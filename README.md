@@ -4,23 +4,24 @@
 
 <br/>
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=14&duration=2500&pause=800&color=E8C84A&center=true&vCenter=true&multiline=false&width=620&lines=Next.js+14+%7C+React+%7C+Node.js+%7C+MongoDB+Atlas;JWT+Auth+%7C+TMDB+API+%7C+Docker+%7C+Nginx;Watchlist+%7C+Trailers+%7C+Personalised+Recommendations;Ken+Burns+Hero+%7C+Bento+Grid+%7C+Framer+Motion" alt="Typing SVG" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=14&duration=2500&pause=800&color=E8C84A&center=true&vCenter=true&multiline=false&width=620&lines=Next.js+14+%7C+React+%7C+Node.js+%7C+MongoDB+Atlas;JWT+Auth+%7C+Supabase+%7C+Redis+%7C+Firebase;Social+Feeds+%7C+Real-time+Chat+%7C+Smart+Recommendations;Ken+Burns+Hero+%7C+Bento+Grid+%7C+Framer+Motion" alt="Typing SVG" />
 
 <br/><br/>
 
-<!-- STACK BADGES — all use shields.io, 100% reliable on GitHub -->
+<!-- STACK BADGES -->
 <img src="https://img.shields.io/badge/Next.js-14-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js"/>
 <img src="https://img.shields.io/badge/React-18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React"/>
-<img src="https://img.shields.io/badge/Node.js-Runtime-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js"/>
 <img src="https://img.shields.io/badge/MongoDB-Atlas-00ED64?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB"/>
+<img src="https://img.shields.io/badge/Redis-Upstash-FF4438?style=for-the-badge&logo=redis&logoColor=white" alt="Redis"/>
+<img src="https://img.shields.io/badge/Supabase-Realtime-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase"/>
 
 <br/>
 
 <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
 <img src="https://img.shields.io/badge/TMDB-API-01b4e4?style=for-the-badge&logo=themoviedb&logoColor=white" alt="TMDB"/>
-<img src="https://img.shields.io/badge/JWT-Auth-FB015B?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT"/>
+<img src="https://img.shields.io/badge/Firebase-Analytics-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firebase"/>
 <img src="https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind"/>
-<img src="https://img.shields.io/badge/Framer-Motion-black?style=for-the-badge&logo=framer&logoColor=white" alt="Framer Motion"/>
+<img src="https://img.shields.io/badge/Sentry-Monitoring-362D59?style=for-the-badge&logo=sentry&logoColor=white" alt="Sentry"/>
 
 <br/><br/>
 
@@ -35,51 +36,44 @@
 
 ## 🧠 What is This?
 
-> **MovieFinder** is a **Next.js 14** full-stack app — meaning React handles the UI, and Next.js API routes run as serverless **Node.js** functions on the backend. One codebase, frontend + backend together.
+**MovieFinder** is a feature-rich, full-stack **Next.js 14** application designed for cinematic discovery, social interaction, and real-time community engagement. 
 
-```
-Browser (React + Tailwind)
-       ↕
-Next.js 14  ←→  Node.js Runtime  ←→  MongoDB Atlas
-       ↕
-   TMDB API
-```
+It has evolved far beyond a simple movie lookup tool into a complete social network for cinephiles. Next.js handles both the stunning React frontend and the powerful Node.js backend API routes.
+
+For an in-depth breakdown of how the systems communicate, caching strategies, and database schemas, please read our **[Architecture Documentation (ARCHITECTURE.md)](ARCHITECTURE.md)**.
 
 ---
 
-## ✨ Features
+## ✨ Features & Tech Stack
 
-| | Feature | Details |
-|:---:|:---|:---|
-| 🎥 | **Cinematic Hero** | Ken Burns effect, parallax, dominant colour extraction |
-| 🔥 | **Trending Rows** | Real-time trending movies & series from TMDB |
-| 🐐 | **GOAT Section** | All-time greatest movies, series & anime |
-| 🎯 | **Personalised** | Recommendations based on your favourite genres |
-| 🎬 | **Trailers** | YouTube autoplay via global trailer modal |
-| ❤️ | **Watchlist** | Synced to MongoDB when logged in, localStorage for guests |
-| 🔍 | **Search** | Instant search across movies & series |
-| 🔒 | **Auth** | JWT email/password, rate limited, HTTP-only cookies |
-| 📧 | **Email** | Welcome & password reset via Gmail SMTP |
-| ⚙️ | **Admin** | Hidden panel at `/admin` — user management & stats |
-| 🐳 | **Docker** | Multi-stage Dockerfile + docker-compose + Nginx |
-| 🗺️ | **SEO** | Sitemap, robots.txt, JSON-LD schema, Open Graph |
-| 🔥 | **Firebase** | Analytics via Firebase (env-safe config) |
-| 📜 | **Legal** | Privacy, Terms, DMCA, Cookie consent |
+We utilize a wide array of modern technologies to deliver a premium user experience:
+
+| Feature | Tech Used | Details |
+|:---|:---|:---|
+| **Social Feeds ("Takes")** | MongoDB, Next.js API | Post hot takes, reviews, follow users, and like posts. |
+| **Real-Time Chat** | Supabase WebSockets | Peer-to-peer messaging and live notifications. |
+| **Smart Recommendations** | Custom Decision Engine | Tailored suggestions based on watch history and onboarding preferences. |
+| **High-Speed Caching** | Upstash Redis | API rate limiting and sub-millisecond response caching. |
+| **Cinematic UI** | Framer Motion, Tailwind | Ken Burns effects, smooth scrolling (Lenis), and dynamic carousels. |
+| **Global Trailers** | YouTube Embeds | Autoplaying HD trailers via a global floating modal. |
+| **Robust Auth** | JWT, NextAuth, bcrypt | Secure email/password login with HTTP-only cookies and password resets. |
+| **Production Ready** | Docker, Nginx | Multi-stage Dockerfiles utilizing Next.js `standalone` mode. |
+| **Monitoring & Analytics**| Firebase, Sentry | Real-time crash reporting and user behavior tracking. |
 
 ---
 
 ## 🚀 Quick Start
 
 <details>
-<summary><b>🖥️ Local Development</b></summary>
+<summary><b>🖥️ Local Development (Node.js)</b></summary>
 <br/>
 
 ```bash
 git clone https://github.com/core-ctrl/MovieFinderForYOU.git
 cd MovieFinderForYOU
-npm install
+npm install --legacy-peer-deps
 cp .env.example .env.local
-# fill in your keys in .env.local
+# Fill in your keys in .env.local (See Environment Variables below)
 npm run dev
 ```
 
@@ -88,170 +82,69 @@ Open → [http://localhost:3000](http://localhost:3000)
 </details>
 
 <details>
-<summary><b>🐳 Docker — Production</b></summary>
+<summary><b>🐳 Docker Deployment (Recommended)</b></summary>
 <br/>
 
+Our Docker configuration uses Next.js `standalone` mode and injects `.env.local` directly into the build context for a seamless setup.
+
 ```bash
-docker-compose up -d
+# Start the entire stack (App, MongoDB, Nginx)
+docker-compose up --build -d
+
+# View logs
 docker-compose logs -f app
-docker-compose restart app
+
+# Stop the stack
 docker-compose down
 ```
 
 </details>
 
 <details>
-<summary><b>⚙️ Environment Variables</b></summary>
+<summary><b>⚙️ Environment Variables (.env.local)</b></summary>
 <br/>
 
-Create `.env.local` — **never commit this file.**
+Create a `.env.local` file in the root directory. **Never commit this file.**
 
 ```env
-# TMDB
-TMDB_API_KEY=
-NEXT_PUBLIC_TMDB_IMAGE=https://image.tmdb.org/t/p
+# TMDB API
+TMDB_API_KEY=your_tmdb_key
 
-# MongoDB
-MONGODB_URI=
+# Database & Caching
+MONGODB_URI=mongodb://localhost:27017/moviefinder
+UPSTASH_REDIS_REST_URL=your_upstash_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_token
 
-# Auth
-JWT_SECRET=
+# Real-Time (Supabase)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
 
-# Email
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=
-EMAIL_PASS=
-EMAIL_FROM=
+# Security & Auth
+JWT_SECRET=your_jwt_secret
+NEXTAUTH_SECRET=your_nextauth_secret
+NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# App
-NEXT_PUBLIC_APP_URL=
+# Email (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email
+SMTP_PASS=your_app_password
 
-# Firebase
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
+# Analytics & Monitoring
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_key
+NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
 ```
 
 </details>
 
 ---
 
-## 🏗️ Architecture
+## 📜 License
 
-```
-MovieFinderForYOU/
-│
-├── components/
-│   ├── Navbar.jsx            # Framer Motion animated navbar
-│   ├── MovieCard.jsx         # Poster card with hover preview
-│   ├── BentoGrid.jsx         # Editorial bento layout
-│   ├── SectionRow.jsx        # Netflix-style scroll row
-│   ├── TopCarousel.jsx       # Ranked top picks
-│   ├── HeroSlider.jsx        # Cinematic hero + YouTube embed
-│   ├── TrailerModal.jsx      # Global trailer player
-│   ├── AuthWidget.jsx        # Login / signup / forgot password
-│   ├── CookieBanner.jsx      # GDPR cookie consent
-│   ├── SEOMeta.jsx           # SEO + JSON-LD
-│   └── SkeletonCard.jsx      # Loading skeleton
-│
-├── pages/                    # Next.js Pages Router
-│   ├── index.js              # Homepage
-│   ├── movies/[id].jsx       # Movie detail (dynamic route)
-│   ├── series/[id].jsx       # Series detail (dynamic route)
-│   ├── search.js             # Search results
-│   ├── my-list/              # Saved watchlist
-│   ├── profile/              # User profile + genre prefs
-│   ├── admin/                # Hidden admin panel
-│   └── api/                  # Node.js serverless API routes
-│       ├── auth/             # register, login, logout, me
-│       ├── user/             # list, preferences
-│       ├── media/            # movie & TV detail proxy
-│       ├── search/           # TMDB search
-│       └── admin/            # admin-only stats
-│
-├── lib/
-│   ├── mongodb.js            # Mongoose connection
-│   ├── auth.js               # JWT sign / verify
-│   ├── tmdb.js               # TMDB API client
-│   ├── firebase.js           # Firebase (env-safe)
-│   ├── mailer.js             # Nodemailer
-│   └── rateLimit.js          # Auth rate limiter
-│
-├── models/
-│   └── User.js               # Mongoose schema
-│
-├── hooks/
-│   └── useLenis.js           # Smooth scroll
-│
-├── Dockerfile                # Multi-stage build
-├── docker-compose.yml        # App + MongoDB + Nginx
-├── nginx.conf                # Reverse proxy
-└── .env.example              # Safe template — no real secrets
-```
+This project is open-sourced software licensed under the **MIT License**. See the [LICENSE](LICENSE) file for more information.
 
----
-
-## 🔌 API Routes
-
-> All routes live under `pages/api/` and run as **Node.js serverless functions** via Next.js.
-
-| Route | Method | Description |
-|:------|:------:|:------------|
-| `/api/auth/register` | `POST` | Create account |
-| `/api/auth/login` | `POST` | Sign in, sets HTTP-only cookie |
-| `/api/auth/logout` | `POST` | Clear session cookie |
-| `/api/auth/me` | `GET` | Get current user |
-| `/api/user/list` | `GET` `POST` `DELETE` | Watchlist CRUD |
-| `/api/user/preferences` | `GET` `POST` | Genre preferences |
-| `/api/media/[type]/[id]` | `GET` | Movie / TV detail via TMDB |
-| `/api/search` | `GET` | Search TMDB |
-| `/api/admin/stats` | `GET` | Admin only — user stats |
-
----
-
-## 🛠️ Full Tech Stack
-
-<div align="center">
-
-| Layer | Technology |
-|:------|:-----------|
-| **Framework** | Next.js 14 (Pages Router) |
-| **Frontend** | React 18 + Tailwind CSS + Framer Motion |
-| **Backend** | Node.js via Next.js API Routes |
-| **Database** | MongoDB Atlas + Mongoose |
-| **Auth** | JWT — HTTP-only cookies, bcrypt, rate limiting |
-| **Media Data** | TMDB API |
-| **Email** | Nodemailer + Gmail SMTP |
-| **Analytics** | Firebase Analytics |
-| **Infra** | Docker + Nginx + docker-compose |
-| **SEO** | JSON-LD, Open Graph, sitemap.xml, robots.txt |
-
-</div>
-
----
-
-## ⚙️ Admin Panel
-
-Access at `/admin` — not linked anywhere public.
-
-To promote a user: set `isAdmin: true` on their document in MongoDB Atlas.
-
-- 👥 View / delete / promote users
-- 📊 Stats overview
-- 🆕 Recent signups
-
----
-
-## 📜 Legal
-
-> This product uses the TMDB API but is **not** endorsed or certified by TMDB.
-> All movie data, images and metadata © their respective rights holders.
-> This is a **discovery tool only** — no content is hosted or streamed.
+> **Disclaimer**: This product uses the TMDB API but is **not** endorsed or certified by TMDB. All movie data, images, and metadata belong to their respective rights holders. This is a discovery tool only — no content is hosted or streamed.
 
 ---
 
@@ -262,9 +155,5 @@ To promote a user: set `isAdmin: true` on their document in MongoDB Atlas.
 <br/><br/>
 
 **Built with ❤️ · Data by [TMDB](https://www.themoviedb.org)**
-
-<br/>
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=E8C84A&height=100&section=footer" width="100%"/>
 
 </div>

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import MovieCard from "./MovieCard";
 import AppIcon from "./AppIcon";
+import HoverCard from "./cards/HoverCard";
 
 export default function TopCarousel({
   items = [],
@@ -45,19 +46,14 @@ export default function TopCarousel({
         </div>
       </div>
 
-      <div ref={ref} className="row-scroll hide-scrollbar">
-        {items.map((movie, index) => (
-          <div key={movie?.id || index} className="relative flex-none w-36 overflow-visible hover:z-50 md:w-44">
-            <div className="absolute left-2 top-2 z-20 select-none text-xs font-black text-white/50">#{index + 1}</div>
-            <MovieCard
-              item={movie}
-              wishlist={wishlist}
-              addToWishlist={addToWishlist}
-              openAuth={openAuth}
-              onPlayTrailer={onPlayTrailer}
-              nowPlayingIds={nowPlayingIds}
-            />
-          </div>
+      <div
+        ref={ref}
+        className="flex gap-3 overflow-x-auto px-4 pb-4 scroll-row"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+      >
+        <style>{`.scroll-row::-webkit-scrollbar{display:none}`}</style>
+        {items.map((item, i) => (
+          <HoverCard key={item.id} item={item} index={i} showTopBadge onPlayTrailer={onPlayTrailer} />
         ))}
       </div>
 

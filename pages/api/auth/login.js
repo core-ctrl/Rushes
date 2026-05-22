@@ -1,7 +1,7 @@
 // pages/api/auth/login.js
 
 import { validate, loginSchema } from "@/middleware/validate";
-import { authLimiter } from "@/lib/rateLimit";
+import { rateLimit } from "@/lib/rateLimit";
 import * as AuthService from "@/services/authService";
 import cookie from "cookie";
 import { getClientIp } from "@/lib/security";
@@ -13,15 +13,12 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: "Method not allowed" });
     }
 
-    // ✅ Get IP safely
-    const ip = getClientIp(req) || "unknown";
-
-    // ✅ Rate limiting
-    const limit = authLimiter(ip);
-    if (!limit.allowed) {
-      return res.status(429).json({
-        error: `Too many attempts. Retry in ${limit.retryAfter}s`,
-      });
+    // Rate limiting — 5 attempts per 15 minutes per email
+    const email = req.body?.email || getClientIp(req) || 'unknown';
+    try {
+      await rateLimit(`login:${email}`, 5, 900);
+    } catch (limitErr) {
+      return res.status(429).json({ error: limitErr.message });
     }
 
     // ✅ Check body exists
@@ -54,13 +51,24 @@ export default async function handler(req, res) {
     return res.status(200).json({ user });
   } catch (err) {
     console.error("Login Error:", err);
-
     const message = err.message || "Login failed";
 
+    // Map specific errors
     let status = 500;
-    if (message.includes("No account")) status = 404;
-    else if (message.includes("password")) status = 401;
+    let userMessage = "An unexpected error occurred";
 
-    return res.status(status).json({ error: message });
+    if (message.includes("No account") || message.includes("not found")) {
+      status = 404;
+      userMessage = "No account found with this email";
+    } else if (message.includes("password") || message.includes("credentials")) {
+      status = 401;
+      userMessage = "Invalid email or password";
+    } else if (message.includes("verify")) {
+      status = 401;
+      userMessage = "Please verify your email before logging in.";
+      return res.status(status).json({ success: false, error: userMessage, requiresVerification: true, email: req.body?.email });
+    }
+
+    return res.status(status).json({ success: false, error: userMessage });
   }
 }

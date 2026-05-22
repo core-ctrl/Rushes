@@ -25,34 +25,36 @@ function parseStringList(value) {
     .filter(Boolean);
 }
 
+function parseOttFilters(query) {
+  return {
+    availableOnly: query.availableOnly === "true",
+    access: ["all", "free", "paid"].includes(query.access) ? query.access : "all",
+    provider: typeof query.provider === "string" ? sanitizeSearchQuery(query.provider) : "",
+  };
+}
+
+function limitDailyPicks(recs) {
+  return {
+    ...recs,
+    movies: [...(recs.movies || [])]
+      .sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))
+      .slice(0, 5),
+    series: [...(recs.series || [])]
+      .sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))
+      .slice(0, 5),
+  };
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
   const decoded = requireAuth(req);
 
   if (!decoded) {
-    const guestProfile = {
-      preferredGenres: parseNumberList(req.query.genres),
-      preferredLanguages: String(req.query.languages || "")
-        .split(",")
-        .map((item) => item.trim().toLowerCase())
-        .filter(Boolean),
-      preferredRegions: parseStringList(req.query.regions),
-      preferredRegionGroup: typeof req.query.regionGroup === "string" ? req.query.regionGroup : "",
-      allowLocationRecommendations: req.query.allowLocationRecommendations === "true",
-      watchHistory: [],
-    };
-
-    const recs = await getRecommendations(guestProfile);
-    const gems = await getHiddenGems(guestProfile.preferredGenres);
-
-    res.setHeader("Cache-Control", "private, s-maxage=180");
-    return res.status(200).json({
-      type: recs.source,
-      movies: recs.movies,
-      tv: recs.tv,
-      becauseYouWatched: [],
-      hiddenGems: gems,
+    return res.status(401).json({
+      error: "Login required",
+      locked: true,
+      message: "Sign in to unlock personalized recommendations.",
     });
   }
 
@@ -62,17 +64,26 @@ export default async function handler(req, res) {
       "preferredGenres preferredLanguages preferredRegions preferredRegionGroup allowLocationRecommendations watchHistory wishlist"
     );
 
-    const [recs, byw, gems] = await Promise.all([
-      getRecommendations(user),
+    const isDaily = req.query.daily === "true";
+
+    let recs;
+    if (isDaily) {
+      recs = await getRecommendations(user, { daily: true, ott: parseOttFilters(req.query) });
+      res.setHeader("Cache-Control", "private, s-maxage=900");
+      return res.status(200).json(limitDailyPicks(recs));
+    }
+
+    const [recsRegular, byw, gems] = await Promise.all([
+      getRecommendations(user, { ott: parseOttFilters(req.query) }),
       getBecauseYouWatched(user),
       getHiddenGems(user.preferredGenres),
     ]);
 
     res.setHeader("Cache-Control", "private, s-maxage=300");
     return res.status(200).json({
-      type: recs.source,
-      movies: recs.movies,
-      tv: recs.tv,
+      type: recsRegular.source,
+      movies: recsRegular.movies,
+      tv: recsRegular.tv,
       becauseYouWatched: byw,
       hiddenGems: gems,
     });

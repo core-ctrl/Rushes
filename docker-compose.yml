@@ -1,6 +1,5 @@
 # docker-compose.yml
 # Run: docker-compose up -d
-version: "3.9"
 
 services:
 
@@ -15,17 +14,10 @@ services:
     container_name: moviefinder-app
     ports:
       - "3000:3000"
+    env_file:
+      - .env.local
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=${MONGODB_URI}
-      - JWT_SECRET=${JWT_SECRET}
-      - TMDB_API_KEY=${TMDB_API_KEY}
-      - EMAIL_HOST=${EMAIL_HOST}
-      - EMAIL_PORT=${EMAIL_PORT}
-      - EMAIL_USER=${EMAIL_USER}
-      - EMAIL_PASS=${EMAIL_PASS}
-      - EMAIL_FROM=${EMAIL_FROM}
-      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
     depends_on:
       - mongo
     restart: unless-stopped

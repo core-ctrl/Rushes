@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     await connectDB();
     const user = await User.findOne({
       resetPasswordToken: token,
-      resetPasswordExpires: { $gt: new Date() },
+      resetPasswordExpiry: { $gt: new Date() },
     });
 
     if (!user) {
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 
     user.password = password;
     user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
+    user.resetPasswordExpiry = undefined;
     await user.save();
     sendPasswordChangedEmail(user.email, user.name).catch(() => {});
 

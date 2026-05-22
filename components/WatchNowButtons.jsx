@@ -4,20 +4,27 @@ import {
   PlayIcon,
   Ticket01Icon,
 } from "@hugeicons/core-free-icons";
+import Image from "next/image";
 import AppIcon from "./AppIcon";
 import { trackWatchNowClick } from "../lib/analytics";
 import { findRegionOption } from "../lib/preferenceOptions";
+import { TMDB_BLUR_DATA_URL } from "../lib/imageBlur";
 
-const PROVIDER_AFFILIATE = {
-  Netflix: null,
-  "Amazon Prime Video": "https://www.primevideo.com/",
-  "Apple TV": "https://tv.apple.com/",
-  Hotstar: "https://www.hotstar.com/",
-  JioCinema: "https://www.jiocinema.com/",
-  ZEE5: "https://www.zee5.com/",
-  SonyLIV: "https://www.sonyliv.com/",
-  "YouTube Premium": "https://www.youtube.com/",
-};
+const STREAMING_SEARCH_LINKS = [
+  { match: /netflix/i, build: (title) => `https://www.netflix.com/search?q=${encodeURIComponent(title)}` },
+  { match: /prime|amazon/i, build: (title) => `https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${encodeURIComponent(title)}` },
+  { match: /disney/i, build: (title) => `https://www.disneyplus.com/search?q=${encodeURIComponent(title)}` },
+  { match: /hotstar/i, build: (title) => `https://www.hotstar.com/in/search?q=${encodeURIComponent(title)}` },
+  { match: /apple/i, build: (title) => `https://tv.apple.com/search?term=${encodeURIComponent(title)}` },
+  { match: /hulu/i, build: (title) => `https://www.hulu.com/search?q=${encodeURIComponent(title)}` },
+  { match: /max|hbo/i, build: (title) => `https://www.max.com/search?q=${encodeURIComponent(title)}` },
+  { match: /jiocinema|jio/i, build: (title) => `https://www.jiocinema.com/search/${encodeURIComponent(title)}` },
+  { match: /zee5|zee/i, build: (title) => `https://www.zee5.com/search?q=${encodeURIComponent(title)}` },
+  { match: /sony/i, build: (title) => `https://www.sonyliv.com/search?q=${encodeURIComponent(title)}` },
+  { match: /youtube/i, build: (title) => `https://www.youtube.com/results?search_query=${encodeURIComponent(`${title} movie`)}` },
+  { match: /mubi/i, build: (title) => `https://mubi.com/search/films?query=${encodeURIComponent(title)}` },
+  { match: /aha/i, build: (title) => `https://www.aha.video/search?q=${encodeURIComponent(title)}` },
+];
 
 const BOOKING_LINKS = {
   bookmyshow: { label: "BookMyShow", build: (title) => `https://in.bookmyshow.com/explore/movies?q=${encodeURIComponent(title)}` },
@@ -91,6 +98,12 @@ function isRecentRelease(releaseDate) {
   return diffDays >= -7 && diffDays <= 60;
 }
 
+function providerDirectUrl(providerName, title, fallback) {
+  const provider = String(providerName || "");
+  const match = STREAMING_SEARCH_LINKS.find((entry) => entry.match.test(provider));
+  return match ? match.build(title) : fallback;
+}
+
 export default function WatchNowButtons({
   providers = null,
   title,
@@ -156,8 +169,7 @@ export default function WatchNowButtons({
         ) : null}
 
         {watchProviders.map((provider) => {
-          const base = PROVIDER_AFFILIATE[provider.provider_name];
-          const href = base || providerRegionLink;
+          const href = providerDirectUrl(provider.provider_name, title, providerRegionLink);
 
           return (
             <a
@@ -168,11 +180,14 @@ export default function WatchNowButtons({
               onClick={() => handleClick(provider.provider_name, href)}
               className="group flex items-center gap-2 rounded-xl border border-white/10 bg-white/8 px-3 py-2 transition-all hover:border-white/20 hover:bg-white/15"
             >
-              <img
+              <Image
                 src={`https://image.tmdb.org/t/p/w45${provider.logo_path}`}
                 alt={provider.provider_name}
+                width={100}
+                height={100}
                 className="h-6 w-6 rounded-lg"
-                loading="lazy"
+                placeholder="blur"
+                blurDataURL={TMDB_BLUR_DATA_URL}
               />
               <span className="text-xs font-medium text-white transition-colors group-hover:text-accent">
                 {provider.provider_name}

@@ -1,6 +1,18 @@
 // pages/my-list/index.js
 import Head from "next/head";
 import Link from "next/link";
+import Image from "next/image";
+import { TMDB_BLUR_DATA_URL } from "../../lib/imageBlur";
+
+function recentContext(item) {
+  const seenAt = item.watchedAt || item.viewedAt || item.addedAt;
+  if (!seenAt) return "";
+  const diffDays = Math.floor((Date.now() - new Date(seenAt).getTime()) / (24 * 60 * 60 * 1000));
+  if (diffDays <= 0) return "You checked this today";
+  if (diffDays === 1) return "You checked this yesterday";
+  if (diffDays <= 7) return `You checked this ${diffDays} days ago`;
+  return "";
+}
 
 export default function MyListPage({ wishlist = [], addToWishlist, user, openAuth }) {
   if (!user) {
@@ -27,7 +39,7 @@ export default function MyListPage({ wishlist = [], addToWishlist, user, openAut
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">❤️ My List</h1>
         <p className="text-neutral-400 text-sm mb-8">
-          {wishlist.length} saved title{wishlist.length !== 1 ? "s" : ""}
+          {wishlist.length} saved title{wishlist.length !== 1 ? "s" : ""}. Watchlist updates appear here when titles move to OTT.
         </p>
 
         {wishlist.length === 0 ? (
@@ -51,10 +63,14 @@ export default function MyListPage({ wishlist = [], addToWishlist, user, openAut
                   <Link href={href}>
                     <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5 border border-white/10 mb-2">
                       {item.posterPath || item.poster_path ? (
-                        <img
+                        <Image
                           src={`https://image.tmdb.org/t/p/w300${item.posterPath || item.poster_path}`}
                           alt={item.title || item.name}
+                          width={200}
+                          height={300}
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                          placeholder="blur"
+                          blurDataURL={TMDB_BLUR_DATA_URL}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-4xl">🎬</div>
@@ -62,6 +78,9 @@ export default function MyListPage({ wishlist = [], addToWishlist, user, openAut
                     </div>
                   </Link>
                   <p className="text-sm font-medium truncate">{item.title || item.name}</p>
+                  {recentContext(item) ? (
+                    <p className="mt-1 text-xs text-amber-300">{recentContext(item)}</p>
+                  ) : null}
                   <button
                     onClick={() => addToWishlist({ id: item.mediaId || item.id, media_type: item.mediaType || item.media_type, ...item })}
                     className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition hover:bg-red-600/60"

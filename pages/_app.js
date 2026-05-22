@@ -1,4 +1,3 @@
-// pages/_app.js
 import { useEffect, useState } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { AnimatePresence, motion } from "framer-motion";
@@ -7,9 +6,13 @@ import store from "../store";
 import Navbar from "../components/Navbar";
 import AuthWidget from "../components/AuthWidget";
 import TrailerModal from "../components/TrailerModal";
-import CookieBanner from "../components/CookieBanner";
+import CookieConsent from "../components/CookieConsent";
+import BottomNav from "../components/BottomNav";
 import Footer from "../components/Footer";
+import FeedbackButton from "../components/FeedbackButton";
+import Toaster, { toast } from "../components/ui/Toaster";
 import useLenis from "../hooks/useLenis";
+import { useLocation } from "../hooks/useLocation";
 import { initAnalytics } from "../lib/firebase";
 import {
   fetchCurrentUser, logoutUser, selectUser, selectInitialized, setUser,
@@ -22,6 +25,12 @@ import {
   openAuthModal, closeAuthModal, openTrailer, closeTrailer,
   selectAuthModalOpen, selectTrailer,
 } from "../store/slices/uiSlice";
+import { readStoredPreferences } from "../lib/userPreferences";
+import dynamic from "next/dynamic";
+const OnboardingWrapper = dynamic(() => import("../components/onboarding/OnboardingWrapper"), { ssr: false });
+import OnboardingFlow from "../components/OnboardingFlow";
+import OnlinePresence from '../components/social/OnlinePresence';
+import { Analytics } from '@vercel/analytics/react';
 
 const pageVariants = {
   initial: { opacity: 0, y: 12 },
@@ -38,6 +47,11 @@ function AppInner({ Component, pageProps, router }) {
   const authOpen = useSelector(selectAuthModalOpen);
   const trailerState = useSelector(selectTrailer);
   const [authFeedback, setAuthFeedback] = useState({ type: "", message: "" });
+  const currentUser = useSelector(selectUser);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Location hook - runs silently after consent
+  useLocation();
 
   // Firebase analytics
   useEffect(() => {
@@ -58,6 +72,10 @@ function AppInner({ Component, pageProps, router }) {
     if (!message) return;
 
     setAuthFeedback({
+      type: typeof authError === "string" ? "error" : "success",
+      message,
+    });
+    toast({
       type: typeof authError === "string" ? "error" : "success",
       message,
     });
@@ -141,9 +159,41 @@ function AppInner({ Component, pageProps, router }) {
   };
 
   const handleOpenTrailer = (key, title, id, type = "movie") => {
-    if (!key) { alert("❌ Trailer not available."); return; }
+    if (!key) {
+      toast({ type: "error", message: "Trailer is not available for this title yet." });
+      return;
+    }
     dispatch(openTrailer({ key, title, id, type }));
   };
+
+  useEffect(() => {
+    const onPlayTrailer = (event) => {
+      const { key, title, id, type } = event.detail || {};
+      handleOpenTrailer(key, title, id, type);
+    };
+    window.addEventListener("rushes:play-trailer", onPlayTrailer);
+    return () => window.removeEventListener("rushes:play-trailer", onPlayTrailer);
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Only show onboarding if user is logged in AND hasCompletedOnboarding is explicitly false
+    const needsOnboarding = currentUser && currentUser.hasCompletedOnboarding === false;
+    console.log("Onboarding check:", { user: !!currentUser, hasCompleted: currentUser?.hasCompletedOnboarding, show: needsOnboarding });
+    if (needsOnboarding) {
+      setShowOnboarding(true);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (showOnboarding) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [showOnboarding]);
 
   const sharedProps = {
     user,
@@ -161,9 +211,24 @@ function AppInner({ Component, pageProps, router }) {
     );
   }
 
+  if (showOnboarding) {
+    return (
+      <div className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-6 overflow-y-auto">
+        <OnboardingWrapper onComplete={(prefs) => {
+          setShowOnboarding(false);
+          // Mark complete
+          if (user) {
+            // Update user
+          }
+        }} />
+      </div>
+    );
+  }
+
   return (
     <>
       <Navbar user={user} logout={handleLogout} openAuth={(mode) => dispatch(openAuthModal(mode))} />
+      <OnboardingFlow />
 
       <AnimatePresence mode="wait">
         <motion.div key={router.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit">
@@ -171,10 +236,13 @@ function AppInner({ Component, pageProps, router }) {
         </motion.div>
       </AnimatePresence>
 
-      <Footer />
+      {!router.pathname.startsWith('/messages') && <Footer />}
+
+      {/* Social realtime presence */}
+      <OnlinePresence />
 
       <AuthWidget
-        open={authOpen}
+        open={authOpen && !user}
         onClose={() => { setAuthFeedback({ type: "", message: "" }); dispatch(closeAuthModal()); }}
         onLogin={() => dispatch(closeAuthModal())}
         externalFeedback={authFeedback}
@@ -189,7 +257,11 @@ function AppInner({ Component, pageProps, router }) {
         onClose={() => dispatch(closeTrailer())}
       />
 
-      <CookieBanner />
+      <CookieConsent />
+      {!router.pathname.startsWith('/messages') && <BottomNav />}
+      <FeedbackButton />
+      <Toaster />
+      <Analytics />
     </>
   );
 }

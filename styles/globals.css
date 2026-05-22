@@ -103,21 +103,21 @@ img {
   font-size: clamp(3rem, 8vw, 7rem);
   font-weight: 900;
   line-height: 1;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
 }
 
 .display-2 {
   font-size: clamp(2rem, 5vw, 4rem);
   font-weight: 800;
   line-height: 1.1;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
 }
 
 .heading-1 {
   font-size: clamp(1.5rem, 3vw, 2.5rem);
   font-weight: 700;
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .heading-2 {
@@ -395,4 +395,43 @@ img {
 
 .line-clamp-3 {
   -webkit-line-clamp: 3;
+}
+
+.chat-icon-button {
+  display: inline-flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.78);
+  transition: transform 220ms var(--ease-out-expo), border-color 220ms, background 220ms, color 220ms;
+}
+
+.chat-icon-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.11);
+  color: #fff;
+}
+
+.premium-surface {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+    rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(28px) saturate(155%);
+  -webkit-backdrop-filter: blur(28px) saturate(155%);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.55);
+}
+
+@media (max-width: 640px) {
+  .chat-icon-button {
+    height: 2.25rem;
+    width: 2.25rem;
+    border-radius: 0.875rem;
+  }
 }

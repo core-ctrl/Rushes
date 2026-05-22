@@ -1,7 +1,7 @@
 // pages/api/auth/register.js
 
 import { validate, registerSchema } from "@/middleware/validate";
-import { authLimiter } from "@/lib/rateLimit";
+import { rateLimit } from "@/lib/rateLimit";
 import * as AuthService from "@/services/authService";
 import cookie from "cookie";
 import { getClientIp } from "@/lib/security";
@@ -13,15 +13,12 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: "Method not allowed" });
     }
 
-    // ✅ Get IP safely
-    const ip = getClientIp(req) || "unknown";
-
-    // ✅ Rate limit
-    const limit = authLimiter(ip);
-    if (!limit.allowed) {
-      return res.status(429).json({
-        error: `Too many attempts. Retry in ${limit.retryAfter}s`,
-      });
+    // Rate limiting — 3 attempts per hour per IP
+    const ip = getClientIp(req) || 'unknown';
+    try {
+      await rateLimit(`register:${ip}`, 3, 3600);
+    } catch (limitErr) {
+      return res.status(429).json({ error: limitErr.message });
     }
 
     // ✅ Ensure body exists
@@ -36,22 +33,34 @@ export default async function handler(req, res) {
     }
 
     // ✅ Register user
-    const { token, user } = await AuthService.registerUser(data);
+    const result = await AuthService.registerUser(data);
 
-    // ✅ Set cookie properly
-    res.setHeader(
-      "Set-Cookie",
-      cookie.serialize("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: "/",
-      })
-    );
+    if (result.token) {
+      res.setHeader(
+        "Set-Cookie",
+        cookie.serialize("token", result.token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        })
+      );
+    }
 
     // ✅ Success response
-    return res.status(201).json({ user });
+    // Fire analytics event fire-and-forget (non-blocking)
+    setImmediate(() => {
+      try {
+        const origin = req.headers.origin || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        fetch(`${origin}/api/analytics/event`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'signup_completed', userId: result.user?.id || null }),
+      }).catch(() => {});
+      } catch {}
+    });
+    return res.status(201).json(result);
   } catch (err) {
     console.error("Register Error:", err);
 

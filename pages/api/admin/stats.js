@@ -1,26 +1,49 @@
-// pages/api/admin/stats.js
-import { connectDB } from "@/lib/mongodb";
-import User from "@/models/User";
-import { getUserFromRequest } from "@/lib/auth";
+import { connectDB } from '../../../lib/mongodb';
+import User from '../../../models/User';
+import Report from '../../../models/Report';
+import { requireAdmin } from '../../../middleware/requireAdmin';
 
-export default async function handler(req, res) {
-  const decoded = getUserFromRequest(req);
-  if (!decoded) return res.status(401).json({ error: "Unauthorized" });
+import Take from '../../../models/Take';
+
+export default requireAdmin(async function handler(req, res) {
+  if (req.method !== 'GET') return res.status(405).end();
 
   await connectDB();
 
-  const user = await User.findById(decoded.id);
-  if (!user?.isAdmin) return res.status(403).json({ error: "Forbidden" });
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const [totalUsers, recentUsers] = await Promise.all([
+  const [totalUsers, pendingReports, dau, signups, totalTakes] = await Promise.all([
     User.countDocuments(),
-    User.find().sort({ createdAt: -1 }).limit(10).select("name email createdAt wishlist"),
+    Report.countDocuments({ status: 'pending' }),
+    User.countDocuments({ lastSeen: { $gte: yesterday } }),
+    User.aggregate([
+      { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%m/%d', date: '$createdAt' } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]),
+    Take.countDocuments()
   ]);
 
-  const totalWishlists = recentUsers.reduce(
-    (acc, u) => acc + (u.wishlist?.length || 0),
-    0
-  );
+  // Recent users for the overview tab
+  const recentUsers = await User.find()
+    .sort({ createdAt: -1 })
+    .limit(10)
+    .select('name email createdAt wishlist isAdmin avatar username')
+    .lean();
 
-  return res.status(200).json({ totalUsers, totalWishlists, recentUsers });
-}
+  res.json({
+    totalUsers,
+    dau,
+    pendingReports,
+    totalTakes,
+    signupsChart: signups.map((s) => ({ date: s._id, count: s.count })),
+    recentUsers,
+    totalWishlists: recentUsers.reduce((acc, u) => acc + (u.wishlist?.length || 0), 0),
+  });
+});

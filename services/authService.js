@@ -2,7 +2,9 @@
 import { connectDB } from "../lib/mongodb.js";
 import User from "../models/User.js";
 import { signToken } from "../lib/auth.js";
-import { sendLoginThankYouEmail, sendVerificationEmail } from "../lib/mailer.js";
+import { sendLoginThankYouEmail, sendVerificationEmail } from "../lib/sendEmail.js";
+import { avatarOrDefault } from "../lib/avatar.js";
+import crypto from "crypto";
 
 function normalizeEmail(email) {
     return email.trim().toLowerCase();
@@ -16,6 +18,26 @@ function credentialsEnabled(user) {
     return Array.isArray(user.authProviders) && user.authProviders.includes("credentials");
 }
 
+async function migrateOldEmailVerification(user) {
+    const storedUser = await User.collection.findOne(
+        { _id: user._id },
+        { projection: { isEmailVerified: 1 } }
+    );
+
+    const hasStoredEmailVerification = Object.prototype.hasOwnProperty.call(
+        storedUser || {},
+        "isEmailVerified"
+    );
+
+    if (!hasStoredEmailVerification || storedUser.isEmailVerified === undefined || storedUser.isEmailVerified === null) {
+        user.isEmailVerified = true;
+        await user.save();
+        return true;
+    }
+
+    return storedUser.isEmailVerified;
+}
+
 // Validate password strength
 export function validatePassword(pw) {
     if (!pw || pw.length < 8) return "Password must be at least 8 characters";
@@ -24,9 +46,46 @@ export function validatePassword(pw) {
     return null;
 }
 
-export async function registerUser({ name, email, password }) {
+// Generate verification token
+function generateVerificationToken() {
+    return crypto.randomBytes(32).toString("hex");
+}
+
+// Username validation
+export function validateUsername(username) {
+    if (!username || username.length < 3) return "Username must be at least 3 characters";
+    if (username.length > 20) return "Username must be at most 20 characters";
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) return "Username can only contain letters, numbers, and underscores";
+    return null;
+}
+
+// Check username availability
+export async function checkUsernameAvailability(username) {
+    await connectDB();
+    const existing = await User.findOne({ username: username.toLowerCase() });
+    return !existing;
+}
+
+// Check email availability
+export async function checkEmailAvailability(email) {
+    await connectDB();
+    const normalizedEmail = normalizeEmail(email);
+    const existing = await User.findOne({ email: normalizedEmail });
+    return !existing;
+}
+
+export async function registerUser({ name, email, password, username }) {
     const err = validatePassword(password);
     if (err) throw new Error(err);
+
+    // Validate username if provided
+    if (username) {
+        const usernameError = validateUsername(username);
+        if (usernameError) throw new Error(usernameError);
+
+        const usernameAvailable = await checkUsernameAvailability(username);
+        if (!usernameAvailable) throw new Error("Username already taken");
+    }
 
     await connectDB();
 
@@ -40,35 +99,37 @@ export async function registerUser({ name, email, password }) {
         throw new Error("An account with this email already exists. Please sign in instead.");
     }
 
+    // Generate verification token
+    const verificationToken = generateVerificationToken();
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     const user = await User.create({
         name: name.trim(),
+        username: username ? username.toLowerCase() : undefined,
+        displayName: username || name.trim(),
         email: normalizedEmail,
         password,
+        avatar: avatarOrDefault("", username || name || normalizedEmail),
         authProviders: ["credentials"],
+        verificationToken,
+        verificationTokenExpiry,
+        isEmailVerified: false,
     });
 
-    // Non-blocking email
-    sendVerificationEmail(normalizedEmail, user.name).catch((e) =>
-        console.warn("Welcome email failed:", e.message)
-    );
+    // Send verification email (non-blocking)
+    sendVerificationEmail(normalizedEmail, verificationToken, username || name.trim()).catch((e) => console.warn("Verification email failed:", e.message));
 
-    const token = signToken({ id: user._id, email: user.email, name: user.name });
+    // Return response without token - user must verify first
     return {
-        token,
-        user: {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            avatar: user.avatar,
-            authProviders: user.authProviders,
-        },
+        message: "Account created. Please check your email to verify your account.",
+        requiresVerification: true,
     };
 }
 
 export async function loginUser({ email, password }) {
     await connectDB();
     const normalizedEmail = normalizeEmail(email);
-    const user = await User.findOne({ email: normalizedEmail }).select("+password");
+    const user = await User.findOne({ email: normalizedEmail }).select("+password +verificationToken");
     if (!user) throw new Error("No account found with this email. Please create an account first.");
 
     if (!credentialsEnabled(user)) {
@@ -79,7 +140,19 @@ export async function loginUser({ email, password }) {
     const valid = await user.comparePassword(password);
     if (!valid) throw new Error("Incorrect password. Please try again.");
 
-    sendLoginThankYouEmail(user.email, user.name).catch(() => {});
+    // Case 1: Account explicitly marked as not verified = block
+    if (user.isEmailVerified === false && user.verificationToken) {
+        throw new Error("Please verify your email before logging in.");
+    }
+
+    // Case 2: Old account with no isEmailVerified field = migrate silently, allow login
+    if (user.isEmailVerified === undefined || user.isEmailVerified === null) {
+        await User.findByIdAndUpdate(user._id, { isEmailVerified: true });
+    }
+
+    // Case 3: isEmailVerified === true = allow login normally
+
+    sendLoginThankYouEmail(user.email, user.name).catch(() => { });
 
     const token = signToken({ id: user._id, email: user.email, name: user.name });
     return {
@@ -87,9 +160,12 @@ export async function loginUser({ email, password }) {
         user: {
             id: user._id,
             name: user.name,
+            username: user.username || "",
+            displayName: user.displayName || user.username || user.name,
             email: user.email,
-            avatar: user.avatar,
+            avatar: avatarOrDefault(user.avatar, user.username || user.email),
             authProviders: user.authProviders,
+            hasCompletedOnboarding: user.hasCompletedOnboarding === true,
         },
     };
 }
@@ -108,22 +184,36 @@ export async function loginOrCreateSocialUser({
     const providerMatch = { [providerIdField]: providerId };
     let user = await User.findOne({ $or: [providerMatch, { email: normalizedEmail }] }).select("+password");
     let created = false;
+    const fallbackUsername = normalizedEmail
+        .split("@")[0]
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "")
+        .slice(0, 16) || "viewer";
 
     if (!user) {
         created = true;
+        let username = fallbackUsername;
+        let suffix = 0;
+        while (await User.exists({ username })) {
+            suffix += 1;
+            username = `${fallbackUsername}${suffix}`;
+        }
         user = await User.create({
             name: name?.trim() || normalizedEmail.split("@")[0],
+            username,
+            displayName: name?.trim() || username,
             email: normalizedEmail,
             password: `SocialAuth${Math.random().toString(36).slice(2)}A1`,
             authProviders: [provider],
             [providerIdField]: providerId,
-            avatar,
+            avatar: avatarOrDefault(avatar, normalizedEmail),
+            hasCompletedOnboarding: false,
         });
-        sendVerificationEmail(normalizedEmail, user.name).catch(() => {});
     } else {
         user.name = user.name || name?.trim() || normalizedEmail.split("@")[0];
-        user.avatar = avatar || user.avatar || "";
+        user.avatar = avatarOrDefault(avatar || user.avatar, user.username || normalizedEmail);
         user.email = normalizedEmail;
+        user.displayName = user.displayName || user.username || user.name;
         user[providerIdField] = providerId;
 
         const providers = new Set(user.authProviders || []);
@@ -132,7 +222,7 @@ export async function loginOrCreateSocialUser({
         await user.save();
     }
 
-    sendLoginThankYouEmail(user.email, user.name).catch(() => {});
+    sendLoginThankYouEmail(user.email, user.name).catch(() => { });
 
     const token = signToken({ id: user._id, email: user.email, name: user.name });
     return {
@@ -141,9 +231,12 @@ export async function loginOrCreateSocialUser({
         user: {
             id: user._id,
             name: user.name,
+            username: user.username || "",
+            displayName: user.displayName || user.username || user.name,
             email: user.email,
-            avatar: user.avatar,
+            avatar: avatarOrDefault(user.avatar, user.username || user.email),
             authProviders: user.authProviders,
+            hasCompletedOnboarding: user.hasCompletedOnboarding === true,
         },
     };
 }
@@ -152,5 +245,3 @@ export async function getUserById(id) {
     await connectDB();
     return User.findById(id).select("-password");
 }
-
-

@@ -3,6 +3,7 @@
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import { getUserFromRequest } from "@/lib/auth";
+import { avatarOrDefault } from "@/lib/avatar";
 
 export default async function handler(req, res) {
   const decoded = getUserFromRequest(req);
@@ -23,19 +24,28 @@ export default async function handler(req, res) {
       user: {
         id: user._id,
         name: user.name,
+        displayName: user.displayName || user.username || user.name,
         email: user.email,
-        avatar: user.avatar || "",
+        username: user.username || "",
+        avatar: avatarOrDefault(user.avatar, user.username || user.email),
+        bio: user.bio || "",
         authProviders: user.authProviders || [],
         preferredGenres: user.preferredGenres || [],
         preferredLanguages: user.preferredLanguages || [],
         preferredRegions: user.preferredRegions || [],
         preferredRegionGroup: user.preferredRegionGroup || "",
+        preferredPlatforms: user.preferredPlatforms || [],
+        ottPlatforms: user.ottPlatforms || user.preferredPlatforms || [],
         allowLocationRecommendations: Boolean(user.allowLocationRecommendations),
+        hasCompletedOnboarding: user.hasCompletedOnboarding === true,
         wishlist: user.wishlist || [],
         watchHistory: user.watchHistory || [],
+        following: user.following || [],
+        followers: user.followers || [],
       },
     });
   } catch (err) {
-    return res.status(500).json({ user: null });
+    console.error("Auth/me error:", err);
+    return res.status(200).json({ user: null, error: "Failed to fetch user" });
   }
 }

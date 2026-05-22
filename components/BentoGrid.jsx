@@ -2,8 +2,10 @@
 // Magic Bento Grid for homepage — shows featured content in editorial layout
 import { motion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { PlayIcon, Tv01Icon } from "@hugeicons/core-free-icons";
 import AppIcon from "./AppIcon";
+import { TMDB_BLUR_DATA_URL } from "../lib/imageBlur";
 
 function BentoCell({ item, size = "normal", rank }) {
   if (!item) return <div className="bento-cell skeleton" />;
@@ -21,8 +23,15 @@ function BentoCell({ item, size = "normal", rank }) {
       className="bento-cell group cursor-pointer"
     >
       <Link href={href} className="block w-full h-full relative">
-        <img src={img} alt={item.title || item.name}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+        <Image
+          src={img}
+          alt={item.title || item.name}
+          width={780}
+          height={440}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          placeholder="blur"
+          blurDataURL={TMDB_BLUR_DATA_URL}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 
         {rank && (

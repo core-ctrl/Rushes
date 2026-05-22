@@ -8,6 +8,7 @@ import {
   FireIcon,
   GameController03Icon,
   LaughingIcon,
+  LockIcon,
   MagicWand01Icon,
   PlayIcon,
   Rocket01Icon,
@@ -41,6 +42,8 @@ import {
 import axios from "axios";
 import { readStoredPreferences } from "../lib/userPreferences";
 import AppIcon from "../components/AppIcon";
+import DailyPicks from "../components/DailyPicks";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 function TitleWithIcon({ icon: Icon, title, subtitle }) {
   return (
@@ -53,6 +56,40 @@ function TitleWithIcon({ icon: Icon, title, subtitle }) {
         {subtitle ? <p className="mt-1 text-sm text-neutral-500">{subtitle}</p> : null}
       </div>
     </div>
+  );
+}
+
+function PremiumRecommendationLock({ onLogin }) {
+  return (
+    <motion.section
+      className="relative my-12 overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.035] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.55)] backdrop-blur-2xl md:p-8"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,rgba(229,9,20,0.16),transparent_38%,rgba(14,165,233,0.09))]" />
+      <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-red-400/30 bg-red-500/10 text-red-200 shadow-[0_0_40px_rgba(229,9,20,0.2)]">
+            <AppIcon icon={LockIcon} size={22} />
+          </div>
+          <div>
+            <p className="text-xl font-black text-white md:text-2xl">Personalized recommendations are locked</p>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-400">
+              Sign in to unlock a private taste model built from your genres, languages, watch history, and streaming platforms.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => onLogin?.("login")}
+          className="group relative overflow-hidden rounded-2xl border border-red-400/30 bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-glow-red transition-all hover:-translate-y-0.5 hover:bg-red-500"
+        >
+          <span className="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-[120%]" />
+          <span className="relative">Login to unlock</span>
+        </button>
+      </div>
+    </motion.section>
   );
 }
 
@@ -87,33 +124,17 @@ export default function Home({
     : null;
 
   useEffect(() => {
-    const storedPreferences = readStoredPreferences();
-    const shouldFetchGuestRecs =
-      !user &&
-      ((storedPreferences.genres?.length || 0) > 0 ||
-        (storedPreferences.languages?.length || 0) > 0 ||
-        (storedPreferences.regions?.length || 0) > 0);
-
-    if (!user && !shouldFetchGuestRecs) {
+    if (!user) {
       setRecs(null);
+      setRecLoad(false);
       return;
     }
 
-    const params = user
-      ? {}
-      : {
-        genres: storedPreferences.genres.join(","),
-        languages: storedPreferences.languages.join(","),
-        regions: storedPreferences.regions.join(","),
-        regionGroup: storedPreferences.regionGroup || "",
-        allowLocationRecommendations: String(Boolean(storedPreferences.allowLocationRecommendations)),
-      };
-
     setRecLoad(true);
     axios
-      .get("/api/recommendations", { params })
+      .get("/api/recommendations")
       .then(({ data }) => setRecs(data))
-      .catch(() => { })
+      .catch(() => setRecs(null))
       .finally(() => setRecLoad(false));
   }, [user]);
 
@@ -149,10 +170,10 @@ export default function Home({
       />
 
       <main className="min-h-screen bg-black text-white">
-        <HeroSlider slides={heroSlides} onPlayTrailer={openTrailer} openAuth={openAuth} />
+        <ErrorBoundary>
+          <HeroSlider slides={heroSlides} onPlayTrailer={openTrailer} openAuth={openAuth} />
 
-        <div className="mx-auto max-w-7xl px-4 pt-10 md:px-8">
-          <AdSlot slot="1000000000" className="mb-10" label="Featured sponsor" />
+          <div className="mx-auto max-w-7xl px-4 pt-10 md:px-8">
 
           <TopCarousel
             items={trendingItems}
@@ -160,30 +181,7 @@ export default function Home({
             {...rowProps}
           />
 
-          <BentoGrid
-            items={trendingMovies.slice(0, 5)}
-            title={<TitleWithIcon icon={PlayIcon} title="Top Movies This Week" subtitle="High momentum picks across the platform" />}
-          />
-
-          <TopCarousel
-            items={trendingTV}
-            title={<TitleWithIcon icon={Tv01Icon} title="Top Series This Week" subtitle="The most talked-about shows right now" />}
-            {...rowProps}
-          />
-
-          {nowPlayingLoad ? (
-            <SkeletonRow count={7} />
-          ) : nowPlaying.length > 0 ? (
-            <SectionRow
-              title={<TitleWithIcon icon={Ticket01Icon} title="In Theaters" subtitle={`Now playing in ${regionLabel || "your region"}`} />}
-              items={nowPlaying}
-              {...rowProps}
-            />
-          ) : null}
-
-          <AdBanner slot="horizontal" />
-
-          {user || recs ? (
+          {user ? (
             <section className="mb-14">
               <motion.div
                 className="mb-6"
@@ -236,26 +234,35 @@ export default function Home({
               ) : null}
             </section>
           ) : (
-            <motion.div
-              className="my-10 flex items-center justify-between rounded-2xl border border-white/8 p-6 glass"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-            >
-              <div>
-                <p className="text-lg font-bold text-white">Get a smarter recommendation feed</p>
-                <p className="mt-1 text-sm text-neutral-500">
-                  Set genres, languages, region, and location preference once. We keep it ready even if you later sign in with Google or GitHub.
-                </p>
-              </div>
-              <button
-                onClick={openAuth}
-                className="flex-shrink-0 rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-accent-dark hover:shadow-glow-red"
-              >
-                Sign In Free
-              </button>
-            </motion.div>
+            <PremiumRecommendationLock onLogin={openAuth} />
           )}
+
+          <AdSlot slot="1000000000" className="mb-10" label="Featured sponsor" />
+
+          <BentoGrid
+            items={trendingMovies.slice(0, 5)}
+            title={<TitleWithIcon icon={PlayIcon} title="Top Movies This Week" subtitle="High momentum picks across the platform" />}
+          />
+
+          <TopCarousel
+            items={trendingTV}
+            title={<TitleWithIcon icon={Tv01Icon} title="Top Series This Week" subtitle="The most talked-about shows right now" />}
+            {...rowProps}
+          />
+
+          {nowPlayingLoad ? (
+            <SkeletonRow count={7} />
+          ) : nowPlaying.length > 0 ? (
+            <SectionRow
+              title={<TitleWithIcon icon={Ticket01Icon} title="In Theaters" subtitle={`Now playing in ${regionLabel || "your region"}`} />}
+              items={nowPlaying}
+              {...rowProps}
+            />
+          ) : null}
+
+          <AdBanner slot="horizontal" />
+
+          {/* Recommended for You moved to top */}
 
           <div className="my-8">
             <TitleWithIcon
@@ -296,7 +303,8 @@ export default function Home({
               </p>
             </div>
           </footer>
-        </div>
+          </div>
+        </ErrorBoundary>
       </main>
     </>
   );

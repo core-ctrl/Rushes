@@ -6,11 +6,11 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   "frame-ancestors 'self'",
   "object-src 'none'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://partner.googleadservices.com https://www.youtube.com https://www.youtube-nocookie.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://partner.googleadservices.com https://www.youtube.com https://www.youtube-nocookie.com https://www.clarity.ms https://cdn.jsdelivr.net",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://image.tmdb.org https://i.ytimg.com https://www.themoviedb.org https://www.google-analytics.com https://pagead2.googlesyndication.com https://images.unsplash.com",
+  "img-src 'self' data: blob: https://image.tmdb.org https://www.themoviedb.org https://i.ytimg.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://images.unsplash.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://secure.gravatar.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://api.themoviedb.org https://www.google-analytics.com https://region1.google-analytics.com https://pagead2.googlesyndication.com",
+  "connect-src 'self' https://api.themoviedb.org https://nominatim.openstreetmap.org https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://region1.google-analytics.com https://pagead2.googlesyndication.com wss: ws:",
   "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://googleads.g.doubleclick.net",
   "media-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
   isProduction ? "upgrade-insecure-requests" : "",
@@ -20,11 +20,17 @@ const contentSecurityPolicy = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
+  env: {
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+  },
 
   images: {
+    domains: ["image.tmdb.org"],
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       { protocol: "https", hostname: "image.tmdb.org" },
       { protocol: "https", hostname: "i.ytimg.com" },
@@ -73,4 +79,22 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+const sentryWebpackPluginOptions = {
+  silent: true,
+  // Sentry source map upload — set SENTRY_ORG, SENTRY_PROJECT, SENTRY_AUTH_TOKEN to enable
+};
+
+// Only wrap with Sentry if DSN is configured
+const hasSentry = !!(process.env.NEXT_PUBLIC_SENTRY_DSN && process.env.SENTRY_AUTH_TOKEN);
+
+if (hasSentry) {
+  try {
+    const { withSentryConfig } = require('@sentry/nextjs');
+    module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions);
+  } catch (e) {
+    console.warn('@sentry/nextjs not installed — skipping Sentry wrapper');
+    module.exports = nextConfig;
+  }
+} else {
+  module.exports = nextConfig;
+}

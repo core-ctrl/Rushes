@@ -4,6 +4,7 @@ import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import MovieCard from "./MovieCard";
 import { SkeletonCard } from "./SkeletonCard";
 import AppIcon from "./AppIcon";
+import HoverCard from "./cards/HoverCard";
 
 const containerVariants = {
   hidden: {},
@@ -83,31 +84,20 @@ export default function SectionRow({
           ))}
         </div>
       ) : (
-        <motion.div
+        <div
           ref={scrollRef}
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-60px" }}
-          className="row-scroll hide-scrollbar"
+          className="flex gap-3 overflow-x-auto px-4 pb-4 scroll-row"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
         >
-          {items.map((movie) => (
-            <motion.div key={movie.id} variants={itemVariants} className="flex-none w-36 md:w-44">
-              {renderItem ? (
-                renderItem(movie)
-              ) : (
-                <MovieCard
-                  item={movie}
-                  wishlist={wishlist}
-                  addToWishlist={addToWishlist}
-                  openAuth={openAuth}
-                  onPlayTrailer={onPlayTrailer}
-                  nowPlayingIds={nowPlayingIds}
-                />
-              )}
-            </motion.div>
+          <style>{`.scroll-row::-webkit-scrollbar{display:none}`}</style>
+          {items.map((item, i) => (
+            renderItem ? (
+              renderItem(item)
+            ) : (
+              <HoverCard key={item.id} item={item} index={i} onPlayTrailer={onPlayTrailer} />
+            )
           ))}
-        </motion.div>
+        </div>
       )}
     </motion.section>
   );

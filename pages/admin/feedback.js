@@ -3,14 +3,14 @@ import Head from "next/head";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    ChartBarLineIcon,
-    CloudServerIcon,
-    Delete02Icon,
-    Feedback01Icon,
-    Logout01Icon,
-    MessageSquare01Icon,
-    Shield01Icon,
-    UserMultipleIcon,
+  ChartBarLineIcon,
+  CloudServerIcon,
+  Delete02Icon,
+  ChatFeedback01Icon,   // ✅ FIXED
+  Logout01Icon,
+  MessageSquareDiffIcon, // ✅ FIXED
+  Shield01Icon,
+  UserMultipleIcon,
 } from "@hugeicons/core-free-icons";
 import AppIcon from "../../components/AppIcon";
 

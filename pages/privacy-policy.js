@@ -1,81 +1,122 @@
-import SEOMeta from "../components/SEOMeta";
+import SEOMeta from '../components/SEOMeta';
+import Link from 'next/link';
 
-const updated = "April 26, 2026";
+const LAST_UPDATED = 'May 7, 2025';
 
 export default function PrivacyPolicyPage() {
   return (
-    <main className="min-h-screen bg-black px-4 pb-20 pt-28 text-white">
+    <>
       <SEOMeta
         title="Privacy Policy"
-        description="Movie Finder Privacy Policy covering account data, cookies, analytics consent, recommendation settings, and user rights."
+        description="Learn how Rushes collects, uses, and protects your personal data. We never sell your data or share it with advertisers."
         url="/privacy-policy"
-        keywords={["privacy policy", "cookies", "gdpr", "movie finder privacy"]}
+        keywords={['privacy policy', 'data protection', 'rushes privacy']}
       />
 
-      <article className="prose prose-invert mx-auto max-w-4xl">
-        <h1>Privacy Policy</h1>
-        <p>Last updated: {updated}</p>
+      <main className="min-h-screen bg-neutral-950 text-white pt-24 pb-20 px-4">
+        <div className="max-w-3xl mx-auto">
+          <p className="text-neutral-500 text-sm mb-2">Last updated: {LAST_UPDATED}</p>
+          <h1 className="text-4xl font-black mb-8">Privacy Policy</h1>
 
-        <h2>1. Scope</h2>
-        <p>
-          This policy explains how Movie Finder collects, uses, stores, and protects personal data when you use the website and related services.
-          Movie Finder is a discovery platform and does not host pirated streams or downloadable media files.
-        </p>
+          <div className="prose prose-invert max-w-none space-y-8">
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-3">1. What We Collect</h2>
+              <p className="text-neutral-400 leading-relaxed">When you use Rushes, we may collect:</p>
+              <ul className="text-neutral-400 list-disc ml-6 mt-2 space-y-1">
+                <li><strong className="text-neutral-300">Account information:</strong> Email address, username, and password (stored as a bcrypt hash)</li>
+                <li><strong className="text-neutral-300">Profile information:</strong> Display name, bio, avatar (optional)</li>
+                <li><strong className="text-neutral-300">Preferences:</strong> Preferred genres, languages, and regional cinema preferences that you set during onboarding</li>
+                <li><strong className="text-neutral-300">Location (optional):</strong> City-level location, only if you explicitly grant permission, used solely for regional recommendations</li>
+                <li><strong className="text-neutral-300">Watch history and taste profile:</strong> Movies and series you add to My List, ratings, and Takes you post</li>
+                <li><strong className="text-neutral-300">Device information:</strong> Browser type, device type, and IP address (used for security and rate limiting)</li>
+              </ul>
+            </section>
 
-        <h2>2. Data We Collect</h2>
-        <p>
-          We collect account information you provide directly, including name, email address, and encrypted password hash.
-          We also store recommendation preferences such as selected genres, language choices, region choices, and optional location-awareness settings.
-          We do not collect payment card data.
-        </p>
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-3">2. How We Use Your Data</h2>
+              <p className="text-neutral-400 leading-relaxed">We use your information to:</p>
+              <ul className="text-neutral-400 list-disc ml-6 mt-2 space-y-1">
+                <li>Provide personalized movie and series recommendations</li>
+                <li>Power social features like the social feed, following, and Takes</li>
+                <li>Match you with people who share your cinema taste</li>
+                <li>Send transactional emails (account verification, password reset)</li>
+                <li>Send occasional platform updates and announcements (you can opt out)</li>
+                <li>Detect and prevent abuse, fraud, and spam</li>
+              </ul>
+            </section>
 
-        <h2>3. Cookies and Consent</h2>
-        <p>
-          Essential cookies are used for secure authentication and session continuity. Analytics and advertising cookies are disabled until you provide consent through the cookie banner.
-          You can update consent by clearing saved preferences and choosing again on your next visit.
-        </p>
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-3">3. What We Don't Do</h2>
+              <p className="text-neutral-400 leading-relaxed">We commit to never:</p>
+              <ul className="text-neutral-400 list-disc ml-6 mt-2 space-y-1">
+                <li>Sell your personal data to any third party</li>
+                <li>Share your data with advertisers or ad networks</li>
+                <li>Use your data to build advertising profiles</li>
+                <li>Access your watch history without your knowledge</li>
+                <li>Share your private messages with anyone (they are end-to-end encrypted)</li>
+              </ul>
+            </section>
 
-        <h2>4. Analytics and Advertising</h2>
-        <p>
-          With consent, we use Google Analytics 4 for aggregated usage insights and Google AdSense for advertisement delivery.
-          Without consent, these scripts do not load and no analytics or ad identifiers are written by our frontend logic.
-        </p>
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-3">4. Data Storage & Security</h2>
+              <p className="text-neutral-400 leading-relaxed">
+                Your account data is stored in MongoDB Atlas (India region). Social features and real-time data are stored in Supabase. All passwords are hashed using bcrypt. Data is transmitted over HTTPS (TLS 1.2+). We use HTTP-only cookies for session management, preventing client-side script access.
+              </p>
+            </section>
 
-        <h2>5. Recommendation Data</h2>
-        <p>
-          Recommendation quality is improved using saved preferences and account interactions such as watchlist actions.
-          Location-aware recommendation behavior remains optional and is activated only when the setting is enabled by the user.
-        </p>
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-3">5. Your Rights</h2>
+              <p className="text-neutral-400 leading-relaxed">You have the right to:</p>
+              <ul className="text-neutral-400 list-disc ml-6 mt-2 space-y-1">
+                <li><strong className="text-neutral-300">Delete your account:</strong> You can delete your account at any time from Settings. All your data will be permanently removed within 30 days.</li>
+                <li><strong className="text-neutral-300">Export your data:</strong> Contact us at privacy@rushes.in to request a copy of your data</li>
+                <li><strong className="text-neutral-300">Opt out of location:</strong> You can revoke location access at any time from your profile settings</li>
+                <li><strong className="text-neutral-300">Opt out of emails:</strong> Use the unsubscribe link in any email we send</li>
+                <li><strong className="text-neutral-300">Correct your data:</strong> Update your profile information at any time from your account settings</li>
+              </ul>
+            </section>
 
-        <h2>6. Data Retention</h2>
-        <p>
-          Account data is retained while the account remains active. If you request deletion, identifiable account records and preference metadata are removed
-          except where retention is legally required for security or dispute resolution.
-        </p>
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-3">6. Cookies</h2>
+              <p className="text-neutral-400 leading-relaxed">
+                We use session cookies only — a single HTTP-only cookie to keep you logged in. We do not use tracking cookies, advertising cookies, or third-party analytics cookies. We do not use Google Analytics or Facebook Pixel.
+              </p>
+            </section>
 
-        <h2>7. Security Controls</h2>
-        <p>
-          We apply technical controls including secure cookie settings, input sanitization, request rate limiting, API bot filtering, HTTPS enforcement in production, and security headers.
-          No system is perfectly secure, but we continuously review and harden our controls.
-        </p>
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-3">7. Third-Party Services</h2>
+              <p className="text-neutral-400 leading-relaxed">
+                Rushes uses The Movie Database (TMDB) API to fetch movie and TV data. We do not share your personal information with TMDB. We may use third-party infrastructure services (MongoDB Atlas, Supabase, Vercel, Upstash) which process data according to their own privacy policies.
+              </p>
+            </section>
 
-        <h2>8. Your Rights</h2>
-        <p>
-          You may request access, correction, or deletion of personal data by contacting us via the support email listed on the Contact page.
-          We will verify identity before processing account-level requests.
-        </p>
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-3">8. Children's Privacy</h2>
+              <p className="text-neutral-400 leading-relaxed">
+                Rushes is not directed at children under 13. If we discover that a child under 13 has provided us with personal information, we will promptly delete that information.
+              </p>
+            </section>
 
-        <h2>9. Third-Party Services</h2>
-        <p>
-          We use third-party services including TMDB for title metadata and provider information. Trailers may reference YouTube-hosted assets.
-          Third-party services have independent privacy policies.
-        </p>
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-3">9. Contact</h2>
+              <p className="text-neutral-400 leading-relaxed">
+                For privacy-related requests, email us at{' '}
+                <a href="mailto:privacy@rushes.in" className="text-red-400 hover:underline">privacy@rushes.in</a>.
+                We aim to respond within 48 hours.
+              </p>
+            </section>
 
-        <h2>10. Contact</h2>
-        <p>
-          Privacy requests: moviefinderforyou@gmail.com
-        </p>
-      </article>
-    </main>
+            <div className="border-t border-white/5 pt-8">
+              <p className="text-neutral-600 text-sm">
+                See also:{' '}
+                <Link href="/terms-and-conditions" className="text-red-400 hover:underline">Terms of Service</Link>
+                {' · '}
+                <Link href="/contact" className="text-red-400 hover:underline">Contact</Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </>
   );
 }

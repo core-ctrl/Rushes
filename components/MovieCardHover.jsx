@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import {
     getMovieDetails,
     getSeriesDetails,
     getMovieProviders,
     getSeriesProviders,
 } from "../utils/tmdb";
+import { TMDB_BLUR_DATA_URL } from "../lib/imageBlur";
 
 export default function MovieCardHover({
     item,
@@ -65,11 +67,6 @@ export default function MovieCardHover({
         return () => (mounted = false);
     }, [item.id, isMovie]);
 
-    const backdrop =
-        item.backdrop_path || item.poster_path
-            ? `https://image.tmdb.org/t/p/w780${item.backdrop_path || item.poster_path}`
-            : "/fallback.jpg";
-
     const playTrailer = async () => {
         if (trailerKey) {
             onPlayTrailer(
@@ -110,56 +107,69 @@ export default function MovieCardHover({
                 ? "right-0"
                 : "left-1/2 -translate-x-1/2";
 
+    const bgUrl = item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : (item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : "/fallback.jpg");
+    const isPosterFallback = !item.backdrop_path && item.poster_path;
+
     return (
         <div
             className={`
         absolute z-[9999]
-        w-[420px]
+        w-[380px]
         ${positionClass}
         -top-6
-        bg-neutral-900/95
-        rounded-xl
+        bg-black/80
+        backdrop-blur-3xl
+        rounded-2xl
         overflow-hidden
-        shadow-[0_20px_60px_rgba(0,0,0,0.9)]
+        shadow-[0_24px_80px_rgba(0,0,0,0.8)]
         border border-white/10
         animate-netflixHover
         pointer-events-auto
+        flex flex-col
       `}
         >
             {/* BACKDROP */}
-            <div className="relative">
-                <img
-                    src={backdrop}
+            <div className={`relative w-full ${isPosterFallback ? "aspect-[2/3] max-h-[300px]" : "aspect-video"}`}>
+                <Image
+                    src={bgUrl}
                     alt={item.title || item.name}
-                    className="w-full h-48 object-cover"
+                    width={780}
+                    height={isPosterFallback ? 1170 : 440}
+                    className="w-full h-full object-cover"
+                    placeholder="blur"
+                    blurDataURL={TMDB_BLUR_DATA_URL}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/70 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
                 {/* PLAY */}
                 <button
                     onClick={playTrailer}
                     className="
-            absolute bottom-3 left-3
+            absolute bottom-4 left-4
             bg-white text-black
-            px-4 py-2 rounded-lg
-            font-bold text-sm
+            px-5 py-2 rounded-xl
+            font-extrabold text-sm
             flex items-center gap-2
+            hover:bg-neutral-200 transition-colors
+            shadow-[0_0_20px_rgba(255,255,255,0.3)]
           "
                 >
-                    ▶ Play
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                    </svg>
+                    Play
                 </button>
 
                 {/* WISHLIST */}
                 <button
                     onClick={handleWishlist}
-                    className="
-            absolute bottom-3 right-3
-            bg-black/70 backdrop-blur
+                    className={`
+            absolute bottom-4 right-4
             w-10 h-10 rounded-full
             flex items-center justify-center
-            text-white text-lg
-            border border-white/20
-          "
+            text-lg transition-all border
+            ${isInList ? "bg-red-600 text-white border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.5)]" : "bg-black/60 text-white border-white/20 backdrop-blur-md hover:bg-white/10 hover:border-white/40"}
+          `}
                 >
                     {isInList ? "❤️" : "🤍"}
                 </button>
@@ -192,11 +202,15 @@ export default function MovieCardHover({
                 {providers.length > 0 && (
                     <div className="flex gap-2 mt-3">
                         {providers.map((p) => (
-                            <img
+                            <Image
                                 key={p.provider_id}
                                 src={`https://image.tmdb.org/t/p/w45${p.logo_path}`}
+                                width={100}
+                                height={100}
                                 className="w-7 h-7 rounded"
-                                alt=""
+                                alt="Provider logo"
+                                placeholder="blur"
+                                blurDataURL={TMDB_BLUR_DATA_URL}
                             />
                         ))}
                     </div>

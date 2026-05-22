@@ -1,5 +1,7 @@
 // components/HeroSlider.jsx
 import { useState, useEffect, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
+import Image from "next/image";
 import {
     FavouriteIcon,
     InformationCircleIcon,
@@ -12,6 +14,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import AppIcon from "./AppIcon";
 import useAdaptiveVideoQuality from "../hooks/useAdaptiveVideoQuality";
+import { TMDB_BLUR_DATA_URL } from "../lib/imageBlur";
 
 const ROTATE_MS = 9000;
 const SKIP_SECS = 60;
@@ -50,7 +53,7 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
 
     // ── Dominant colour ────────────────────────────────────────────
     useEffect(() => {
-        const img = new Image();
+        const img = new window.Image();
         img.crossOrigin = "anonymous";
         img.src = bgUrl(bgImage);
         img.onload = () => {
@@ -109,13 +112,13 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
 
         ytPlayer.current = new window.YT.Player(id, {
             videoId,
-            playerVars: { autoplay: 1, controls: 0, modestbranding: 1, rel: 0, loop: 1, playlist: videoId, playsinline: 1, vq: vqParam, iv_load_policy: 3 },
+            playerVars: { autoplay: 1, controls: 0, modestbranding: 1, rel: 0, loop: 1, playlist: videoId, playsinline: 1, vq: 'highres', iv_load_policy: 3 },
             events: {
                 onReady: (e) => {
                     try {
                         e.target.setVolume(volume);
                         muted ? e.target.mute() : e.target.unMute();
-                        e.target.setPlaybackQuality(ytQuality);
+                        e.target.setPlaybackQuality('highres');
                     } catch (e) { }
                 },
                 onStateChange: (e) => {
@@ -310,14 +313,18 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
             <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/85 to-transparent z-30" />
 
             {/* Background image */}
-            <img
+            <Image
                 src={bgUrl(bgImage)}
                 alt={slide?.title || slide?.name || "hero"}
+                width={780}
+                height={440}
                 className={`absolute inset-0 w-full h-full object-cover transition-transform duration-[2200ms] will-change-transform ${zoom ? `scale-[${SCALE}]` : "scale-[1.03]"}`}
                 style={{
                     transform: `perspective(1200px) translateX(${parallax.x * -16}px) translateY(${parallax.y * -10}px) rotateY(${parallax.x * 3}deg) rotateX(${parallax.y * -2.8}deg)`,
                     transitionTimingFunction: "cubic-bezier(.2,.9,.2,1)",
                 }}
+                placeholder="blur"
+                blurDataURL={TMDB_BLUR_DATA_URL}
             />
 
             {/* YouTube inline player */}
@@ -349,62 +356,93 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
                     <p className="text-gray-200 md:text-lg mb-5" style={{ maxWidth: "65ch" }}>{trimOverview(slide?.overview)}</p>
 
                     {/* Card */}
-                    <div className="p-4 md:p-5 rounded-2xl mb-5 flex flex-wrap gap-2 items-center"
-                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", backdropFilter: "blur(8px)", boxShadow: "0 8px 30px rgba(0,0,0,0.6)" }}>
-                        <button onClick={handleWishlist}
-                            className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-neutral-700/40 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: showInfo ? 1 : 0, y: showInfo ? 0 : 10 }}
+                        transition={{ duration: 0.5, delay: 0.1 }}
+                        className="p-3 md:p-4 rounded-2xl mb-5 flex flex-wrap gap-2 items-center"
+                        style={{ background: "rgba(20,20,20,0.4)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(24px)", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
+                        <motion.button 
+                            whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.15)" }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleWishlist}
+                            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-colors">
                             {isInList ? <AppIcon icon={FavouriteIcon} size={16} className="fill-current" /> : <AppIcon icon={PlusSignIcon} size={16} />}
                             {isInList ? "In My List" : "Add to List"}
-                        </button>
+                        </motion.button>
                         {(slide?.genres || []).slice(0, 5).map((g, i) => (
-                            <span key={i} className="text-xs px-3 py-1 rounded-full bg-white/6 border border-white/8 text-white">
+                            <span key={i} className="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/5 text-white/90">
                                 {typeof g === "string" ? g : g.name}
                             </span>
                         ))}
-                    </div>
+                    </motion.div>
 
                     {/* Buttons row */}
-                    <div className="flex flex-wrap items-center gap-3">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: showInfo ? 1 : 0, y: showInfo ? 0 : 10 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        className="flex flex-wrap items-center gap-3">
                         {/* Play Trailer — correct signature */}
-                        <button
+                        <motion.button
+                            whileHover={{ scale: 1.05, filter: "brightness(1.2)" }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={handleHeroTrailer}
-                            className="flex items-center gap-2 rounded-lg px-6 py-3 text-lg font-bold"
-                            style={{ background: `linear-gradient(90deg,${accent},rgba(255,255,255,0.06))`, color: accentTxt }}
+                            className="flex items-center gap-2 rounded-xl px-6 py-3 text-lg font-bold shadow-[0_0_30px_rgba(0,0,0,0.5)]"
+                            style={{ background: `linear-gradient(135deg, ${accent}, rgba(255,255,255,0.1))`, color: accentTxt }}
                         >
                             <AppIcon icon={PlayIcon} size={18} className="fill-current" />
                             Play Trailer
-                        </button>
+                        </motion.button>
 
-                        <button onClick={() => setShowInfo((s) => !s)}
-                            className="inline-flex items-center gap-2 rounded-lg border border-white/6 bg-neutral-700/40 px-5 py-3 font-semibold text-white">
+                        <motion.button 
+                            whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.15)" }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setShowInfo((s) => !s)}
+                            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 backdrop-blur-md px-5 py-3 font-semibold text-white transition-colors">
                             <AppIcon icon={InformationCircleIcon} size={18} />
                             Info
-                        </button>
+                        </motion.button>
 
-                        <button onClick={handleSkipIntro}
-                            className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-black/60 px-4 py-2 text-sm text-white">
+                        <motion.button 
+                            whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.1)" }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleSkipIntro}
+                            className="inline-flex items-center gap-2 rounded-xl border border-white/5 bg-black/60 backdrop-blur-md px-4 py-2.5 text-sm text-white transition-colors">
                             <AppIcon icon={NextIcon} size={16} />
                             Skip
-                        </button>
+                        </motion.button>
 
                         <div className="ml-auto flex items-center gap-3">
-                            <button onClick={() => setMuted((m) => !m)}
-                                className="rounded-md border border-white/6 bg-black/50 px-3 py-2 text-white">
+                            <motion.button 
+                                whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.1)" }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => setMuted((m) => !m)}
+                                className="flex items-center justify-center rounded-xl border border-white/10 bg-black/50 backdrop-blur-md h-10 w-10 text-white transition-colors">
                                 {muted ? <AppIcon icon={VolumeMute02Icon} size={16} /> : <AppIcon icon={VolumeHighIcon} size={16} />}
-                            </button>
-                            <input
-                                aria-label="Volume"
-                                type="range" min="0" max="100"
-                                value={volume}
-                                onChange={(e) => {
-                                    const v = Number(e.target.value);
-                                    setVolume(v); setMuted(v === 0);
-                                    try { if (ytPlayer.current) ytPlayer.current.setVolume(v); } catch (e) { }
-                                }}
-                                className="h-1 w-28 md:w-36"
-                            />
+                            </motion.button>
+                            <div className="relative flex items-center w-28 md:w-36 group h-6">
+                                <div className="absolute w-full h-1.5 bg-white/20 rounded-full overflow-hidden pointer-events-none">
+                                    <div className="h-full" style={{ width: `${volume}%`, backgroundColor: accent }} />
+                                </div>
+                                <input
+                                    aria-label="Volume"
+                                    type="range" min="0" max="100"
+                                    value={volume}
+                                    onChange={(e) => {
+                                        const v = Number(e.target.value);
+                                        setVolume(v); setMuted(v === 0);
+                                        try { if (ytPlayer.current) ytPlayer.current.setVolume(v); } catch (e) { }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+                                <div 
+                                    className="absolute h-3.5 w-3.5 rounded-full shadow-lg transition-transform group-hover:scale-125 pointer-events-none" 
+                                    style={{ left: `calc(${volume}% - 7px)`, backgroundColor: accent }}
+                                />
+                            </div>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
 

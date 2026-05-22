@@ -13,7 +13,7 @@ import {
   FavouriteIcon,
   Key01Icon,
   Logout01Icon,
-  MessageSquare01Icon,
+  Message01Icon,
   PlayIcon,
   Shield01Icon,
   UserMultipleIcon,
@@ -199,7 +199,7 @@ export default function AdminPage() {
           ))}
           <a href="/admin/feedback"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left text-neutral-500 hover:text-white hover:bg-white/5">
-            <span className="text-xs"><AppIcon icon={MessageSquare01Icon} size={14} /></span>
+            <span className="text-xs"><AppIcon icon={Message01Icon} size={14} /></span>
             Feedback
           </a>
         </nav>

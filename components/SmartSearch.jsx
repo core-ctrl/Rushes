@@ -2,6 +2,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import {
   Cancel01Icon,
   FireIcon,
@@ -11,6 +12,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import axios from "axios";
 import AppIcon from "./AppIcon";
+import { TMDB_BLUR_DATA_URL } from "../lib/imageBlur";
 
 const TRENDING = ["Interstellar", "Breaking Bad", "The Dark Knight", "Oppenheimer", "Stranger Things"];
 
@@ -101,7 +103,15 @@ export default function SmartSearch({ fullscreen = false, onClose }) {
                                     <button key={s.id} onClick={() => handleSearch(s.title)}
                                         className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left">
                                         {s.poster ? (
-                                            <img src={`https://image.tmdb.org/t/p/w92${s.poster}`} alt={s.title} className="w-8 h-12 object-cover rounded-md flex-shrink-0" />
+                                            <Image
+                                                src={`https://image.tmdb.org/t/p/w92${s.poster}`}
+                                                alt={s.title}
+                                                width={200}
+                                                height={300}
+                                                className="w-8 h-12 object-cover rounded-md flex-shrink-0"
+                                                placeholder="blur"
+                                                blurDataURL={TMDB_BLUR_DATA_URL}
+                                            />
                                         ) : (
                                             <div className="w-8 h-12 bg-white/5 rounded-md flex items-center justify-center flex-shrink-0">
                                                 {s.type === "movie" ? <AppIcon icon={PlayIcon} size={10} /> : <AppIcon icon={Tv01Icon} size={10} />}

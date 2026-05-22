@@ -5,9 +5,28 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import axios from "axios";
 import { setUser, logoutUser } from "../../store/slices/authSlice";
-import { Search01Icon, Logout01Icon, LockIcon } from "@hugeicons/core-free-icons";
-import { ALL_GENRES, LANGUAGE_OPTIONS, REGION_GROUPS, REGION_OPTIONS } from "../../lib/preferenceOptions";
+import { Search01Icon, Logout01Icon, LockIcon, UserIcon } from "@hugeicons/core-free-icons";
+import { ALL_GENRES, LANGUAGE_OPTIONS, REGION_GROUPS, REGION_OPTIONS, OTT_PLATFORMS } from "../../lib/preferenceOptions";
 import AppIcon from "../../components/AppIcon";
+import OnboardingFlow from "../../components/OnboardingFlow";
+
+const GENRE_MAP = {
+  28: "Action",
+  35: "Comedy",
+  18: "Drama",
+  27: "Horror",
+  10749: "Romance",
+  878: "Sci-Fi",
+  53: "Thriller",
+  99: "Documentary",
+  16: "Animation",
+  14: "Fantasy",
+  80: "Crime",
+  9648: "Mystery",
+  36: "Biography",
+  10770: "Sports",
+  10402: "Musical",
+};
 
 export default function ProfilePage({ user, wishlist = [], openAuth }) {
   const dispatch = useDispatch();
@@ -16,12 +35,14 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
   const [selectedLanguages, setSelectedLanguages] = useState(user?.preferredLanguages || []);
   const [selectedRegions, setSelectedRegions] = useState(user?.preferredRegions || []);
   const [selectedRegionGroup, setSelectedRegionGroup] = useState(user?.preferredRegionGroup || "");
+  const [selectedPlatforms, setSelectedPlatforms] = useState(user?.preferredPlatforms || []);
   const [regionSearch, setRegionSearch] = useState("");
   const [allowLocationRecommendations, setAllowLocationRecommendations] = useState(
     Boolean(user?.allowLocationRecommendations)
   );
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Change password state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -33,6 +54,14 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteInput, setDeleteInput] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  // Avatar update state
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar || "");
+  const [updatingAvatar, setUpdatingAvatar] = useState(false);
 
   // Logout loading state
   const [loggingOut, setLoggingOut] = useState(false);
@@ -84,6 +113,7 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
       genres: selectedGenres,
       languages: selectedLanguages,
       regions: selectedRegions,
+      platforms: selectedPlatforms,
       regionGroup: selectedRegionGroup,
       allowLocationRecommendations,
     });
@@ -92,12 +122,65 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
       preferredGenres: selectedGenres,
       preferredLanguages: selectedLanguages,
       preferredRegions: selectedRegions,
+      preferredPlatforms: selectedPlatforms,
       preferredRegionGroup: selectedRegionGroup,
       allowLocationRecommendations,
     }));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     setSaving(false);
+  };
+
+  // Handle avatar update
+  const handleUpdateAvatar = async (e) => {
+    e.preventDefault();
+    setUpdatingAvatar(true);
+    try {
+      const { data } = await axios.put("/api/user/profile", { avatar: avatarUrl });
+      dispatch(setUser(data.user));
+      setShowAvatarModal(false);
+    } catch (error) {
+      console.error("Avatar update failed:", error);
+      alert("Failed to update profile picture");
+    } finally {
+      setUpdatingAvatar(false);
+    }
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // We can use a basic Supabase upload if available
+    try {
+      setUpdatingAvatar(true);
+      const { supabase } = await import('../../lib/supabase');
+      if (!supabase) {
+        alert("Supabase not configured. Using placeholder.");
+        return;
+      }
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      if (data?.publicUrl) {
+        setAvatarUrl(data.publicUrl);
+        // Automatically save
+        const { data: updatedData } = await axios.put("/api/user/profile", { avatar: data.publicUrl });
+        dispatch(setUser(updatedData.user));
+        setShowAvatarModal(false);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Failed to upload image. Make sure 'avatars' bucket exists and is public.");
+    } finally {
+      setUpdatingAvatar(false);
+    }
   };
 
   // Handle logout
@@ -111,6 +194,22 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
       console.error("Logout failed:", error);
     } finally {
       setLoggingOut(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteInput !== user.username) return;
+    setDeleting(true);
+    try {
+      await axios.delete('/api/user/delete-account');
+      await dispatch(logoutUser()).unwrap();
+      dispatch(setUser(null));
+      router.push('/');
+    } catch (error) {
+      console.error('Delete account failed:', error);
+      alert('Failed to delete account');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -169,8 +268,23 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
         {/* Avatar + Name */}
         <div className="flex items-center justify-between gap-5 mb-10">
           <div className="flex items-center gap-5">
-            <div className="w-20 h-20 rounded-full bg-red-600 flex items-center justify-center text-3xl font-bold">
-              {user.name?.[0]?.toUpperCase()}
+            <div 
+              className="relative w-20 h-20 rounded-full bg-red-600 flex items-center justify-center text-3xl font-bold overflow-hidden cursor-pointer group"
+              onClick={() => {
+                setAvatarUrl(user.avatar || "");
+                setShowAvatarModal(true);
+              }}
+            >
+              {user.avatar ? (
+                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-neutral-800 flex items-center justify-center">
+                  <AppIcon icon={UserIcon} size={40} className="text-neutral-500" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-[10px] uppercase font-bold text-white tracking-wider">Edit</span>
+              </div>
             </div>
             <div>
               <h1 className="text-2xl font-bold">{user.name}</h1>
@@ -215,6 +329,98 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
           <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
             <p className="text-3xl font-bold text-red-400">{selectedRegions.length}</p>
             <p className="text-sm text-neutral-400 mt-1">Preferred Regions</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center col-span-2 md:col-span-1">
+            <p className="text-3xl font-bold text-red-400">{selectedPlatforms.length}</p>
+            <p className="text-sm text-neutral-400 mt-1">OTT Platforms</p>
+          </div>
+        </div>
+
+        <div className="bg-neutral-900 border border-white/10 rounded-2xl p-6 mt-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg">My Taste</h3>
+            <button
+              onClick={() => setShowOnboarding(true)}
+              className="text-xs text-red-400 hover:text-red-300 transition-colors"
+            >
+              Edit preferences
+            </button>
+          </div>
+
+          {selectedGenres?.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs text-neutral-500 uppercase tracking-wider mb-2">Favourite Genres</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedGenres.map((genreId) => (
+                  <span key={genreId} className="px-3 py-1 bg-red-600/20 text-red-300 border border-red-500/30 rounded-full text-xs">
+                    {GENRE_MAP[genreId] || genreId}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedLanguages?.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs text-neutral-500 uppercase tracking-wider mb-2">Languages</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedLanguages.map((lang) => (
+                  <span key={lang} className="px-3 py-1 bg-white/5 text-neutral-300 border border-white/10 rounded-full text-xs capitalize">
+                    {lang}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedPlatforms?.length > 0 && (
+            <div>
+              <p className="text-xs text-neutral-500 uppercase tracking-wider mb-2">My OTTs</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedPlatforms.map((platform) => (
+                  <span key={platform} className="px-3 py-1 bg-white/5 text-neutral-300 border border-white/10 rounded-full text-xs capitalize">
+                    {platform}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!selectedGenres?.length && !selectedLanguages?.length && (
+            <p className="text-neutral-500 text-sm">
+              No taste profile yet.{" "}
+              <button onClick={() => setShowOnboarding(true)} className="text-red-400 underline">
+                Set up now
+              </button>
+            </p>
+          )}
+        </div>
+
+        {/* Platforms section */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8">
+          <h2 className="text-xl font-bold mb-4">OTT Platforms You Use</h2>
+          <p className="text-sm text-neutral-400 mb-5">We prioritize content available on your subscriptions for daily picks.</p>
+          <div className="flex flex-wrap gap-3">
+            {OTT_PLATFORMS.map((platform) => (
+              <button
+                key={platform.id}
+                onClick={() => {
+                  setSelectedPlatforms(prev =>
+                    prev.includes(platform.id)
+                      ? prev.filter(p => p !== platform.id)
+                      : [...prev, platform.id]
+                  );
+                  setSaved(false);
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition ${selectedPlatforms.includes(platform.id)
+                  ? "bg-red-600 text-white"
+                  : "bg-white/10 text-neutral-300 hover:bg-white/20"
+                  }`}
+              >
+                <img src={platform.logo} alt={platform.name} className="h-4 w-4 rounded" />
+                {platform.name}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -346,7 +552,122 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
             {saved ? "✓ Saved!" : saving ? "Saving..." : "Save Preferences"}
           </button>
         </div>
+
+        <div className="bg-neutral-900 border border-red-500/20 rounded-2xl p-6 mt-8">
+          <h3 className="font-bold text-red-400 mb-2">Danger Zone</h3>
+          <p className="text-neutral-400 text-sm mb-4">
+            Permanently delete your account and all your data. This cannot be undone.
+          </p>
+
+          {!showDeleteConfirm ? (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="px-4 py-2 bg-red-600/20 text-red-400 border border-red-500/30 rounded-xl text-sm hover:bg-red-600/30 transition-colors"
+            >
+              Delete my account
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-neutral-300">
+                Type <strong className="text-white">@{user.username}</strong> to confirm:
+              </p>
+              <input
+                value={deleteInput}
+                onChange={(e) => setDeleteInput(e.target.value)}
+                placeholder={user.username}
+                className="w-full bg-neutral-800 border border-red-500/30 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-red-500"
+              />
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowDeleteConfirm(false); setDeleteInput(''); }}
+                  className="flex-1 py-2.5 bg-white/5 rounded-xl text-sm hover:bg-white/10 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  disabled={deleteInput !== user.username || deleting}
+                  className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 disabled:opacity-40 rounded-xl text-sm font-bold transition-colors"
+                >
+                  {deleting ? 'Deleting...' : 'Delete forever'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Avatar Modal */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#1a1a1a] p-6 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">Update Profile Picture</h2>
+              <button
+                onClick={() => setShowAvatarModal(false)}
+                className="text-neutral-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateAvatar}>
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-neutral-300">
+                    Upload new picture
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition file:mr-4 file:rounded-full file:border-0 file:bg-red-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-red-700 focus:border-red-500/50"
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="h-px flex-1 bg-white/10"></div>
+                  <span className="text-xs text-neutral-500 font-bold uppercase">or</span>
+                  <div className="h-px flex-1 bg-white/10"></div>
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-neutral-300">
+                    Image URL
+                  </label>
+                  <input
+                    type="url"
+                    value={avatarUrl}
+                    onChange={(e) => setAvatarUrl(e.target.value)}
+                    placeholder="https://example.com/avatar.jpg"
+                    className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-red-500/50"
+                  />
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Paste a direct link to an image. Leave blank to use your default avatar.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarModal(false)}
+                  className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-neutral-300 transition hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updatingAvatar}
+                  className="flex-1 rounded-xl bg-red-600 px-4 py-3 font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
+                >
+                  {updatingAvatar ? "Saving..." : "Save Picture"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Change Password Modal */}
       {showPasswordModal && (
@@ -445,6 +766,7 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
           </div>
         </div>
       )}
+      {showOnboarding && <OnboardingFlow forceOpen onClose={() => setShowOnboarding(false)} />}
     </div>
   );
 }

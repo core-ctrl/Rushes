@@ -1,53 +1,56 @@
-// pages/api/user/preferences.js
-import { connectDB } from "@/lib/mongodb";
-import User from "@/models/User";
-import { getUserFromRequest } from "@/lib/auth";
-import { ALL_GENRES, LANGUAGE_OPTIONS, REGION_GROUPS, REGION_OPTIONS } from "@/lib/preferenceOptions";
-
-const validGenreIds = new Set(ALL_GENRES.map((genre) => genre.id));
-const validLanguageCodes = new Set(LANGUAGE_OPTIONS.map((language) => language.code));
-const validRegionCodes = new Set(REGION_OPTIONS.map((region) => region.code));
-const validRegionGroups = new Set(REGION_GROUPS.map((group) => group.id));
-
-function sanitizeArray(values, validValues, limit = 8) {
-  if (!Array.isArray(values)) return [];
-  return [...new Set(values.filter((value) => validValues.has(value)))].slice(0, limit);
-}
+import { connectDB } from "../../../lib/mongodb";
+import User from "../../../models/User";
+import { requireAuth } from "../../../middleware/requireAuth";
 
 export default async function handler(req, res) {
-  const decoded = getUserFromRequest(req);
-  if (!decoded) return res.status(401).json({ error: "Not authenticated" });
-
-  await connectDB();
-
-  if (req.method === "GET") {
-    const user = await User.findById(decoded.id);
-    return res.status(200).json({
-      genres: user?.preferredGenres || [],
-      languages: user?.preferredLanguages || [],
-      regions: user?.preferredRegions || [],
-      regionGroup: user?.preferredRegionGroup || "",
-      allowLocationRecommendations: Boolean(user?.allowLocationRecommendations),
-    });
-  }
-
   if (req.method === "POST") {
-    const genres = sanitizeArray(req.body?.genres, validGenreIds, 10);
-    const languages = sanitizeArray(req.body?.languages, validLanguageCodes, 8);
-    const regions = sanitizeArray(req.body?.regions, validRegionCodes, 5);
-    const regionGroup = validRegionGroups.has(req.body?.regionGroup) ? req.body.regionGroup : "";
-    const allowLocationRecommendations = Boolean(req.body?.allowLocationRecommendations);
+    const decoded = requireAuth(req);
 
-    await User.findByIdAndUpdate(decoded.id, {
-      preferredGenres: genres,
-      preferredLanguages: languages,
-      preferredRegions: regions,
-      preferredRegionGroup: regionGroup,
-      allowLocationRecommendations,
-    });
+    try {
+      await connectDB();
 
-    return res.status(200).json({ message: "Preferences saved" });
+      // Handle field name variations from onboarding flow
+      const incomingGenres = req.body.genres || req.body.preferredGenres || [];
+      const incomingLanguages = req.body.languages || req.body.preferredLanguages || [];
+      const incomingPlatforms = req.body.platforms || req.body.preferredPlatforms || req.body.ottPlatforms || [];
+
+      const updateData = {
+        preferredGenres: incomingGenres,
+        preferredLanguages: incomingLanguages,
+        preferredRegions: req.body.regions || [],
+        preferredRegionGroup: req.body.regionGroup || "",
+        allowLocationRecommendations: Boolean(req.body.allowLocationRecommendations),
+        preferredPlatforms: incomingPlatforms,
+        ottPlatforms: incomingPlatforms,
+      };
+      if (typeof req.body.hasCompletedOnboarding === "boolean") {
+        updateData.hasCompletedOnboarding = req.body.hasCompletedOnboarding;
+      }
+
+      let user;
+      if (decoded) {
+        // Authenticated user
+        user = await User.findByIdAndUpdate(
+          decoded.id,
+          updateData,
+          { new: true, runValidators: true }
+        ).select("preferredGenres preferredLanguages preferredRegions preferredRegionGroup allowLocationRecommendations preferredPlatforms ottPlatforms hasCompletedOnboarding");
+      } else {
+        // Guest - return success but no DB save
+        res.status(201).json({ message: "Guest preferences saved locally", data: updateData });
+        return;
+      }
+
+      res.status(200).json({
+        message: "Preferences updated",
+        data: user
+      });
+
+    } catch (error) {
+      console.error("PREFS_ERROR:", error);
+      res.status(500).json({ error: "Failed to save preferences" });
+    }
+  } else {
+    res.status(405).json({ error: "Method not allowed" });
   }
-
-  return res.status(405).json({ error: "Method not allowed" });
 }

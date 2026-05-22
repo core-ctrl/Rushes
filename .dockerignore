@@ -1,6 +1,5 @@
 .next
 node_modules
 .git
-.env.local
 *.md
 .dockerignore

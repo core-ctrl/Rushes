@@ -1,36 +1,149 @@
-// pages/movies/index.jsx
-import Head from "next/head";
-import SectionRow from "../../components/SectionRow";
-import { fetchTopRatedMovies, fetchByGenre } from "../../lib/tmdb";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import axios from "axios";
+import { useSelector } from "react-redux";
+import { selectUser } from "../../store/slices/authSlice";
+import ShareButton from "../../components/ShareButton";
+import { TMDB_BLUR_DATA_URL } from "../../lib/imageBlur";
+import SEOMeta from "../../components/SEOMeta";
+import HoverCard from "../../components/cards/HoverCard";
 
-export default function MoviesPage({ movies = [], action = [], comedy = [], thriller = [], addToWishlist, wishlist, openAuth, openTrailer }) {
-  const rowProps = { wishlist, addToWishlist, openAuth, onPlayTrailer: openTrailer };
+const GENRE_MAP = {
+  28: "Action",
+  35: "Comedy",
+  18: "Drama",
+  27: "Horror",
+  10749: "Romance",
+  878: "Sci-Fi",
+  53: "Thriller",
+  99: "Documentary",
+  16: "Animation",
+  14: "Fantasy",
+  80: "Crime",
+  9648: "Mystery",
+};
+
+function NetflixRow({ title, items, loading, landscape = false }) {
+  if (loading) {
+    return (
+      <section>
+        <h2 className="mb-3 text-xl font-black">{title}</h2>
+        <div className="flex gap-3 overflow-x-auto px-2 py-6 scroll-row" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className={`flex-shrink-0 flex flex-col gap-2 ${landscape ? 'w-[240px] md:w-[280px]' : 'w-[140px] md:w-[160px]'}`}>
+              <div className={`w-full ${landscape ? 'aspect-video' : 'aspect-[2/3]'} rounded-xl bg-neutral-900 animate-pulse`} />
+              <div className="h-4 w-3/4 rounded bg-neutral-900 animate-pulse mt-1" />
+              <div className="h-3 w-1/2 rounded-full bg-neutral-900 animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (!items?.length) return null;
 
   return (
-    <div className="min-h-screen bg-black text-white pt-28 px-4 md:px-6">
-      <Head><title>Movies — Movie Finder</title></Head>
-
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-10">🎬 Movies</h1>
-        <SectionRow title="Top Rated" items={movies} {...rowProps} />
-        <SectionRow title="Action" items={action} {...rowProps} />
-        <SectionRow title="Comedy" items={comedy} {...rowProps} />
-        <SectionRow title="Thriller" items={thriller} {...rowProps} />
+    <section>
+      <h2 className="mb-3 text-xl font-black">{title}</h2>
+      <div className="flex gap-3 overflow-x-auto px-2 py-6 scroll-row" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
+        <style>{`.scroll-row::-webkit-scrollbar{display:none}`}</style>
+        {items.map((item, i) => <HoverCard key={item.id} item={item} index={i} landscape={landscape} />)}
       </div>
-    </div>
+    </section>
   );
 }
 
-export async function getServerSideProps() {
-  try {
-    const [movies, action, comedy, thriller] = await Promise.all([
-      fetchTopRatedMovies(),
-      fetchByGenre(28),
-      fetchByGenre(35),
-      fetchByGenre(53),
-    ]);
-    return { props: { movies, action, comedy, thriller } };
-  } catch {
-    return { props: {} };
-  }
+export default function MoviesPage() {
+  const user = useSelector(selectUser);
+  const [trending, setTrending] = useState([]);
+  const [picks, setPicks] = useState([]);
+  const [byGenre, setByGenre] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  const preferredGenres = useMemo(() => user?.preferredGenres || [], [user]);
+
+  useEffect(() => {
+    fetchMoviesData();
+  }, [preferredGenres.join(",")]);
+
+  const fetchMoviesData = async () => {
+    setLoading(true);
+    try {
+      const genresParam = preferredGenres.join(",");
+      const [trendingRes, picksRes] = await Promise.all([
+        axios.get("/api/movies/trending"),
+        axios.get(`/api/movies/recommendations${genresParam ? `?genres=${genresParam}` : ""}`),
+      ]);
+      const trendingMovies = trendingRes.data.movies || [];
+      const allPicks = picksRes.data.movies || [];
+      
+      const trendingTasteMatches = trendingMovies.filter(m => 
+        m.genre_ids?.some(id => preferredGenres.includes(id))
+      );
+      
+      const top3Trending = trendingTasteMatches.length >= 3 
+        ? trendingTasteMatches.slice(0, 3) 
+        : trendingMovies.slice(0, 3);
+        
+      const top3Ids = new Set(top3Trending.map(m => m.id));
+      const next6Picks = allPicks.filter(m => !top3Ids.has(m.id)).slice(0, 6);
+      
+      setTrending(trendingMovies.sort((a, b) => (b.popularity || 0) - (a.popularity || 0)));
+      setPicks([...top3Trending, ...next6Picks]);
+
+      const genreRows = {};
+      await Promise.all(preferredGenres.slice(0, 4).map(async (genreId) => {
+        const { data } = await axios.get(`/api/movies/recommendations?genres=${genreId}`);
+        genreRows[genreId] = data.movies || [];
+      }));
+      setByGenre(genreRows);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const hero = trending[0];
+
+  return (
+    <div className="min-h-screen bg-neutral-950 text-white">
+      <SEOMeta
+        title="Movies"
+        description="Discover trending movies, genre picks, and personalized recommendations on Rushes."
+        url="/movies"
+        keywords={["movies", "trending movies", "movie recommendations", "bollywood", "hollywood"]}
+      />
+      {hero && (
+        <section className="relative h-[58vh] min-h-[420px]">
+          <Image
+            src={`https://image.tmdb.org/t/p/original${hero.backdrop_path || hero.poster_path}`}
+            alt={hero.title}
+            width={780}
+            height={440}
+            className="h-full w-full object-cover"
+            placeholder="blur"
+            blurDataURL={TMDB_BLUR_DATA_URL}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/30 to-transparent" />
+          <div className="absolute bottom-10 left-0 right-0 mx-auto max-w-7xl px-4">
+            <p className="mb-2 text-sm font-bold text-red-400">Top trending movie today</p>
+            <h1 className="max-w-2xl text-4xl font-black md:text-6xl">{hero.title}</h1>
+            <p className="mt-3 max-w-2xl line-clamp-3 text-sm text-neutral-200 md:text-base">{hero.overview}</p>
+          </div>
+        </section>
+      )}
+      <div className="mx-auto max-w-7xl space-y-12 px-4 py-8">
+        <h1 className="text-3xl font-black">Movies</h1>
+        <NetflixRow title="Top Trending Movies" items={trending} loading={loading} />
+        {user && <NetflixRow title="🔥 Today's Picks For You" items={picks} loading={loading} landscape={true} />}
+        {preferredGenres.slice(0, 4).map((genreId) => (
+          <NetflixRow key={genreId} title={`${GENRE_MAP[genreId] || "Genre"} Movies`} items={byGenre[genreId]} loading={loading} />
+        ))}
+        <NetflixRow title="Leaving Soon" items={[]} loading={false} />
+      </div>
+    </div>
+  );
 }

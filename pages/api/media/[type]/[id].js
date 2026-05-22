@@ -2,6 +2,7 @@
 // Fetches full movie or TV details including trailer, cast, providers
 import { fetchDetails, fetchMovieReleaseDates, fetchWatchProviders } from "@/lib/tmdb";
 import { setPublicCache } from "@/lib/security";
+import { withDecisionMetadata } from "@/lib/decisionEngine";
 
 export default async function handler(req, res) {
   const { type, id } = req.query;
@@ -23,12 +24,13 @@ export default async function handler(req, res) {
     }
 
     setPublicCache(res, "public, s-maxage=1800, stale-while-revalidate=86400");
-    return res.status(200).json({
+    return res.status(200).json(withDecisionMetadata({
       ...details,
       providers,
+      availability: providers,
       region,
       releaseDates,
-    });
+    }));
   } catch (err) {
     console.error("MEDIA_DETAIL_ERROR:", err.message);
     return res.status(500).json({ error: "Failed to fetch details" });

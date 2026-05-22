@@ -3,6 +3,16 @@ import bcrypt from "bcryptjs";
 
 const UserSchema = new mongoose.Schema(
   {
+    username: {
+      type: String,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    displayName: {
+      type: String,
+      trim: true,
+    },
     name: {
       type: String,
       required: [true, "Name is required"],
@@ -39,8 +49,34 @@ const UserSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
+      default: "/avatar.svg",
+    },
+    bio: {
+      type: String,
       default: "",
     },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: {
+      type: String,
+      select: false,
+    },
+    verificationTokenExpiry: {
+      type: Date,
+      select: false,
+    },
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
+    lastSeen: {
+      type: Date,
+    },
+    blockedUsers: [{
+      type: String,
+    }],
     preferredGenres: {
       type: [Number],
       default: [],
@@ -61,13 +97,33 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    preferredPlatforms: {
+      type: [String],
+      default: [],
+    },
+    ottPlatforms: {
+      type: [String],
+      default: [],
+    },
+    hasCompletedOnboarding: {
+      type: Boolean,
+      default: false,
+    },
     resetPasswordToken: {
       type: String,
       select: false,
     },
-    resetPasswordExpires: {
+    resetPasswordExpiry: {
       type: Date,
       select: false,
+    },
+    location: {
+      city: String,
+      district: String,
+      state: String,
+      country: String,
+      lat: Number,
+      lng: Number,
     },
     wishlist: [
       {
@@ -87,6 +143,63 @@ const UserSchema = new mongoose.Schema(
         watchedAt: { type: Date, default: Date.now },
       },
     ],
+    notificationInbox: [
+      {
+        type: {
+          type: String,
+          enum: ["taste", "watchlist", "theater_to_ott", "trend_spike"],
+        },
+        mediaId: Number,
+        mediaType: { type: String, enum: ["movie", "tv"] },
+        title: String,
+        message: String,
+        providerNames: { type: [String], default: [] },
+        read: { type: Boolean, default: false },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    availabilitySnapshots: [
+      {
+        mediaId: Number,
+        mediaType: { type: String, enum: ["movie", "tv"] },
+        statusKey: String,
+        providerNames: { type: [String], default: [] },
+        checkedAt: { type: Date, default: Date.now },
+      },
+    ],
+    notificationSettings: {
+      email: { type: Boolean, default: true },
+      inApp: { type: Boolean, default: true },
+    },
+    // SOCIAL FIELDS
+    following: [{ type: String }],       // userIds
+    followers: [{ type: String }],       // userIds
+    feedPrivacy: {
+      type: String,
+      enum: ['public', 'followers'],
+      default: 'public',
+    },
+    likedMovies: [{
+      tmdbId: Number,
+      mediaType: String,
+      title: String,
+      poster: String,
+      likedAt: Date
+    }],
+    watchedMovies: [{
+      tmdbId: Number,
+      mediaType: String,
+      title: String,
+      poster: String,
+      watchedAt: Date,
+      rating: Number
+    }],
+    tasteProfile: {
+      topGenres: [Number],
+      topLanguages: [String],
+      avgRating: Number,
+      totalWatched: Number
+    }
   },
   { timestamps: true }
 );

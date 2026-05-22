@@ -1,54 +1,70 @@
-import Head from "next/head";
-import { buildSeo } from "../lib/seo";
+import Head from 'next/head';
 
 export default function SEOMeta({
-  title = "Discover Movies, Series, Streaming Guides, and Trailers",
+  title,
   description,
   image,
-  url = "/",
-  type = "website",
-  jsonLd = null,
+  url,
+  type = 'website',
   keywords = [],
+  jsonLd,
   noindex = false,
 }) {
-  const meta = buildSeo({
-    title,
-    description,
-    image,
-    path: url,
-    type,
-    keywords,
-    noindex,
-  });
+  const siteName = 'Rushes';
+  const fullTitle = title
+    ? title.includes(siteName)
+      ? title
+      : `${title} | ${siteName}`
+    : 'Rushes — Where movie people connect';
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rushes.in';
+  const fullUrl = `${baseUrl}${url || ''}`;
+  const defaultImage = `${baseUrl}/og-default.png`;
+  const metaImage = image || defaultImage;
+  const metaDescription =
+    description ||
+    'Discover, discuss and share movies and series with people who feel cinema like you do.';
 
   return (
     <Head>
-      <title>{meta.title}</title>
-      <meta name="description" content={meta.description} />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <link rel="canonical" href={meta.canonical} />
+      <title>{fullTitle}</title>
+      <meta name="description" content={metaDescription} />
+      {keywords.length > 0 && (
+        <meta name="keywords" content={keywords.join(', ')} />
+      )}
+      <meta
+        name="robots"
+        content={noindex ? 'noindex,nofollow' : 'index,follow,max-image-preview:large'}
+      />
+      <link rel="canonical" href={fullUrl} />
 
-      {meta.keywords ? <meta name="keywords" content={meta.keywords} /> : null}
-      {meta.noindex ? <meta name="robots" content="noindex,nofollow" /> : <meta name="robots" content="index,follow,max-image-preview:large" />}
+      {/* Open Graph */}
+      <meta property="og:type" content={type} />
+      <meta property="og:title" content={fullTitle} />
+      <meta property="og:description" content={metaDescription} />
+      <meta property="og:image" content={metaImage} />
+      <meta property="og:url" content={fullUrl} />
+      <meta property="og:site_name" content={siteName} />
 
-      <meta property="og:title" content={meta.title} />
-      <meta property="og:description" content={meta.description} />
-      <meta property="og:image" content={meta.image} />
-      <meta property="og:url" content={meta.canonical} />
-      <meta property="og:type" content={meta.type} />
-      <meta property="og:site_name" content="Movie Finder" />
-
+      {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={meta.title} />
-      <meta name="twitter:description" content={meta.description} />
-      <meta name="twitter:image" content={meta.image} />
+      <meta name="twitter:title" content={fullTitle} />
+      <meta name="twitter:description" content={metaDescription} />
+      <meta name="twitter:image" content={metaImage} />
+      <meta name="twitter:site" content="@rushesapp" />
 
-      {jsonLd ? (
+      {/* JSON-LD structured data */}
+      {jsonLd && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-      ) : null}
+      )}
+
+      {/* PWA */}
+      <meta name="theme-color" content="#E63946" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-title" content={siteName} />
     </Head>
   );
 }

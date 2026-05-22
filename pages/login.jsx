@@ -186,16 +186,16 @@ export default function LoginPage() {
                         <div className="flex flex-col gap-3">
                             <button
                                 type="button"
-                                onClick={() => window.location.assign("/api/auth/oauth/google")}
-                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                                onClick={() => toast({ type: "info", message: "Google login is coming soon!" })}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10 opacity-70 cursor-not-allowed"
                             >
                                 <AppIcon icon={GoogleIcon} size={14} />
                                 <span>Continue with Google</span>
                             </button>
                             <button
                                 type="button"
-                                onClick={() => window.location.assign("/api/auth/oauth/github")}
-                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                                onClick={() => toast({ type: "info", message: "GitHub login is coming soon!" })}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10 opacity-70 cursor-not-allowed"
                             >
                                 <AppIcon icon={GithubIcon} size={14} />
                                 <span>Continue with GitHub</span>

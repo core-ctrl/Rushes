@@ -58,10 +58,9 @@ function SocialButton({ provider, icon, label }) {
     <button
       type="button"
       onClick={() => {
-        toast({ type: "info", message: `Opening ${label.replace("Continue with ", "")} sign-in...` });
-        window.location.assign(`/api/auth/oauth/${provider}`);
+        toast({ type: "info", message: `${label.replace("Continue with ", "")} login is coming soon!` });
       }}
-      className={`${baseClasses} hover:border-white/20 hover:bg-white/10`}
+      className={`${baseClasses} hover:border-white/20 hover:bg-white/10 opacity-70 cursor-not-allowed`}
     >
       {icon}
       <span>{label}</span>

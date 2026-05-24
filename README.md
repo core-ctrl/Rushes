@@ -40,7 +40,7 @@
 
 It has evolved far beyond a simple movie lookup tool into a complete social network for cinephiles. Next.js handles both the stunning React frontend and the powerful Node.js backend API routes.
 
-For an in-depth breakdown of how the systems communicate, caching strategies, and database schemas, please read our **[Architecture Documentation (ARCHITECTURE.md)](ARCHITECTURE.md)** and **(DIRECTORY_TREE.md)](DIRECTORY_TREE.md)**
+For an in-depth breakdown of how the systems communicate, caching strategies, and database schemas, please read our **[Architecture Documentation (ARCHITECTURE.md)](ARCHITECTURE.md)** and **[(DIRECTORY_TREE.md)](DIRECTORY_TREE.md)**
 
 
 

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
 import { useRouter } from 'next/router';
 import { selectWatchlist, toggleWatchlist } from '../../store/slices/watchlistSlice';
+import { openTrailer } from '../../store/slices/uiSlice';
 import { toast } from '../ui/Toaster';
 
 export default function HoverCard({ item, index, showTopBadge = false, onPlayTrailer, landscape = false }) {
@@ -58,8 +59,12 @@ export default function HoverCard({ item, index, showTopBadge = false, onPlayTra
     const mediaType = item.media_type || (isTV ? 'tv' : 'movie');
     const title = item.title || item.name;
 
-    if (item.trailerKey && onPlayTrailer) {
-      onPlayTrailer(item.trailerKey, title, item.id, mediaType);
+    const playTrailer = (key) => {
+      dispatch(openTrailer({ key, title, id: item.id, type: mediaType }));
+    };
+
+    if (item.trailerKey) {
+      playTrailer(item.trailerKey);
       return;
     }
 
@@ -67,15 +72,11 @@ export default function HoverCard({ item, index, showTopBadge = false, onPlayTra
       const response = await fetch(`/api/trailer?id=${item.id}&media_type=${mediaType}`);
       const data = await response.json();
       const key = data.trailer?.key || null;
-      if (key && onPlayTrailer) {
-        onPlayTrailer(key, title, item.id, mediaType);
-        return;
-      }
       if (key) {
-        router.push(`/${isTV ? 'series' : 'movies'}/${item.id}`);
-        return;
+        playTrailer(key);
+      } else {
+        toast({ type: "error", message: "Trailer is not available yet." });
       }
-      toast({ type: "error", message: "Trailer is not available yet." });
     } catch {
       toast({ type: "error", message: "Could not load trailer right now." });
     }

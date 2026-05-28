@@ -90,6 +90,21 @@ export default function AuthWidget({ open, onClose, onLogin, externalFeedback })
   // Clear error when modal opens
   useEffect(() => { if (open) { setLocalErr(""); dispatch(clearError()); } }, [open, dispatch]);
 
+  // Disable body scroll when modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!externalFeedback?.message) return;
     if (externalFeedback.type === "error") setLocalErr(externalFeedback.message);
@@ -162,18 +177,18 @@ export default function AuthWidget({ open, onClose, onLogin, externalFeedback })
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] flex justify-center p-4 overflow-y-auto"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={onClose}
         >
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md pointer-events-none" />
 
           <motion.div
             initial={{ opacity: 0, scale: 0.92, y: 24 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 16 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="relative z-10 w-full max-w-md glass-strong rounded-2xl p-8 shadow-2xl"
+            className="relative z-10 w-full max-w-md glass-strong rounded-2xl p-8 shadow-2xl my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button onClick={onClose} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition">

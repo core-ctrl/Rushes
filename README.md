@@ -24,10 +24,10 @@
 
 <br/><br/>
 
-<img src="https://img.shields.io/github/stars/core-ctrl/MovieFinderForYOU?style=for-the-badge&color=E8C84A&labelColor=0a0a0f" alt="Stars"/>
-<img src="https://img.shields.io/github/forks/core-ctrl/MovieFinderForYOU?style=for-the-badge&color=E8C84A&labelColor=0a0a0f" alt="Forks"/>
-<img src="https://img.shields.io/github/last-commit/core-ctrl/MovieFinderForYOU?style=for-the-badge&color=E8C84A&labelColor=0a0a0f" alt="Last Commit"/>
-<img src="https://img.shields.io/github/license/core-ctrl/MovieFinderForYOU?style=for-the-badge&color=E8C84A&labelColor=0a0a0f" alt="License"/>
+<img src="https://img.shields.io/github/stars/core-ctrl/Rushes?style=for-the-badge&color=E8C84A&labelColor=0a0a0f" alt="Stars"/>
+<img src="https://img.shields.io/github/forks/core-ctrl/Rushes?style=for-the-badge&color=E8C84A&labelColor=0a0a0f" alt="Forks"/>
+<img src="https://img.shields.io/github/last-commit/core-ctrl/Rushes?style=for-the-badge&color=E8C84A&labelColor=0a0a0f" alt="Last Commit"/>
+<img src="https://img.shields.io/github/license/core-ctrl/Rushes?style=for-the-badge&color=E8C84A&labelColor=0a0a0f" alt="License"/>
 
 </div>
 
@@ -72,8 +72,8 @@ We utilize a wide array of modern technologies to deliver a premium user experie
 <br/>
 
 ```bash
-git clone https://github.com/core-ctrl/MovieFinderForYOU.git
-cd MovieFinderForYOU
+git clone https://github.com/core-ctrl/Rushes.git
+cd Rushes
 npm install --legacy-peer-deps
 cp .env.example .env.local
 # Fill in your keys in .env.local (See Environment Variables below)

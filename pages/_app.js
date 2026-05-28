@@ -34,14 +34,7 @@ import OnboardingFlow from "../components/OnboardingFlow";
 import OnlinePresence from '../components/social/OnlinePresence';
 import ConnectionStatusBanner from '../components/ConnectionStatusBanner';
 import { Analytics } from '@vercel/analytics/react';
-import { init as initOrbit } from '@orbitapp/nextjs';
 
-if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_ORBIT_DSN) {
-  initOrbit({
-    dsn: process.env.NEXT_PUBLIC_ORBIT_DSN,
-    endpoint: process.env.NEXT_PUBLIC_ORBIT_ENDPOINT || "http://localhost:8000/api/v1"
-  });
-}
 
 const pageVariants = {
   initial: { opacity: 0, y: 12 },

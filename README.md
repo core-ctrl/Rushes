@@ -21,7 +21,6 @@
 <img src="https://img.shields.io/badge/TMDB-API-01b4e4?style=for-the-badge&logo=themoviedb&logoColor=white" alt="TMDB"/>
 <img src="https://img.shields.io/badge/Firebase-Analytics-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firebase"/>
 <img src="https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind"/>
-<img src="https://img.shields.io/badge/Sentry-Monitoring-362D59?style=for-the-badge&logo=sentry&logoColor=white" alt="Sentry"/>
 
 <br/><br/>
 
@@ -56,11 +55,13 @@ We utilize a wide array of modern technologies to deliver a premium user experie
 | **Real-Time Chat** | Supabase WebSockets | Peer-to-peer messaging and live notifications. |
 | **Smart Recommendations** | Custom Decision Engine | Tailored suggestions based on watch history and onboarding preferences. |
 | **High-Speed Caching** | Upstash Redis | API rate limiting and sub-millisecond response caching. |
-| **Cinematic UI** | Framer Motion, Tailwind | Ken Burns effects, smooth scrolling (Lenis), and dynamic carousels. |
+| **Cinematic UI & Loader** | Framer Motion, Tailwind | Ken Burns effects, smooth scrolling (Lenis), dynamic carousels, and custom cinematic clapperboard loading animations. |
 | **Global Trailers** | YouTube Embeds | Autoplaying HD trailers via a global floating modal. |
-| **Robust Auth** | JWT, NextAuth, bcrypt | Secure email/password login with HTTP-only cookies and password resets. |
+| **Robust Auth & OTP** | JWT, NextAuth, bcrypt | Secure email/password login with HTTP-only cookies, password resets, and 2-step OTP verification for password updates. |
+| **Abuse Reporting** | MongoDB, Admin Dashboard | Ability to report Takes/Posts for Hate Speech, Nudity/Sexual Content, Piracy, Impersonation etc., and moderate them from the Admin Panel. |
+| **OTT Affiliate Engine** | MongoDB, Analytics API | Monetize and route users to original OTT streaming platforms via partner referral URLs with outbound click analytics. |
 | **Production Ready** | Docker, Nginx | Multi-stage Dockerfiles utilizing Next.js `standalone` mode. |
-| **Monitoring & Analytics**| Firebase, Sentry | Real-time crash reporting and user behavior tracking. |
+| **Analytics**| Firebase Analytics | Real-time user behavior tracking and client-side event monitoring. |
 
 ---
 
@@ -135,7 +136,6 @@ SMTP_PASS=your_app_password
 
 # Analytics & Monitoring
 NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_key
-NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
 ```
 
 </details>

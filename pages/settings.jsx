@@ -5,8 +5,8 @@ import { motion } from 'framer-motion';
 import { Shield, Trash2, Power, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { useSelector, useDispatch } from 'react-redux';
-import { selectUser, logoutUser } from '../../store/slices/authSlice';
-import { toast } from '../../components/ui/Toaster';
+import { selectUser, logoutUser } from '../store/slices/authSlice';
+import { toast } from '../components/ui/Toaster';
 
 export default function SettingsPage() {
     const router = useRouter();

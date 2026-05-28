@@ -10,9 +10,7 @@
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.1.1",
     "@hugeicons/react": "^1.1.6",
-    "@orbitapp/nextjs": "file:../Orbit-SDKs/orbit-nextjs",
     "@reduxjs/toolkit": "^2.11.2",
-    "@sentry/nextjs": "^10.52.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.1",
     "@upstash/redis": "^1.38.0",

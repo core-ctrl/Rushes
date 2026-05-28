@@ -79,22 +79,4 @@ const nextConfig = {
   },
 };
 
-const sentryWebpackPluginOptions = {
-  silent: true,
-  // Sentry source map upload — set SENTRY_ORG, SENTRY_PROJECT, SENTRY_AUTH_TOKEN to enable
-};
-
-// Only wrap with Sentry if DSN is configured
-const hasSentry = !!(process.env.NEXT_PUBLIC_SENTRY_DSN && process.env.SENTRY_AUTH_TOKEN);
-
-if (hasSentry) {
-  try {
-    const { withSentryConfig } = require('@sentry/nextjs');
-    module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions);
-  } catch (e) {
-    console.warn('@sentry/nextjs not installed — skipping Sentry wrapper');
-    module.exports = nextConfig;
-  }
-} else {
-  module.exports = nextConfig;
-}
+module.exports = nextConfig;

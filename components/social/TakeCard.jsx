@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, AlertTriangle, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -6,7 +6,7 @@ import Image from 'next/image';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
-import FriendActivity from './FriendActivity';
+
 import { formatDistanceToNow } from 'date-fns';
 import { TMDB_BLUR_DATA_URL } from '../../lib/imageBlur';
 import { UserIcon } from '@hugeicons/core-free-icons';
@@ -53,18 +53,26 @@ function renderContent(content) {
 export default function TakeCard({ take, index }) {
     const [likes, setLikes] = useState(take.likes || []);
     const [spoilerRevealed, setSpoilerRevealed] = useState(false);
-    const [activity, setActivity] = useState([]);
+    const [expanded, setExpanded] = useState(false);
     const user = useSelector(selectUser);
     const isLiked = likes.includes(user?._id);
-    const isOwn = user?._id === (take.userId || take.user_id);
+    const isOwn = user?._id === take.userId;
 
     const takeId = take.id || take._id;
-    const tmdbId = take.tmdbId || take.tmdb_id;
-    const movieTitle = take.movieTitle || take.movie_title;
-    const movieBanner = take.movieBackdrop || take.movie_backdrop || take.moviePoster || take.movie_poster;
-    const createdAt = take.createdAt || take.created_at;
+    const tmdbId = take.tmdbId;
+    const movieTitle = take.movieTitle;
+    const movieBanner = take.movieBackdrop || take.moviePoster;
+    const createdAt = take.createdAt;
+    const isLongContent = (take.content?.length || 0) > 280;
 
     const toggleLike = async () => {
+        const previousLikes = [...likes];
+        // Optimistic update
+        if (isLiked) {
+            setLikes(likes.filter(id => id !== user?._id));
+        } else {
+            setLikes([...likes, user?._id]);
+        }
         try {
             const response = await axios.post('/api/takes/like', {
                 takeId: takeId,
@@ -73,18 +81,7 @@ export default function TakeCard({ take, index }) {
             setLikes(response.data.likes);
         } catch (error) {
             console.error('Like error:', error);
-        }
-    };
-
-    const loadActivity = async () => {
-        if (!tmdbId) return;
-        try {
-            const { data } = await axios.post('/api/social/friend-activity', {
-                tmdbIds: [tmdbId]
-            });
-            setActivity(data.activity[tmdbId] || []);
-        } catch (error) {
-            console.error('Activity error:', error);
+            setLikes(previousLikes);
         }
     };
 
@@ -154,10 +151,7 @@ export default function TakeCard({ take, index }) {
                     </div>
                 </div>
 
-                {/* Friend activity */}
-                {!isOwn && (
-                    <FriendActivity activity={activity} />
-                )}
+
 
                 {/* Take content */}
                 <div className="mb-4">
@@ -173,9 +167,22 @@ export default function TakeCard({ take, index }) {
                             </span>
                         </motion.button>
                     ) : (
-                        <p className="text-sm leading-relaxed text-neutral-100 whitespace-pre-wrap max-h-24 overflow-hidden">
-                            {renderContent(take.content) || 'Quick take!'}
-                        </p>
+                        <div className="relative">
+                            <p className={`text-sm leading-relaxed text-neutral-100 whitespace-pre-wrap ${isLongContent && !expanded ? 'max-h-20 overflow-hidden' : ''}`}>
+                                {renderContent(take.content) || 'Quick take!'}
+                            </p>
+                            {isLongContent && !expanded && (
+                                <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-neutral-900/80 to-transparent" />
+                            )}
+                            {isLongContent && (
+                                <button
+                                    onClick={() => setExpanded(!expanded)}
+                                    className="text-xs text-red-400 hover:text-red-300 mt-1 transition-colors"
+                                >
+                                    {expanded ? 'Show less' : 'Show more...'}
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
 

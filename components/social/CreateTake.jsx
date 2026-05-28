@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
@@ -7,6 +7,7 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
 import { TMDB_BLUR_DATA_URL } from '../../lib/imageBlur';
+import { toast } from '../ui/Toaster';
 
 export default function CreateTake({ onCreated }) {
   const currentUser = useSelector(selectUser);
@@ -23,7 +24,10 @@ export default function CreateTake({ onCreated }) {
   const [mentionResults, setMentionResults] = useState([]);
   const [showMentions, setShowMentions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [searchingMovies, setSearchingMovies] = useState(false);
   const textareaRef = useRef(null);
+  const movieSearchTimer = useRef(null);
+  const mentionSearchTimer = useRef(null);
 
   if (!currentUser) return null;
 
@@ -32,7 +36,7 @@ export default function CreateTake({ onCreated }) {
     return matches.map((m) => m.slice(1));
   };
 
-  const handleContentChange = async (e) => {
+  const handleContentChange = (e) => {
     const val = e.target.value;
     setContent(val);
 
@@ -42,12 +46,15 @@ export default function CreateTake({ onCreated }) {
       const query = lastWord.slice(1);
       setMentionQuery(query);
       setShowMentions(true);
-      try {
-        const { data } = await axios.get(`/api/users/search?q=${encodeURIComponent(query)}`);
-        setMentionResults(data.users?.slice(0, 5) || []);
-      } catch {
-        setMentionResults([]);
-      }
+      if (mentionSearchTimer.current) clearTimeout(mentionSearchTimer.current);
+      mentionSearchTimer.current = setTimeout(async () => {
+        try {
+          const { data } = await axios.get(`/api/users/search?q=${encodeURIComponent(query)}`);
+          setMentionResults(data.users?.slice(0, 5) || []);
+        } catch {
+          setMentionResults([]);
+        }
+      }, 300);
     } else {
       setShowMentions(false);
       setMentionResults([]);
@@ -62,17 +69,27 @@ export default function CreateTake({ onCreated }) {
     textareaRef.current?.focus();
   };
 
-  const searchMovies = async (q) => {
-    if (!q.trim()) return setMovieResults([]);
-    try {
-      const { data } = await axios.get(
-        `https://api.themoviedb.org/3/search/multi?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&query=${encodeURIComponent(q)}`
-      );
-      setMovieResults(data.results?.filter((r) => r.media_type !== 'person').slice(0, 5) || []);
-    } catch (error) {
-      console.error('Movie search error:', error);
+  const searchMovies = (q) => {
+    if (movieSearchTimer.current) clearTimeout(movieSearchTimer.current);
+    if (!q.trim()) {
       setMovieResults([]);
+      setSearchingMovies(false);
+      return;
     }
+    setSearchingMovies(true);
+    movieSearchTimer.current = setTimeout(async () => {
+      try {
+        const { data } = await axios.get(
+          `https://api.themoviedb.org/3/search/multi?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&query=${encodeURIComponent(q)}`
+        );
+        setMovieResults(data.results?.filter((r) => r.media_type !== 'person').slice(0, 5) || []);
+      } catch (error) {
+        console.error('Movie search error:', error);
+        setMovieResults([]);
+      } finally {
+        setSearchingMovies(false);
+      }
+    }, 300);
   };
 
   const handleSubmit = async () => {
@@ -103,6 +120,7 @@ export default function CreateTake({ onCreated }) {
       onCreated?.();
     } catch (e) {
       console.error(e);
+      toast({ type: 'error', message: 'Failed to post your take. Please try again.' });
     } finally {
       setSubmitting(false);
     }
@@ -123,7 +141,7 @@ export default function CreateTake({ onCreated }) {
     <div className="bg-neutral-900 border border-white/10 rounded-2xl p-4 mb-6">
       <div className="flex gap-3">
         <img
-          src={currentUser?.avatar || '/default-avatar.png'}
+          src={currentUser?.avatar || '/avatar.svg'}
           className="w-10 h-10 rounded-full object-cover flex-shrink-0"
         />
 
@@ -154,7 +172,7 @@ export default function CreateTake({ onCreated }) {
                       onClick={() => insertMention(user.username)}
                       className="w-full flex items-center gap-2 px-3 py-2 hover:bg-white/5 transition-colors text-left"
                     >
-                      <img src={user.avatar || '/default-avatar.png'} className="w-6 h-6 rounded-full object-cover" />
+                      <img src={user.avatar || '/avatar.svg'} className="w-6 h-6 rounded-full object-cover" />
                       <div>
                         <p className="text-xs font-medium">{user.displayName}</p>
                         <p className="text-xs text-neutral-400">@{user.username}</p>
@@ -195,6 +213,12 @@ export default function CreateTake({ onCreated }) {
                 placeholder="Search a movie or series..."
                 className="w-full bg-neutral-800 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500"
               />
+              {searchingMovies && (
+                <div className="mt-1 flex items-center gap-2 px-3 py-2 text-xs text-neutral-400">
+                  <div className="w-3 h-3 border border-neutral-500 border-t-transparent rounded-full animate-spin" />
+                  Searching...
+                </div>
+              )}
               {movieResults.length > 0 && (
                 <div className="mt-1 bg-neutral-800 border border-white/10 rounded-xl overflow-hidden">
                   {movieResults.map((movie) => (

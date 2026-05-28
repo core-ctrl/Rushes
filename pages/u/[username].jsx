@@ -7,7 +7,7 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
 import TakeCard from '../../components/social/TakeCard';
-import UserSearch from '../../components/social/UserSearch';
+
 
 export default function UserProfile() {
     const router = useRouter();
@@ -92,10 +92,10 @@ export default function UserProfile() {
                     >
                         <div className="relative inline-block mb-6">
                             <img
-                                src={profile.avatar || '/default-avatar.png'}
+                                src={profile.avatar || '/avatar.svg'}
                                 className="w-32 h-32 rounded-full object-cover border-4 border-white/20 shadow-2xl mx-auto"
                             />
-                            <div className="absolute inset-0 w-32 h-32 bg-gradient-to-r from-red-500/20 to-transparent rounded-full animate-pulse opacity-75" />
+                            <div className="absolute inset-0 w-32 h-32 bg-gradient-to-br from-red-500/10 via-transparent to-purple-500/10 rounded-full opacity-60" />
                         </div>
                         <h1 className="text-4xl font-black bg-gradient-to-r from-white to-neutral-300 bg-clip-text text-transparent mb-2">
                             @{profile.username}
@@ -133,11 +133,7 @@ export default function UserProfile() {
                         )}
                     </motion.div>
 
-                    {/* Search & Tabs */}
-                    <div className="flex flex-col lg:flex-row gap-4 mb-12">
-                        <UserSearch />
-                        <div className="flex-1" />
-                    </div>
+
 
                     {/* Content */}
                     <div className="space-y-6">

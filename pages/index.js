@@ -337,6 +337,15 @@ function sortByRating(items) {
   return [...items].sort((a, b) => b.vote_average - a.vote_average);
 }
 
+function sortByNewest(items) {
+  return [...items].sort((a, b) => {
+    const dateA = new Date(a.release_date || a.first_air_date || '1900-01-01');
+    const dateB = new Date(b.release_date || b.first_air_date || '1900-01-01');
+    const diff = dateB - dateA;
+    return diff !== 0 ? diff : (b.popularity || 0) - (a.popularity || 0);
+  });
+}
+
 export async function getServerSideProps() {
   try {
     const [
@@ -387,9 +396,9 @@ export async function getServerSideProps() {
     return {
       props: {
         heroSlides,
-        trendingItems: trendingSorted.slice(0, 12).map((item) => compactMedia(item)),
-        trendingMovies: trendingMoviesRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
-        trendingTV: trendingTVRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "tv" })),
+        trendingItems: sortByNewest(trendingRaw).slice(0, 12).map((item) => compactMedia(item)),
+        trendingMovies: sortByNewest(trendingMoviesRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
+        trendingTV: sortByNewest(trendingTVRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "tv" })),
         goatedMovies: sortByRating(goatedMoviesRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
         goatedSeries: sortByRating(goatedSeriesRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "tv" })),
         goatedAnime: sortByRating(goatedAnimeRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "tv" })),

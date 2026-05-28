@@ -5,8 +5,10 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
 import debounce from 'lodash.debounce';
+import { useRouter } from 'next/router';
 
 export default function UserSearch() {
+    const router = useRouter();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -21,10 +23,9 @@ export default function UserSearch() {
         setLoading(true);
         try {
             const { data } = await axios.get(`/api/users/search?q=${encodeURIComponent(q)}`);
-            console.log('UserSearch results:', data.users);
+
             setResults(data.users || []);
         } catch (error) {
-            console.error('Search error:', error);
             setResults([]);
         } finally {
             setLoading(false);
@@ -80,10 +81,10 @@ export default function UserSearch() {
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     className="flex items-center gap-3 p-4 hover:bg-white/5 transition-all cursor-pointer"
-                                    onClick={() => !isCurrentUser && handleFollow(u._id)}
+                                    onClick={() => router.push(`/u/${u.username}`)}
                                 >
                                     <img
-                                        src={u.avatar || '/default-avatar.png'}
+                                        src={u.avatar || '/avatar.svg'}
                                         alt={`@${u.username}`}
                                         className="w-10 h-10 rounded-full object-cover ring-1 ring-white/20"
                                     />
@@ -96,6 +97,10 @@ export default function UserSearch() {
                                     {!isCurrentUser && (
                                         <motion.button
                                             whileTap={{ scale: 0.98 }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleFollow(u._id);
+                                            }}
                                             className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isFollowing
                                                 ? 'bg-neutral-700/50 text-neutral-300 hover:bg-neutral-600/50 border border-neutral-500/50'
                                                 : 'bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-500 hover:to-red-600 shadow-glow-red'

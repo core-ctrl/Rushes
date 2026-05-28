@@ -180,7 +180,7 @@ export default function HoverCard({ item, index, showTopBadge = false, onPlayTra
           {/* Top Left: Rating Pill */}
           {rating && rating > 0 && (
             <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-md px-1.5 py-0.5 rounded-full flex items-center gap-1 text-[10px] font-bold text-white shadow-sm border border-white/10">
-              <span className="text-emerald-400">{rating} ★</span>
+              <span className={parseFloat(rating) >= 7 ? 'text-emerald-400' : parseFloat(rating) >= 5 ? 'text-amber-400' : 'text-red-400'}>{rating} ★</span>
             </div>
           )}
 
@@ -218,14 +218,11 @@ export default function HoverCard({ item, index, showTopBadge = false, onPlayTra
           <motion.div
             initial={{ opacity: 0, scale: 0.92, y: 14 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ opacity: 0, scale: 0.95, y: 6 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             // Absolute positioning centered horizontally on the base card, overflowing the bounds
-            className="absolute top-[-20px] left-1/2 z-50 w-[300px] max-w-[calc(100vw-32px)] -translate-x-1/2 origin-top overflow-hidden rounded-2xl border border-white/10 shadow-[0_35px_90px_rgba(0,0,0,0.82)]"
+            className="absolute top-[-20px] left-1/2 z-50 w-[300px] max-w-[calc(100vw-32px)] -translate-x-1/2 origin-top overflow-hidden rounded-2xl border border-white/10 shadow-[0_35px_90px_rgba(0,0,0,0.82)] backdrop-blur-xl bg-black/80"
             style={{
-              // Fallback dark gradient roughly matching reference vibe
-              background: 'linear-gradient(145deg, rgba(28,28,34,0.96), rgba(70,20,38,0.92), rgba(3,7,18,0.98))',
-              backdropFilter: 'blur(24px)',
               transformStyle: 'preserve-3d',
               boxShadow: `0 30px 90px rgba(0,0,0,0.85), 0 0 50px rgba(229,9,20,0.16)`,
             }}

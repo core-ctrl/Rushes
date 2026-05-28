@@ -16,7 +16,7 @@ export default function FriendActivity({ activity }) {
                 {displayFriends.map((friend, i) => (
                     <motion.img
                         key={i}
-                        src={friend.avatar || '/default-avatar.png'}
+                        src={friend.avatar || '/avatar.svg'}
                         alt={`@${friend.username}`}
                         className="w-6 h-6 rounded-full object-cover border-2 border-neutral-900/50 shadow-md"
                         whileHover={{ scale: 1.2 }}

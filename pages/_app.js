@@ -31,6 +31,14 @@ const OnboardingWrapper = dynamic(() => import("../components/onboarding/Onboard
 import OnboardingFlow from "../components/OnboardingFlow";
 import OnlinePresence from '../components/social/OnlinePresence';
 import { Analytics } from '@vercel/analytics/react';
+import { init as initOrbit } from '@orbitapp/nextjs';
+
+if (typeof window !== 'undefined') {
+  initOrbit({
+    dsn: "IaZvKzgpNZCB49mXAwF69f4AqFwAyhEqE6ylvEOOa3s", // Using the real Project ID from DB!
+    endpoint: "http://localhost:8000/api/v1"
+  });
+}
 
 const pageVariants = {
   initial: { opacity: 0, y: 12 },

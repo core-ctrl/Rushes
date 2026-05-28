@@ -125,11 +125,17 @@ export default function AuthWidget({ open, onClose, onLogin, externalFeedback })
     const result = await action;
     if (!result.error) {
       if (mode === "signup") {
-        const message = result.payload?.requiresVerification
-          ? result.payload.message || "Account created. Please verify your email before signing in."
+        const isVerify = result.payload?.requiresVerification;
+        const message = isVerify
+          ? "Account created. Redirecting to verification..."
           : "Account created. Thanks for joining Movie Finder.";
         setSuccess(message);
         toast({ type: "success", message });
+        if (isVerify) {
+          setTimeout(() => {
+            window.location.href = `/verify-email?email=${encodeURIComponent(data.email)}`;
+          }, 1200);
+        }
       }
       if (mode === "login") {
         const message = "Thanks for signing in. Your recommendations are ready.";
@@ -140,7 +146,13 @@ export default function AuthWidget({ open, onClose, onLogin, externalFeedback })
     } else if (mode === "signup" && String(result.payload || "").includes("Please sign in instead")) {
       setMode("login");
     } else {
-      toast({ type: "error", message: String(result.payload || "Authentication failed.") });
+      const errMsg = String(result.payload || "Authentication failed.");
+      toast({ type: "error", message: errMsg });
+      if (mode === "login" && errMsg.toLowerCase().includes("verify")) {
+        setTimeout(() => {
+          window.location.href = `/verify-email?email=${encodeURIComponent(data.email)}`;
+        }, 1200);
+      }
     }
   };
 

@@ -30,10 +30,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'This email is already verified. Please sign in.' });
     }
 
-    // Generate a fresh token
-    const newToken = crypto.randomBytes(32).toString('hex');
+    // Generate a fresh 6-digit verification code
+    const newToken = Math.floor(100000 + Math.random() * 900000).toString();
     user.verificationToken = newToken;
-    user.verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+    user.verificationTokenExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     await user.save();
 
     // Send the email (non-blocking)

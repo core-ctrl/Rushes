@@ -6,13 +6,16 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).end();
     await connectDB();
 
-    const { token } = req.body;
+    const { email, code } = req.body;
+    if (!email || !code) return res.status(400).json({ error: 'Email and verification code are required' });
+
     const user = await User.findOne({
-        verificationToken: token,
+        email: email.toLowerCase().trim(),
+        verificationToken: code,
         verificationTokenExpiry: { $gt: new Date() },
     });
 
-    if (!user) return res.status(400).json({ error: 'Invalid or expired verification link' });
+    if (!user) return res.status(400).json({ error: 'Invalid or expired verification code' });
 
     user.isEmailVerified = true;
     user.verificationToken = undefined;

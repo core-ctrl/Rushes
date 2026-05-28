@@ -134,67 +134,13 @@ export default function RegisterPage() {
                 email: data.email,
                 password: data.password,
             });
-            setSuccess(true);
+            router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
         } catch (err) {
             setError(err.response?.data?.error || "Registration failed. Please try again.");
         } finally {
             setLoading(false);
         }
     };
-
-    const handleResend = async () => {
-        setResendLoading(true);
-        try {
-            await axios.post("/api/auth/forgot-password", { email: watch("email") || "" });
-            alert("Verification email sent!");
-        } catch {
-            alert("Could not resend email. Please try again later.");
-        } finally {
-            setResendLoading(false);
-        }
-    };
-
-    if (success) {
-        return (
-            <>
-                <Head>
-                    <title>Verify Email — MovieFinder</title>
-                </Head>
-                <div className="min-h-screen flex items-center justify-center p-4 bg-neutral-950">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="w-full max-w-md p-8 rounded-2xl bg-neutral-900 border border-white/10 text-center"
-                    >
-                        <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", delay: 0.1 }}
-                            className="text-5xl mb-4"
-                        >
-                            📧
-                        </motion.div>
-                        <h1 className="text-2xl font-bold text-white mb-2">Check your email</h1>
-                        <p className="text-neutral-400 text-sm mb-6">
-                            We've sent a verification link to your email. Click the link to activate your account.
-                        </p>
-                        <button
-                            onClick={handleResend}
-                            disabled={resendLoading}
-                            className="text-sm text-neutral-500 hover:text-accent transition-colors"
-                        >
-                            {resendLoading ? "Sending..." : "Didn't receive the email? Resend"}
-                        </button>
-                        <div className="mt-6 pt-6 border-t border-white/10">
-                            <Link href="/login" className="text-sm text-neutral-400 hover:text-white transition-colors">
-                                Already verified? Sign in →
-                            </Link>
-                        </div>
-                    </motion.div>
-                </div>
-            </>
-        );
-    }
 
     return (
         <>

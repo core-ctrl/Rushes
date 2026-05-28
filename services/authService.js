@@ -99,9 +99,9 @@ export async function registerUser({ name, email, password, username }) {
         throw new Error("An account with this email already exists. Please sign in instead.");
     }
 
-    // Generate verification token
-    const verificationToken = generateVerificationToken();
-    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    // Generate 6-digit verification code
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationTokenExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     const user = await User.create({
         name: name.trim(),

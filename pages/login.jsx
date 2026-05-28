@@ -17,7 +17,6 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [showPass, setShowPass] = useState(false);
-    const [resendEmail, setResendEmail] = useState("");
 
     const { register, handleSubmit, formState: { errors } } = useForm();
 
@@ -48,9 +47,10 @@ export default function LoginPage() {
 
             // Check if email not verified
             if (message.includes("verify")) {
-                setResendEmail(data.email);
-                setError("Please verify your email first.");
-                toast({ type: "error", message: "Please verify your email first." });
+                toast({ type: "info", message: "Please verify your email. Redirecting..." });
+                setTimeout(() => {
+                    router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
+                }, 1200);
             } else {
                 setError(message);
                 toast({ type: "error", message });
@@ -60,17 +60,6 @@ export default function LoginPage() {
         }
     };
 
-    const handleResendVerification = async () => {
-        if (!resendEmail) return;
-
-        try {
-            await axios.post("/api/auth/forgot-password", { email: resendEmail });
-            alert("Verification email sent! Check your inbox.");
-            setResendEmail("");
-        } catch {
-            alert("Could not resend. Please try again.");
-        }
-    };
 
     return (
         <>
@@ -150,15 +139,6 @@ export default function LoginPage() {
                                 className="text-red-400 text-xs text-center bg-red-500/10 border border-red-500/20 rounded-lg py-2 px-3"
                             >
                                 {error}
-                                {resendEmail && (
-                                    <button
-                                        type="button"
-                                        onClick={handleResendVerification}
-                                        className="block mt-1 text-accent hover:underline"
-                                    >
-                                        Resend verification email
-                                    </button>
-                                )}
                             </motion.p>
                         )}
 

@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
     try {
         const user = await User.findOne({ username })
-            .select('username avatar bio following followers likedMovies watchedMovies tasteProfile createdAt')
+            .select('username avatar bio following followers likedMovies watchedMovies tasteProfile createdAt ottPlatforms isVerified isAdmin')
             .lean();
 
         if (!user) return res.status(404).json({ error: 'User not found' });

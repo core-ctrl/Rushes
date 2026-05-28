@@ -25,6 +25,9 @@ import { formatDistanceToNow } from "date-fns";
 import { supabase } from "../../lib/supabase";
 import { TMDB_BLUR_DATA_URL } from "../../lib/imageBlur";
 import { toast } from "../ui/Toaster";
+import dynamic from "next/dynamic";
+
+const ZegoCallPanel = dynamic(() => import('./ZegoCallPanel'), { ssr: false });
 
 const REACTIONS = ["❤️", "🔥", "😂", "👏", "🎬"];
 
@@ -126,6 +129,7 @@ export default function ChatPanel({ conversation, currentUser }) {
   const currentUserId = currentUser?._id || currentUser?.id;
   const receiverId = otherUser?._id || otherUser?.id;
   const isOnline = Boolean(otherUser?.isOnline);
+  const isBlocked = (currentUser?.blockedUsers || []).includes(receiverId);
 
   const statusLabel = useMemo(() => {
     if (isOnline) return "Online";
@@ -543,6 +547,12 @@ export default function ChatPanel({ conversation, currentUser }) {
       </AnimatePresence>
 
       <div className="flex-shrink-0 border-t border-white/8 bg-black/35 p-3 backdrop-blur-2xl md:p-4">
+        {isBlocked ? (
+          <div className="text-center py-3">
+            <p className="text-sm text-neutral-500">You have blocked this user. Unblock them to send messages.</p>
+          </div>
+        ) : (
+        <>
         {attachments.length ? (
           <div className="mb-2 flex flex-wrap gap-2">
             {attachments.map((file) => (
@@ -650,11 +660,19 @@ export default function ChatPanel({ conversation, currentUser }) {
             <Send className="h-4 w-4" />
           </button>
         </div>
+        </>
+        )}
       </div>
 
-      <AnimatePresence>
-        <CallOverlay mode={callMode} otherUser={otherUser} onClose={() => setCallMode(null)} />
-      </AnimatePresence>
+      {callMode && (
+        <ZegoCallPanel
+          roomID={`mf_${conversationId}_${Date.now()}`}
+          mode={callMode}
+          otherUser={otherUser}
+          currentUser={currentUser}
+          onClose={() => setCallMode(null)}
+        />
+      )}
     </div>
   );
 }

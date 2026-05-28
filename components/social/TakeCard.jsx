@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Heart, AlertTriangle, MessageCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Heart, AlertTriangle, MessageCircle, MoreHorizontal, Flag } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import axios from 'axios';
@@ -11,6 +11,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { TMDB_BLUR_DATA_URL } from '../../lib/imageBlur';
 import { UserIcon } from '@hugeicons/core-free-icons';
 import AppIcon from '../AppIcon';
+import VerifiedBadge from '../VerifiedBadge';
+import ReportModal from '../ReportModal';
 
 const MOOD_EMOJIS = {
     loved: '❤️',
@@ -57,6 +59,8 @@ export default function TakeCard({ take, index }) {
     const user = useSelector(selectUser);
     const isLiked = likes.includes(user?._id);
     const isOwn = user?._id === take.userId;
+    const [showMenu, setShowMenu] = useState(false);
+    const [showReport, setShowReport] = useState(false);
 
     const takeId = take.id || take._id;
     const tmdbId = take.tmdbId;
@@ -86,6 +90,7 @@ export default function TakeCard({ take, index }) {
     };
 
     return (
+        <>
         <motion.article
             layout
             initial={{ opacity: 0, y: 20 }}
@@ -144,11 +149,41 @@ export default function TakeCard({ take, index }) {
                         </div>
                     )}
                     <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm text-white truncate">@{take.username}</p>
+                        <p className="font-bold text-sm text-white truncate flex items-center gap-1">@{take.username}{take.isVerified && <VerifiedBadge size={12} />}</p>
                         <p className="text-xs text-neutral-500">
                             {createdAt ? formatDistanceToNow(new Date(createdAt), { addSuffix: true }) : 'Just now'}
                         </p>
                     </div>
+
+                    {/* 3-dot menu (report) */}
+                    {!isOwn && user && (
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowMenu(!showMenu)}
+                                className="p-1.5 rounded-lg text-neutral-600 hover:text-neutral-300 hover:bg-white/5 transition-all"
+                            >
+                                <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                            <AnimatePresence>
+                                {showMenu && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9, y: -4 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        className="absolute right-0 mt-1 w-44 bg-neutral-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+                                    >
+                                        <button
+                                            onClick={() => { setShowReport(true); setShowMenu(false); }}
+                                            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-left hover:bg-white/5 transition-colors text-red-400 hover:text-red-300"
+                                        >
+                                            <Flag className="w-3.5 h-3.5" />
+                                            Report this take
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    )}
                 </div>
 
 
@@ -207,5 +242,14 @@ export default function TakeCard({ take, index }) {
                 </div>
             </div>
         </motion.article>
+
+        <ReportModal
+            open={showReport}
+            onClose={() => setShowReport(false)}
+            targetUsername={take.username}
+            targetId={takeId}
+            targetType="take"
+        />
+        </>
     );
 }

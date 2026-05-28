@@ -122,7 +122,7 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
             <div className="flex items-center gap-3 p-5 border-b border-white/5 bg-neutral-900/50 backdrop-blur-sm">
                 <div className="relative">
                     <img
-                        src={otherUser?.avatar || '/default-avatar.png'}
+                        src={otherUser?.avatar || '/avatar.svg'}
                         className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-400/50"
                         alt="avatar"
                     />

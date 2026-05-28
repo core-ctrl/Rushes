@@ -35,6 +35,17 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    isDeactivated: {
+      type: Boolean,
+      default: false,
+    },
+    deactivatedAt: {
+      type: Date,
+    },
     authProviders: {
       type: [String],
       default: ["credentials"],

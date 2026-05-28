@@ -8,20 +8,28 @@ export default async function handler(req, res) {
     await connectDB();
     const user = getUserFromRequest(req);
     let allowedUserIds = [];
+    let blockedIds = [];
 
     if (user) {
-      const currentUser = await User.findById(user.id).select('following');
+      const currentUser = await User.findById(user.id).select('following blockedUsers');
       const followingIds = (currentUser?.following || []).map(String);
+      blockedIds = (currentUser?.blockedUsers || []).map(String);
       allowedUserIds = [...new Set([user.id, ...followingIds].filter(Boolean))];
     }
 
     let filter = { privacy: 'public' };
 
+    // Filter out blocked users
+    if (blockedIds.length > 0) {
+      filter.userId = { $nin: blockedIds };
+    }
+
     if (allowedUserIds.length > 0) {
+      const blockFilter = blockedIds.length > 0 ? { userId: { $nin: blockedIds } } : {};
       filter = {
         $or: [
-          { privacy: 'public' },
-          { privacy: 'followers', userId: { $in: allowedUserIds } }
+          { privacy: 'public', ...blockFilter },
+          { privacy: 'followers', userId: { $in: allowedUserIds.filter(id => !blockedIds.includes(id)) } }
         ]
       };
     }
@@ -37,4 +45,3 @@ export default async function handler(req, res) {
     res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 }
-

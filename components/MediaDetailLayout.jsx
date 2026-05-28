@@ -170,8 +170,49 @@ export default function MediaDetailLayout({
                 </button>
               </div>
               
-              <div className="mt-4">
+              <div className="mt-4 flex flex-wrap items-center gap-3">
                 <ShareButton movie={{ ...media, media_type: mediaType, title }} />
+
+                {/* Watch Together */}
+                <button
+                  onClick={async () => {
+                    try {
+                      const streamUrl = flatrate.length > 0
+                        ? (() => {
+                            const name = flatrate[0].provider_name || '';
+                            const links = [
+                              { match: /netflix/i, url: `https://www.netflix.com/search?q=${encodeURIComponent(title)}` },
+                              { match: /prime|amazon/i, url: `https://www.primevideo.com/search?phrase=${encodeURIComponent(title)}` },
+                              { match: /disney/i, url: `https://www.disneyplus.com/search?q=${encodeURIComponent(title)}` },
+                              { match: /hotstar/i, url: `https://www.hotstar.com/in/search?q=${encodeURIComponent(title)}` },
+                              { match: /jio/i, url: `https://www.jiocinema.com/search/${encodeURIComponent(title)}` },
+                              { match: /zee5/i, url: `https://www.zee5.com/search?q=${encodeURIComponent(title)}` },
+                              { match: /apple/i, url: `https://tv.apple.com/search?term=${encodeURIComponent(title)}` },
+                            ];
+                            return links.find(l => l.match.test(name))?.url || '';
+                          })()
+                        : '';
+                      const res = await fetch('/api/watch-together/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          title,
+                          mediaId: media.id,
+                          mediaType,
+                          streamingUrl: streamUrl,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (data.roomUrl) {
+                        await navigator.clipboard.writeText(window.location.origin + data.roomUrl);
+                        window.open(data.roomUrl, '_blank');
+                      }
+                    } catch {}
+                  }}
+                  className="flex items-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-sm font-medium text-purple-300 transition hover:bg-purple-500/20 hover:border-purple-400/50"
+                >
+                  👥 Watch Together
+                </button>
               </div>
               
               <WatchNowButtons

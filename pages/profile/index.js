@@ -147,38 +147,49 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
     }
   };
 
-  // Handle file upload
+  // Handle file upload via Cloudinary
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // We can use a basic Supabase upload if available
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file.');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be under 5MB.');
+      return;
+    }
+
     try {
       setUpdatingAvatar(true);
-      const { supabase } = await import('../../lib/supabase');
-      if (!supabase) {
-        alert("Supabase not configured. Using placeholder.");
-        return;
-      }
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
-      if (uploadError) throw uploadError;
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const { data } = await axios.post('/api/user/upload-avatar', {
+            image: reader.result,
+          });
 
-      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      if (data?.publicUrl) {
-        setAvatarUrl(data.publicUrl);
-        // Automatically save
-        const { data: updatedData } = await axios.put("/api/user/profile", { avatar: data.publicUrl });
-        dispatch(setUser(updatedData.user));
-        setShowAvatarModal(false);
-      }
+          if (data.success) {
+            setAvatarUrl(data.avatar);
+            dispatch(setUser({ ...user, avatar: data.avatar }));
+            setShowAvatarModal(false);
+          }
+        } catch (error) {
+          console.error('Upload error:', error);
+          alert(error.response?.data?.error || 'Failed to upload image.');
+        } finally {
+          setUpdatingAvatar(false);
+        }
+      };
+      reader.readAsDataURL(file);
     } catch (error) {
-      console.error("Upload error:", error);
-      alert("Failed to upload image. Make sure 'avatars' bucket exists and is public.");
-    } finally {
+      console.error('File read error:', error);
       setUpdatingAvatar(false);
     }
   };

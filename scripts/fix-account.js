@@ -4,7 +4,8 @@
 
 const mongoose = require('mongoose');
 
-const MONGODB_URI = 'mongodb+srv://parupallisaiharshitha_db_user:2WupJnyi90kmh3dT@cluster0.mo2ufsz.mongodb.net/moviefinder?retryWrites=true&w=majority&appName=Cluster0';
+require('dotenv').config({ path: '.env.local' });
+const MONGODB_URI = process.env.MONGODB_URI;
 
 const UserSchema = new mongoose.Schema({
   email: String,

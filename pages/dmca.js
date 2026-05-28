@@ -1,8 +1,10 @@
 // pages/dmca.js
 import Head from "next/head";
 import Link from "next/link";
+import { SITE_CONTACT } from "../lib/site";
 
 export default function DMCAPage() {
+  const contactEmail = SITE_CONTACT.email;
   return (
     <div className="min-h-screen bg-black text-white pt-28 pb-20 px-4">
       <Head><title>DMCA Policy — Movie Finder</title></Head>
@@ -27,7 +29,7 @@ export default function DMCAPage() {
         <h2 className="text-xl font-bold mb-3">Contact Us</h2>
         <p className="text-neutral-300 leading-relaxed">
           If you have a concern specific to Movie Finder platform content, email:<br />
-          <a href="mailto:moviefinderforyou@gmail.com" className="text-red-400 hover:underline">moviefinderforyou@gmail.com</a>
+          <a href={`mailto:${contactEmail}`} className="text-red-400 hover:underline">{contactEmail}</a>
         </p>
       </div>
     </div>

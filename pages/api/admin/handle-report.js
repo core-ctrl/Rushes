@@ -42,7 +42,7 @@ export default requireAdmin(async function handler(req, res) {
         bannedUser.email,
         bannedUser.username || bannedUser.name,
         'Your account has been banned due to a violation of our community guidelines. Please contact support if you believe this is an error.',
-        'Your Rushes account has been suspended'
+        'Your MovieFinder account has been suspended'
       ).catch(() => {});
     }
   } else if (action === 'warn' && report.targetId) {
@@ -52,7 +52,7 @@ export default requireAdmin(async function handler(req, res) {
         warnedUser.email,
         warnedUser.username || warnedUser.name,
         'You have received a warning for violating our community guidelines. Repeated violations may result in account suspension.',
-        'Warning from Rushes'
+        'Warning from MovieFinder'
       ).catch(() => {});
     }
   }

@@ -1,28 +1,38 @@
-import dbConnect from '../../../lib/mongodb';
+import { connectDB } from '../../../lib/mongodb';
 import User from '../../../models/User';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]';
+import { getUserFromRequest } from '../../../lib/auth';
 
 export default async function handler(req, res) {
-    const session = await getServerSession(req, res, authOptions);
-    if (!session) return res.status(401).end();
-    await dbConnect();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { targetUserId, action } = req.body;
+  const user = getUserFromRequest(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
+  const { targetUserId, action } = req.body;
+
+  if (!targetUserId) return res.status(400).json({ error: 'Target user ID is required' });
+  if (!['block', 'unblock'].includes(action)) return res.status(400).json({ error: 'Invalid action' });
+
+  await connectDB();
+
+  try {
     if (action === 'block') {
-        await User.findByIdAndUpdate(session.user.id, {
-            $addToSet: { blockedUsers: targetUserId },
-            $pull: { following: targetUserId, followers: targetUserId },
-        });
-        await User.findByIdAndUpdate(targetUserId, {
-            $pull: { following: session.user.id, followers: session.user.id },
-        });
+      await User.findByIdAndUpdate(user.id, {
+        $addToSet: { blockedUsers: targetUserId },
+        $pull: { following: targetUserId, followers: targetUserId },
+      });
+      await User.findByIdAndUpdate(targetUserId, {
+        $pull: { following: user.id, followers: user.id },
+      });
     } else {
-        await User.findByIdAndUpdate(session.user.id, {
-            $pull: { blockedUsers: targetUserId },
-        });
+      await User.findByIdAndUpdate(user.id, {
+        $pull: { blockedUsers: targetUserId },
+      });
     }
 
-    res.json({ success: true });
+    res.json({ success: true, action });
+  } catch (error) {
+    console.error('Block API error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 }

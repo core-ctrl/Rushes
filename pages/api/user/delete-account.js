@@ -24,6 +24,11 @@ export default async function handler(req, res) {
         await Take.deleteMany({ userId: user.id });
         await Notification.deleteMany({ userId: user.id });
 
+        // Clean up dangling references in other users' documents
+        await User.updateMany({ following: user.id }, { $pull: { following: user.id } });
+        await User.updateMany({ followers: user.id }, { $pull: { followers: user.id } });
+        await User.updateMany({ blockedUsers: user.id }, { $pull: { blockedUsers: user.id } });
+
         await User.findByIdAndDelete(user.id);
 
         res.setHeader(

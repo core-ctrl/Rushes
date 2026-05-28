@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useRouter } from 'next/router';
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { AnimatePresence, motion } from "framer-motion";
 import "../styles/globals.css";
 import store from "../store";
 import Navbar from "../components/Navbar";
+import ClapperLoader from "../components/ClapperLoader";
 import AuthWidget from "../components/AuthWidget";
 import TrailerModal from "../components/TrailerModal";
 import CookieConsent from "../components/CookieConsent";
@@ -30,13 +32,14 @@ import dynamic from "next/dynamic";
 const OnboardingWrapper = dynamic(() => import("../components/onboarding/OnboardingWrapper"), { ssr: false });
 import OnboardingFlow from "../components/OnboardingFlow";
 import OnlinePresence from '../components/social/OnlinePresence';
+import ConnectionStatusBanner from '../components/ConnectionStatusBanner';
 import { Analytics } from '@vercel/analytics/react';
 import { init as initOrbit } from '@orbitapp/nextjs';
 
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_ORBIT_DSN) {
   initOrbit({
-    dsn: "IaZvKzgpNZCB49mXAwF69f4AqFwAyhEqE6ylvEOOa3s", // Using the real Project ID from DB!
-    endpoint: "http://localhost:8000/api/v1"
+    dsn: process.env.NEXT_PUBLIC_ORBIT_DSN,
+    endpoint: process.env.NEXT_PUBLIC_ORBIT_ENDPOINT || "http://localhost:8000/api/v1"
   });
 }
 
@@ -57,6 +60,30 @@ function AppInner({ Component, pageProps, router }) {
   const [authFeedback, setAuthFeedback] = useState({ type: "", message: "" });
   const currentUser = useSelector(selectUser);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [routeLoading, setRouteLoading] = useState(false);
+
+  // Route change loading with ClapperLoader
+  useEffect(() => {
+    const handleStart = () => setRouteLoading(true);
+    const handleDone = () => setRouteLoading(false);
+    router.events.on('routeChangeStart', handleStart);
+    router.events.on('routeChangeComplete', handleDone);
+    router.events.on('routeChangeError', handleDone);
+    return () => {
+      router.events.off('routeChangeStart', handleStart);
+      router.events.off('routeChangeComplete', handleDone);
+      router.events.off('routeChangeError', handleDone);
+    };
+  }, [router]);
+
+  // Maintenance mode check
+  useEffect(() => {
+    fetch('/api/health').then(r => r.json()).then(d => {
+      if (d.status === 'maintenance' && router.pathname !== '/maintenance') {
+        router.replace('/maintenance');
+      }
+    }).catch(() => {});
+  }, []);
 
   // Location hook - runs silently after consent
   useLocation();
@@ -236,12 +263,28 @@ function AppInner({ Component, pageProps, router }) {
   return (
     <>
       <Navbar user={user} logout={handleLogout} openAuth={(mode) => dispatch(openAuthModal(mode))} />
+      <ConnectionStatusBanner />
       <OnboardingFlow />
 
       <AnimatePresence mode="wait">
         <motion.div key={router.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit">
           <Component {...pageProps} {...sharedProps} />
         </motion.div>
+      </AnimatePresence>
+
+      {/* Route change loading overlay */}
+      <AnimatePresence>
+        {routeLoading && (
+          <motion.div
+            key="route-loader"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center"
+          >
+            <ClapperLoader message="Loading..." />
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {!router.pathname.startsWith('/messages') && <Footer />}

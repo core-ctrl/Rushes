@@ -1,13 +1,15 @@
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { motion } from 'framer-motion';
-import { Users, Heart, Film, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Users, Heart, Film, MoreHorizontal, ShieldAlert, Ban, Flag } from 'lucide-react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
 import TakeCard from '../../components/social/TakeCard';
-
+import VerifiedBadge from '../../components/VerifiedBadge';
+import ReportModal from '../../components/ReportModal';
+import { toast } from '../../components/ui/Toaster';
 
 export default function UserProfile() {
     const router = useRouter();
@@ -17,6 +19,10 @@ export default function UserProfile() {
     const [takes, setTakes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [following, setFollowing] = useState(false);
+    const [followLoading, setFollowLoading] = useState(false);
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
 
     useEffect(() => {
         if (!username) return;
@@ -29,9 +35,9 @@ export default function UserProfile() {
 
                 if (currentUser) {
                     setFollowing(currentUser.following?.includes(profileData.user._id) || false);
+                    setIsBlocked(currentUser.blockedUsers?.includes(profileData.user._id) || false);
                 }
 
-                // Fetch user's takes (use feed API with filter, or add new API later)
                 const { data } = await axios.get('/api/takes/feed');
                 setTakes(data.takes.filter(t => t.username === username));
             } catch (error) {
@@ -45,8 +51,9 @@ export default function UserProfile() {
     }, [username, currentUser]);
 
     const handleFollow = async () => {
-        if (!currentUser || !profile) return;
+        if (!currentUser || !profile || followLoading) return;
 
+        setFollowLoading(true);
         try {
             const action = following ? 'unfollow' : 'follow';
             await axios.post('/api/users/follow', {
@@ -54,8 +61,28 @@ export default function UserProfile() {
                 action
             });
             setFollowing(!following);
+            toast({ type: 'success', message: following ? `Unfollowed @${profile.username}` : `Now following @${profile.username}` });
         } catch (error) {
-            console.error('Follow error:', error);
+            toast({ type: 'error', message: error.response?.data?.error || 'Action failed' });
+        } finally {
+            setFollowLoading(false);
+        }
+    };
+
+    const handleBlock = async () => {
+        if (!currentUser || !profile) return;
+        try {
+            const action = isBlocked ? 'unblock' : 'block';
+            await axios.post('/api/users/block', {
+                targetUserId: profile._id,
+                action
+            });
+            setIsBlocked(!isBlocked);
+            if (!isBlocked) setFollowing(false);
+            setShowMenu(false);
+            toast({ type: 'info', message: isBlocked ? `Unblocked @${profile.username}` : `Blocked @${profile.username}` });
+        } catch (error) {
+            toast({ type: 'error', message: 'Action failed' });
         }
     };
 
@@ -88,28 +115,81 @@ export default function UserProfile() {
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-center mb-12"
+                        className="text-center mb-12 relative"
                     >
+                        {/* Three-dot menu for other users */}
+                        {!isOwnProfile && currentUser && (
+                            <div className="absolute top-0 right-0">
+                                <button
+                                    onClick={() => setShowMenu(!showMenu)}
+                                    className="p-2 rounded-xl text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
+                                >
+                                    <MoreHorizontal className="w-5 h-5" />
+                                </button>
+
+                                <AnimatePresence>
+                                    {showMenu && (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9, y: -4 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.9, y: -4 }}
+                                            className="absolute right-0 mt-1 w-56 bg-neutral-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+                                        >
+                                            <button
+                                                onClick={handleBlock}
+                                                className="flex items-center gap-3 w-full px-4 py-3 text-sm text-left hover:bg-white/5 transition-colors text-neutral-300 hover:text-white"
+                                            >
+                                                <Ban className="w-4 h-4" />
+                                                {isBlocked ? `Unblock @${profile.username}` : `Block @${profile.username}`}
+                                            </button>
+                                            <button
+                                                onClick={() => { setShowReportModal(true); setShowMenu(false); }}
+                                                className="flex items-center gap-3 w-full px-4 py-3 text-sm text-left hover:bg-white/5 transition-colors text-red-400 hover:text-red-300"
+                                            >
+                                                <Flag className="w-4 h-4" />
+                                                Report @{profile.username}
+                                            </button>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        )}
+
                         <div className="relative inline-block mb-6">
                             <img
                                 src={profile.avatar || '/avatar.svg'}
+                                alt={`@${profile.username}`}
                                 className="w-32 h-32 rounded-full object-cover border-4 border-white/20 shadow-2xl mx-auto"
                             />
                             <div className="absolute inset-0 w-32 h-32 bg-gradient-to-br from-red-500/10 via-transparent to-purple-500/10 rounded-full opacity-60" />
                         </div>
-                        <h1 className="text-4xl font-black bg-gradient-to-r from-white to-neutral-300 bg-clip-text text-transparent mb-2">
+
+                        <h1 className="text-4xl font-black bg-gradient-to-r from-white to-neutral-300 bg-clip-text text-transparent mb-2 flex items-center justify-center gap-2">
                             @{profile.username}
+                            {profile.isVerified && <VerifiedBadge size={22} />}
+                            {profile.isAdmin && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-xs font-semibold">
+                                    <ShieldAlert className="w-3 h-3" /> Admin
+                                </span>
+                            )}
                         </h1>
+
                         {profile.bio && (
                             <p className="text-xl text-neutral-400 mb-8 max-w-2xl mx-auto">
                                 {profile.bio}
                             </p>
                         )}
+
                         <div className="flex items-center justify-center gap-8 text-sm mb-8">
                             <div className="flex items-center gap-2 text-neutral-400">
                                 <Users className="w-5 h-5" />
-                                <span className="font-semibold text-white">{profile.followersCount || 0}</span>
+                                <span className="font-semibold text-white">{profile.followers?.length || profile.followersCount || 0}</span>
                                 followers
+                            </div>
+                            <div className="w-px h-6 bg-neutral-600" />
+                            <div className="flex items-center gap-2 text-neutral-400">
+                                <span className="font-semibold text-white">{profile.following?.length || 0}</span>
+                                following
                             </div>
                             <div className="w-px h-6 bg-neutral-600" />
                             <div className="flex items-center gap-2 text-neutral-400">
@@ -119,21 +199,40 @@ export default function UserProfile() {
                             </div>
                         </div>
 
+                        {/* OTT Platforms */}
+                        {profile.ottPlatforms?.length > 0 && (
+                            <div className="flex items-center justify-center gap-2 flex-wrap mb-6">
+                                <span className="text-[10px] text-neutral-600 uppercase tracking-wider mr-1">Watches on</span>
+                                {profile.ottPlatforms.map(platform => (
+                                    <span
+                                        key={platform}
+                                        className="px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] text-neutral-400 capitalize"
+                                    >
+                                        {platform.replace(/_/g, ' ')}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+
                         {!isOwnProfile && (
                             <motion.button
                                 whileTap={{ scale: 0.98 }}
                                 onClick={handleFollow}
-                                className={`px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg transition-all ${following
+                                disabled={followLoading || isBlocked}
+                                className={`px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg transition-all disabled:opacity-50 ${following
                                     ? 'bg-neutral-800 text-neutral-200 border-2 border-neutral-600/50 hover:border-neutral-500 hover:bg-neutral-700'
                                     : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-600 text-white shadow-glow-red'
                                     }`}
                             >
-                                {following ? 'Following' : 'Follow'}
+                                {followLoading ? (
+                                    <span className="flex items-center gap-2">
+                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        {following ? 'Unfollowing...' : 'Following...'}
+                                    </span>
+                                ) : isBlocked ? 'Blocked' : following ? 'Following' : 'Follow'}
                             </motion.button>
                         )}
                     </motion.div>
-
-
 
                     {/* Content */}
                     <div className="space-y-6">
@@ -161,6 +260,15 @@ export default function UserProfile() {
                     </div>
                 </div>
             </div>
+
+            {/* Report Modal */}
+            <ReportModal
+                open={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                targetUsername={profile.username}
+                targetId={profile._id}
+                targetType="user"
+            />
         </>
     );
 }

@@ -33,18 +33,6 @@ import { readStoredPreferences } from "../lib/userPreferences";
 import OnlinePresence from '../components/social/OnlinePresence';
 import ConnectionStatusBanner from '../components/ConnectionStatusBanner';
 import { Analytics } from '@vercel/analytics/react';
-import { Orbit } from '@orbit/nextjs';
-
-// Initialize Orbit SDK immediately on load
-if (typeof window !== 'undefined') {
-  Orbit.init({
-    dsn: 'http://localhost:8000/api/v1',
-    apiKey: 'nwqaLeoJjed0_O4FHwORZQHJlRm-4hLLG62N519gruc',
-    environment: 'production',
-    enableReplay: false
-  });
-}
-
 
 const pageVariants = {
   initial: { opacity: 0, y: 12 },

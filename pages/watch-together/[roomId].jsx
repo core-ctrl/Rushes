@@ -194,6 +194,18 @@ export default function WatchTogetherRoom() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      if (zegoContainerRef.current) {
+        zegoContainerRef.current.requestFullscreen().catch(err => {
+          toast({ type: 'error', message: 'Could not enter fullscreen mode.' });
+        });
+      }
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center text-white">
@@ -246,11 +258,19 @@ export default function WatchTogetherRoom() {
                 <a href="https://www.disneyplus.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-500 transition-colors hidden sm:flex">Disney+</a>
               </div>
               <button
+                onClick={toggleFullscreen}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-neutral-400 text-xs hover:bg-white/5 transition-colors"
+                title="Watch in Fullscreen"
+              >
+                <MonitorPlay className="w-3 h-3" />
+                <span className="hidden sm:inline">Fullscreen</span>
+              </button>
+              <button
                 onClick={copyInvite}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-neutral-400 text-xs hover:bg-white/5 transition-colors"
               >
                 {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
-                Invite
+                <span className="hidden sm:inline">Invite</span>
               </button>
             </div>
           </div>

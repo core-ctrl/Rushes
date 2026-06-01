@@ -17,15 +17,16 @@ export default function SocialFeed() {
     const [loading, setLoading] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0);
     const [showComposer, setShowComposer] = useState(false);
+    const [feedType, setFeedType] = useState('foryou'); // 'foryou' or 'following'
 
     useEffect(() => {
         loadTakes();
-    }, [refreshKey]);
+    }, [refreshKey, feedType]);
 
     const loadTakes = async () => {
         setLoading(true);
         try {
-            const { data } = await axios.get('/api/takes/feed');
+            const { data } = await axios.get(`/api/takes/feed?type=${feedType}`);
             setTakes(data.takes);
         } catch (error) {
             console.error('Load takes error:', error);
@@ -76,23 +77,38 @@ export default function SocialFeed() {
             />
 
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-4 mb-8 pb-6 border-b border-white/5"
-                >
-                    <Heart className="w-7 h-7 text-red-500" />
-                    <h1 className="text-3xl font-black bg-gradient-to-r from-white to-neutral-200 bg-clip-text text-transparent">
-                        Takes Feed
-                    </h1>
-                    <div className="ml-auto flex items-center gap-3">
-                        <ErrorBoundary>
-                            <NotificationBell />
-                        </ErrorBoundary>
-                        <UserSearch />
+                {/* Header & Tabs */}
+                <div className="sticky top-[72px] z-30 bg-black/80 backdrop-blur-md border-b border-white/10 mb-6 px-4 pt-4 sm:px-6 lg:px-8 -mx-4 sm:-mx-6 lg:-mx-8">
+                    <div className="flex items-center gap-4 mb-4">
+                        <h1 className="text-2xl font-black text-white">Home</h1>
+                        <div className="ml-auto flex items-center gap-3">
+                            <ErrorBoundary>
+                                <NotificationBell />
+                            </ErrorBoundary>
+                            <UserSearch />
+                        </div>
                     </div>
-                </motion.div>
+                    <div className="flex">
+                        <button
+                            onClick={() => setFeedType('foryou')}
+                            className={`flex-1 pb-4 text-sm font-bold relative transition-colors hover:bg-white/5 ${feedType === 'foryou' ? 'text-white' : 'text-neutral-500'}`}
+                        >
+                            For You
+                            {feedType === 'foryou' && (
+                                <motion.div layoutId="feedTab" className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-red-500 rounded-t-full" />
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setFeedType('following')}
+                            className={`flex-1 pb-4 text-sm font-bold relative transition-colors hover:bg-white/5 ${feedType === 'following' ? 'text-white' : 'text-neutral-500'}`}
+                        >
+                            Following
+                            {feedType === 'following' && (
+                                <motion.div layoutId="feedTab" className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-red-500 rounded-t-full" />
+                            )}
+                        </button>
+                    </div>
+                </div>
 
                 {/* Create Take */}
                 <ErrorBoundary>
@@ -167,10 +183,12 @@ export default function SocialFeed() {
                     ) : (
                         <motion.div
                             layout
-                            className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                            className="flex flex-col gap-0 border-x border-white/5 bg-black rounded-xl overflow-hidden"
                         >
                             {takes.map((take, index) => (
-                                <TakeCard key={take.id} take={take} index={index} />
+                                <div key={take.id} className={index !== takes.length - 1 ? "border-b border-white/10" : ""}>
+                                    <TakeCard take={take} index={index} onTakeDeleted={() => setRefreshKey(prev => prev + 1)} />
+                                </div>
                             ))}
                         </motion.div>
                     )}

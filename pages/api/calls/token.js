@@ -37,10 +37,21 @@ function generateKitToken(appID, serverSecret, roomID, userID, userName, effecti
   return token;
 }
 
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]";
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const user = getUserFromRequest(req);
+  let user = getUserFromRequest(req);
+  
+  if (!user) {
+    const session = await getServerSession(req, res, authOptions);
+    if (session && session.user) {
+      user = session.user;
+    }
+  }
+
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
   const { roomID } = req.body;

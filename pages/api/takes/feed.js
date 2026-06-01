@@ -17,6 +17,7 @@ export default async function handler(req, res) {
       allowedUserIds = [...new Set([user.id, ...followingIds].filter(Boolean))];
     }
 
+    const type = req.query.type || 'foryou';
     let filter = { privacy: 'public' };
 
     // Filter out blocked users
@@ -24,14 +25,23 @@ export default async function handler(req, res) {
       filter.userId = { $nin: blockedIds };
     }
 
-    if (allowedUserIds.length > 0) {
-      const blockFilter = blockedIds.length > 0 ? { userId: { $nin: blockedIds } } : {};
-      filter = {
-        $or: [
-          { privacy: 'public', ...blockFilter },
-          { privacy: 'followers', userId: { $in: allowedUserIds.filter(id => !blockedIds.includes(id)) } }
-        ]
-      };
+    if (type === 'following') {
+      // Only show takes from users the current user follows
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      filter = { userId: { $in: allowedUserIds } };
+    } else {
+      // For You feed: public takes + followers takes
+      if (allowedUserIds.length > 0) {
+        const blockFilter = blockedIds.length > 0 ? { userId: { $nin: blockedIds } } : {};
+        filter = {
+          $or: [
+            { privacy: 'public', ...blockFilter },
+            { privacy: 'followers', userId: { $in: allowedUserIds.filter(id => !blockedIds.includes(id)) } }
+          ]
+        };
+      }
     }
 
     const takes = await Take.find(filter)

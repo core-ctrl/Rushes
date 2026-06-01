@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { motion } from 'framer-motion';
-import { Film, Users, Send, Copy, Check, ExternalLink, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Film, Users, Send, Copy, Check, ExternalLink, Mic, MicOff, Video, VideoOff, AlertTriangle, MonitorPlay, X, Chrome, Settings, Power, RefreshCw } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
 import { supabase } from '../../lib/supabase';
@@ -22,6 +22,7 @@ export default function WatchTogetherRoom() {
   const [zegoReady, setZegoReady] = useState(false);
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const bottomRef = useRef(null);
   const channelRef = useRef(null);
   const zegoContainerRef = useRef(null);
@@ -30,6 +31,7 @@ export default function WatchTogetherRoom() {
   // Initialize ZEGOCLOUD for Watch Together (voice chat while watching)
   useEffect(() => {
     if (!roomId || !user || !zegoContainerRef.current) return;
+    
     let cancelled = false;
 
     const initZego = async () => {
@@ -37,9 +39,23 @@ export default function WatchTogetherRoom() {
         const { data } = await axios.post('/api/watch-together/token', { roomID: `wt_${roomId}` });
         if (cancelled) return;
 
+        if (!data.serverSecret || !data.appID) {
+          console.error('Watch Together: Missing serverSecret or appID from server');
+          setZegoReady(true); // still show the page, just without video
+          return;
+        }
+
         const { ZegoUIKitPrebuilt } = await import('@zegocloud/zego-uikit-prebuilt');
 
-        const zp = ZegoUIKitPrebuilt.create(data.appID, data.token);
+        const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+          data.appID,
+          data.serverSecret,
+          data.roomID,
+          String(data.userID),
+          data.userName
+        );
+
+        const zp = ZegoUIKitPrebuilt.create(kitToken);
         zpRef.current = zp;
 
         zp.joinRoom({
@@ -47,7 +63,7 @@ export default function WatchTogetherRoom() {
           scenario: {
             mode: ZegoUIKitPrebuilt.GroupCall,
           },
-          turnOnMicrophoneWhenJoining: true,
+          turnOnMicrophoneWhenJoining: false,
           turnOnCameraWhenJoining: false,
           showMyCameraToggleButton: true,
           showMyMicrophoneToggleButton: true,
@@ -67,7 +83,9 @@ export default function WatchTogetherRoom() {
         setZegoReady(true);
       } catch (err) {
         console.error('Watch Together init error:', err);
-        toast({ type: 'error', message: 'Failed to connect to Watch Together room.' });
+        // Still allow the page to work (chat sidebar) even if video fails
+        setZegoReady(true);
+        toast({ type: 'error', message: 'Voice/video not available. Chat is still working!' });
       }
     };
 
@@ -135,6 +153,21 @@ export default function WatchTogetherRoom() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    // Show hardware acceleration guide if they haven't dismissed it before
+    if (typeof window !== 'undefined') {
+      const hidden = localStorage.getItem('hideHAguide');
+      if (!hidden) {
+        setShowGuide(true);
+      }
+    }
+  }, []);
+
+  const dismissGuide = () => {
+    localStorage.setItem('hideHAguide', 'true');
+    setShowGuide(false);
+  };
 
   const sendMessage = (e) => {
     e.preventDefault();
@@ -206,6 +239,12 @@ export default function WatchTogetherRoom() {
                   <ExternalLink className="w-3 h-3" /> Open on OTT
                 </a>
               )}
+              
+              <div className="flex gap-2 border-l border-white/10 pl-2 ml-1">
+                <a href="https://www.netflix.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-500 transition-colors">Netflix</a>
+                <a href="https://www.primevideo.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center px-3 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-bold hover:bg-blue-400 transition-colors hidden sm:flex">Prime Video</a>
+                <a href="https://www.disneyplus.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-500 transition-colors hidden sm:flex">Disney+</a>
+              </div>
               <button
                 onClick={copyInvite}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-neutral-400 text-xs hover:bg-white/5 transition-colors"
@@ -316,6 +355,83 @@ export default function WatchTogetherRoom() {
           </form>
         </div>
       </div>
+
+      {/* Hardware Acceleration Guide Modal */}
+      <AnimatePresence>
+        {showGuide && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-neutral-900 border border-white/10 rounded-2xl p-6 sm:p-8 max-w-lg w-full relative shadow-2xl"
+            >
+              <button
+                onClick={dismissGuide}
+                className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-6 text-red-500">
+                <AlertTriangle className="w-8 h-8" />
+                <h2 className="text-xl font-black text-white">Streaming OTT? Fix the Black Screen</h2>
+              </div>
+
+              <div className="space-y-6 text-sm text-neutral-300">
+                <p className="text-neutral-400">
+                  If you try to screen share Netflix, Prime, or Hulu directly, your friends will only see a black screen due to copyright protection (DRM). <strong>Here's how to bypass it in 30 seconds:</strong>
+                </p>
+
+                {/* Step by step visual guide */}
+                <div className="space-y-3">
+                  <div className="flex gap-4 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 text-white font-black shadow-inner">1</div>
+                    <div>
+                      <h4 className="text-white font-bold mb-1 flex items-center gap-2"><Chrome className="w-4 h-4 text-neutral-400" /> Open Browser Settings</h4>
+                      <p className="text-xs text-neutral-400 leading-relaxed">Open settings in Chrome, Edge, or Brave. In the search bar at the top, type <strong>"Graphics Acceleration"</strong> (or "Hardware Acceleration").</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 text-white font-black shadow-inner">2</div>
+                    <div>
+                      <h4 className="text-white font-bold mb-1 flex items-center gap-2"><Power className="w-4 h-4 text-red-400" /> Turn it OFF</h4>
+                      <p className="text-xs text-neutral-400 leading-relaxed">Find the toggle that says <strong>"Use graphics acceleration when available"</strong> and turn it <strong className="text-red-400">OFF</strong>.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 text-white font-black shadow-inner">3</div>
+                    <div>
+                      <h4 className="text-white font-bold mb-1 flex items-center gap-2"><RefreshCw className="w-4 h-4 text-emerald-400" /> Relaunch & Stream</h4>
+                      <p className="text-xs text-neutral-400 leading-relaxed">Click the <strong>Relaunch</strong> button that appears. Now you can screen share Netflix perfectly!</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <p className="text-[11px] text-neutral-500 italic text-center px-4">
+                  (Or, skip this entirely! Everyone can just click "Open on OTT" at the top to watch in separate tabs while talking here)
+                </p>
+              </div>
+
+              <div className="mt-8">
+                <button
+                  onClick={dismissGuide}
+                  className="w-full py-3.5 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl transition-colors shadow-lg shadow-red-900/20"
+                >
+                  I'm ready to watch!
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

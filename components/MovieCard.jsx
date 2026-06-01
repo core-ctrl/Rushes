@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import Image from "next/image";
 import { toggleWatchlist, selectInWatchlist } from "../store/slices/watchlistSlice";
 import { openAuthModal } from "../store/slices/uiSlice";
@@ -14,6 +15,7 @@ import { TMDB_BLUR_DATA_URL } from "../lib/imageBlur";
 import { toast } from "./ui/Toaster";
 
 export default function MovieCard({ item, friendActivity = [] }) {
+  const router = useRouter();
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
   const isInList = useSelector(selectInWatchlist(item?.id));
@@ -74,9 +76,15 @@ export default function MovieCard({ item, friendActivity = [] }) {
     dispatch(toggleWatchlist(item));
   };
 
+  const [trailerLoading, setTrailerLoading] = useState(false);
+
   const handleTrailer = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (trailerLoading) return;
+    setTrailerLoading(true);
+
     const mediaType = item.media_type || (isMovie ? "movie" : "tv");
     try {
       const response = await fetch(`/api/trailer?id=${item.id}&media_type=${mediaType}`);
@@ -86,11 +94,15 @@ export default function MovieCard({ item, friendActivity = [] }) {
         window.dispatchEvent(new CustomEvent("rushes:play-trailer", {
           detail: { key, title, id: item.id, type: mediaType },
         }));
-        return;
+      } else {
+        toast({ type: "error", message: "Trailer unavailable, redirecting to movie page..." });
+        router.push(href);
       }
-      window.location.href = href;
     } catch {
-      toast({ type: "error", message: "Could not load trailer right now." });
+      toast({ type: "error", message: "Trailer unavailable, redirecting to movie page..." });
+      router.push(href);
+    } finally {
+      setTrailerLoading(false);
     }
   };
 
@@ -160,12 +172,20 @@ export default function MovieCard({ item, friendActivity = [] }) {
               {/* Trailer button */}
               <button
                 onClick={(e) => { e.stopPropagation(); handleTrailer(e); }}
-                className="flex items-center gap-1.5 bg-white text-black px-3 py-1.5 rounded-full text-xs font-bold hover:bg-neutral-200 transition-colors"
+                disabled={trailerLoading}
+                className="flex items-center gap-1.5 bg-white text-black px-3 py-1.5 rounded-full text-xs font-bold hover:bg-neutral-200 transition-colors disabled:opacity-70 disabled:cursor-wait"
               >
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-                Trailer
+                {trailerLoading ? (
+                  <svg className="w-3 h-3 animate-spin text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                )}
+                {trailerLoading ? 'Loading...' : 'Trailer'}
               </button>
 
               {/* Heart/wishlist button */}

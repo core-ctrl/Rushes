@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import Image from "next/image";
 import {
     getMovieDetails,
@@ -19,6 +20,7 @@ export default function MovieCardHover({
     const [details, setDetails] = useState(null);
     const [providers, setProviders] = useState([]);
     const [trailerKey, setTrailerKey] = useState(null);
+    const router = useRouter();
 
     const isMovie = item.media_type === "movie" || item.title;
     const isInList = wishlist.some((m) => m.id === item.id);
@@ -68,28 +70,36 @@ export default function MovieCardHover({
     }, [item.id, isMovie]);
 
     const playTrailer = async () => {
+        const mediaType = item.media_type || (isMovie ? "movie" : "tv");
+        const fallbackUrl = mediaType === "movie" ? `/movies/${item.id}` : `/series/${item.id}`;
+
+        if (!onPlayTrailer) {
+            router.push(fallbackUrl);
+            return;
+        }
+
         if (trailerKey) {
             onPlayTrailer(
                 trailerKey,
                 item.title || item.name,
                 item.id,
-                item.media_type || (isMovie ? "movie" : "tv")
+                mediaType
             );
             return;
         }
+
         // Fetch if not preloaded
         try {
-            const mediaType = item.media_type || (isMovie ? "movie" : "tv");
             const res = await fetch(`/api/trailer?id=${item.id}&media_type=${mediaType}`);
             const data = await res.json();
             const key = data.trailer?.key || null;
             if (key) {
                 onPlayTrailer(key, item.title || item.name, item.id, mediaType);
             } else {
-                alert("Trailer not available");
+                router.push(fallbackUrl);
             }
         } catch {
-            alert("Failed to load trailer");
+            router.push(fallbackUrl);
         }
     };
 

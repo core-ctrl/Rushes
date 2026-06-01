@@ -23,7 +23,7 @@ import {
 import axios from "axios";
 import AppIcon from "./AppIcon";
 import { toast } from "./ui/Toaster";
-
+import { signIn } from "next-auth/react";
 function PasswordStrength({ password = "" }) {
   const checks = [
     { label: "8+ chars", ok: password.length >= 8 },
@@ -57,10 +57,8 @@ function SocialButton({ provider, icon, label }) {
   return (
     <button
       type="button"
-      onClick={() => {
-        toast({ type: "info", message: `${label.replace("Continue with ", "")} login is coming soon!` });
-      }}
-      className={`${baseClasses} hover:border-white/20 hover:bg-white/10 opacity-70 cursor-not-allowed`}
+      onClick={() => signIn(provider)}
+      className={`${baseClasses} hover:border-white/20 hover:bg-white/10`}
     >
       {icon}
       <span>{label}</span>

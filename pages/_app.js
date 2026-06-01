@@ -6,6 +6,7 @@ import "../styles/globals.css";
 import store from "../store";
 import Navbar from "../components/Navbar";
 import ClapperLoader from "../components/ClapperLoader";
+
 import AuthWidget from "../components/AuthWidget";
 import TrailerModal from "../components/TrailerModal";
 import CookieConsent from "../components/CookieConsent";
@@ -28,12 +29,21 @@ import {
   selectAuthModalOpen, selectTrailer,
 } from "../store/slices/uiSlice";
 import { readStoredPreferences } from "../lib/userPreferences";
-import dynamic from "next/dynamic";
-const OnboardingWrapper = dynamic(() => import("../components/onboarding/OnboardingWrapper"), { ssr: false });
-import OnboardingFlow from "../components/OnboardingFlow";
+
 import OnlinePresence from '../components/social/OnlinePresence';
 import ConnectionStatusBanner from '../components/ConnectionStatusBanner';
 import { Analytics } from '@vercel/analytics/react';
+import { Orbit } from '@orbit/nextjs';
+
+// Initialize Orbit SDK immediately on load
+if (typeof window !== 'undefined') {
+  Orbit.init({
+    dsn: 'http://localhost:8000/api/v1',
+    apiKey: 'nwqaLeoJjed0_O4FHwORZQHJlRm-4hLLG62N519gruc',
+    environment: 'production',
+    enableReplay: false
+  });
+}
 
 
 const pageVariants = {
@@ -52,7 +62,6 @@ function AppInner({ Component, pageProps, router }) {
   const trailerState = useSelector(selectTrailer);
   const [authFeedback, setAuthFeedback] = useState({ type: "", message: "" });
   const currentUser = useSelector(selectUser);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [routeLoading, setRouteLoading] = useState(false);
 
   // Route change loading with ClapperLoader
@@ -203,25 +212,7 @@ function AppInner({ Component, pageProps, router }) {
     return () => window.removeEventListener("rushes:play-trailer", onPlayTrailer);
   }, [dispatch]);
 
-  useEffect(() => {
-    // Only show onboarding if user is logged in AND hasCompletedOnboarding is explicitly false
-    const needsOnboarding = currentUser && currentUser.hasCompletedOnboarding === false;
-    console.log("Onboarding check:", { user: !!currentUser, hasCompleted: currentUser?.hasCompletedOnboarding, show: needsOnboarding });
-    if (needsOnboarding) {
-      setShowOnboarding(true);
-    }
-  }, [currentUser]);
 
-  useEffect(() => {
-    if (showOnboarding) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
-    }
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, [showOnboarding]);
 
   const sharedProps = {
     user,
@@ -233,32 +224,21 @@ function AppInner({ Component, pageProps, router }) {
 
   if (!initialized) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black">
+        <ClapperLoader message="Loading..." />
       </div>
     );
   }
 
-  if (showOnboarding) {
-    return (
-      <div className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-6 overflow-y-auto">
-        <OnboardingWrapper onComplete={(prefs) => {
-          setShowOnboarding(false);
-          // Mark complete
-          if (user) {
-            // Update user
-          }
-        }} />
-      </div>
-    );
-  }
+
 
   return (
     <>
       <Navbar user={user} logout={handleLogout} openAuth={(mode) => dispatch(openAuthModal(mode))} />
       <ConnectionStatusBanner />
-      <OnboardingFlow />
+      
 
+      
       <AnimatePresence mode="wait">
         <motion.div key={router.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit">
           <Component {...pageProps} {...sharedProps} />

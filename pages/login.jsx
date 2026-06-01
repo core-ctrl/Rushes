@@ -10,7 +10,7 @@ import { LockIcon, Mail01Icon, ViewIcon, ViewOffSlashIcon, GithubIcon, GoogleIco
 import AppIcon from "../components/AppIcon";
 import { fetchCurrentUser, loginUser } from "../store/slices/authSlice";
 import { toast } from "../components/ui/Toaster";
-
+import { signIn } from "next-auth/react";
 export default function LoginPage() {
     const router = useRouter();
     const dispatch = useDispatch();
@@ -166,16 +166,16 @@ export default function LoginPage() {
                         <div className="flex flex-col gap-3">
                             <button
                                 type="button"
-                                onClick={() => toast({ type: "info", message: "Google login is coming soon!" })}
-                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10 opacity-70 cursor-not-allowed"
+                                onClick={() => signIn("google")}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
                             >
                                 <AppIcon icon={GoogleIcon} size={14} />
                                 <span>Continue with Google</span>
                             </button>
                             <button
                                 type="button"
-                                onClick={() => toast({ type: "info", message: "GitHub login is coming soon!" })}
-                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10 opacity-70 cursor-not-allowed"
+                                onClick={() => signIn("github")}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
                             >
                                 <AppIcon icon={GithubIcon} size={14} />
                                 <span>Continue with GitHub</span>

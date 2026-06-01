@@ -20,14 +20,44 @@ export default async function handler(req, res) {
   if (!currentUserId) return res.status(401).end();
 
   const { conversationId } = req.query;
-  const participantIds = parseParticipantIds(conversationId);
-  const otherUserId = req.body?.receiverId || participantIds.find((id) => id !== currentUserId);
 
-  if (!otherUserId) {
-    return res.status(400).json({ error: "Missing receiver" });
+  let conversation;
+  let otherUserId;
+
+  // If conversationId is a 24-character hex string, it could be a Conversation ObjectId
+  if (/^[0-9a-fA-F]{24}$/.test(conversationId)) {
+    // Import Conversation locally to avoid top-level import issues if not already there
+    const Conversation = require("../../../models/Conversation.js").default || require("../../../models/Conversation.js");
+    const { connectDB } = require("../../../lib/mongodb.js");
+    await connectDB();
+    
+    conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      // Fallback: it might be a single user ID
+      const participantIds = parseParticipantIds(conversationId);
+      otherUserId = req.body?.receiverId || participantIds.find((id) => id !== currentUserId) || participantIds[0];
+      if (!otherUserId) return res.status(400).json({ error: "Missing receiver" });
+      conversation = await getOrCreateConversation(currentUserId, otherUserId);
+    } else {
+      // Found the actual conversation in the DB!
+      otherUserId = req.body?.receiverId || conversation.participants.find(id => id.toString() !== currentUserId)?.toString();
+    }
+  } else {
+    // Normal case: "userId1_userId2"
+    const participantIds = parseParticipantIds(conversationId);
+    otherUserId = req.body?.receiverId || participantIds.find((id) => id !== currentUserId);
+
+    if (!otherUserId) {
+      return res.status(400).json({ error: "Missing receiver" });
+    }
+
+    conversation = await getOrCreateConversation(currentUserId, otherUserId);
   }
 
-  const conversation = await getOrCreateConversation(currentUserId, otherUserId);
+  // Double check conversation exists
+  if (!conversation) {
+    return res.status(404).json({ error: "Conversation not found" });
+  }
 
   if (req.method === "GET") {
     const messages = await getConversationMessages(conversation._id);

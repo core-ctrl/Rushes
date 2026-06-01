@@ -75,10 +75,12 @@ export default function HoverCard({ item, index, showTopBadge = false, onPlayTra
       if (key) {
         playTrailer(key);
       } else {
-        toast({ type: "error", message: "Trailer is not available yet." });
+        toast({ type: "error", message: "Trailer unavailable, redirecting to movie page..." });
+        router.push(`/${mediaType === 'tv' ? 'series' : 'movies'}/${item.id}`);
       }
     } catch {
-      toast({ type: "error", message: "Could not load trailer right now." });
+      toast({ type: "error", message: "Trailer unavailable, redirecting to movie page..." });
+      router.push(`/${mediaType === 'tv' ? 'series' : 'movies'}/${item.id}`);
     }
   };
 
@@ -87,7 +89,10 @@ export default function HoverCard({ item, index, showTopBadge = false, onPlayTra
     dispatch(toggleWatchlist({ ...item, media_type: item.media_type || (isTV ? 'tv' : 'movie') }));
   };
 
-  const handleClick = () => {
+  const handleClick = (e) => {
+    // If clicking inside the hover popup, don't navigate
+    if (e.target.closest('[data-hover-popup]')) return;
+
     if (typeof window !== "undefined" && window.innerWidth < 768 && !hovered) {
       setHovered(true);
       return;
@@ -223,6 +228,7 @@ export default function HoverCard({ item, index, showTopBadge = false, onPlayTra
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             // Absolute positioning centered horizontally on the base card, overflowing the bounds
             className="absolute top-[-20px] left-1/2 z-50 w-[300px] max-w-[calc(100vw-32px)] -translate-x-1/2 origin-top overflow-hidden rounded-2xl border border-white/10 shadow-[0_35px_90px_rgba(0,0,0,0.82)] backdrop-blur-xl bg-black/80"
+            data-hover-popup
             style={{
               transformStyle: 'preserve-3d',
               boxShadow: `0 30px 90px rgba(0,0,0,0.85), 0 0 50px rgba(229,9,20,0.16)`,

@@ -18,6 +18,11 @@ const takeSchema = new mongoose.Schema(
     privacy: { type: String, enum: ["public", "followers"], default: "public" },
     mentions: { type: [String], default: [] },
     likes: { type: [String], default: [] },
+    // New fields for Professional Redesign
+    mediaUrl: { type: String, default: null },
+    mediaType: { type: String, enum: ["image", "video", "none"], default: "none" },
+    isEdited: { type: Boolean, default: false },
+    replyCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

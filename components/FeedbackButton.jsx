@@ -1,5 +1,5 @@
 // components/FeedbackButton.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
@@ -19,6 +19,12 @@ export default function FeedbackButton() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const handleOpen = () => setOpen(true);
+    window.addEventListener('open-feedback', handleOpen);
+    return () => window.removeEventListener('open-feedback', handleOpen);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,37 +51,37 @@ export default function FeedbackButton() {
   };
 
   return (
-    <div className="fixed bottom-6 left-4 z-[200] flex flex-col items-start gap-2">
-      <AnimatePresence>
-        {open && (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 10 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="w-72 bg-neutral-900 border border-white/10 rounded-2xl p-4 shadow-2xl"
+            className="w-full max-w-sm bg-neutral-900 border border-white/10 rounded-2xl p-5 shadow-2xl"
           >
             {success ? (
-              <div className="text-center py-4">
-                <p className="text-3xl mb-2">🎉</p>
-                <p className="text-white font-bold text-sm">Thanks for the feedback!</p>
-                <p className="text-neutral-500 text-xs mt-1">We read every message.</p>
+              <div className="text-center py-6">
+                <p className="text-4xl mb-3">🎉</p>
+                <p className="text-white font-bold text-lg">Thanks for the feedback!</p>
+                <p className="text-neutral-500 text-sm mt-1">We read every message.</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-white text-sm font-bold">Send Feedback</p>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-white text-lg font-bold">Send Feedback</p>
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
-                    className="text-neutral-500 hover:text-white text-lg leading-none"
+                    className="text-neutral-500 hover:text-white text-2xl leading-none"
                   >
                     ×
                   </button>
                 </div>
 
                 {/* Type selector */}
-                <div className="flex gap-2 mb-3">
+                <div className="flex gap-2 mb-4">
                   {TYPES.map((t) => (
                     <button
                       key={t.id}
@@ -87,7 +93,7 @@ export default function FeedbackButton() {
                           : 'bg-neutral-800 border-white/5 text-neutral-400 hover:text-white'
                       }`}
                     >
-                      <span className="text-base">{t.emoji}</span>
+                      <span className="text-xl">{t.emoji}</span>
                       {t.label}
                     </button>
                   ))}
@@ -103,44 +109,28 @@ export default function FeedbackButton() {
                       ? 'Share your idea...'
                       : 'What\'s on your mind?'
                   }
-                  rows={3}
+                  rows={4}
                   maxLength={1000}
                   required
-                  className="w-full bg-neutral-800 border border-white/10 text-white rounded-xl px-3 py-2.5 text-xs resize-none focus:outline-none focus:border-red-500 placeholder:text-neutral-600 mb-3"
+                  className="w-full bg-neutral-800 border border-white/10 text-white rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-red-500 placeholder:text-neutral-600 mb-4"
                 />
 
                 {error && (
-                  <p className="text-red-400 text-xs mb-3">{error}</p>
+                  <p className="text-red-400 text-xs mb-4">{error}</p>
                 )}
 
                 <button
                   type="submit"
                   disabled={loading || !message.trim()}
-                  className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white text-xs font-bold py-2.5 rounded-xl transition-colors"
+                  className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white text-sm font-bold py-3 rounded-xl transition-colors"
                 >
                   {loading ? 'Sending…' : 'Send Feedback'}
                 </button>
               </form>
             )}
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Toggle button */}
-      <motion.button
-        onClick={() => setOpen((o) => !o)}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold shadow-lg transition-all border ${
-          open
-            ? 'bg-neutral-800 border-white/10 text-neutral-300'
-            : 'bg-neutral-900 border-white/10 text-neutral-400 hover:text-white hover:bg-neutral-800'
-        }`}
-        aria-label="Send feedback"
-      >
-        <span>💬</span>
-        <span>Feedback</span>
-      </motion.button>
-    </div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }

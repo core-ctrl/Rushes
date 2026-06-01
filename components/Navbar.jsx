@@ -14,7 +14,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import SmartSearch from "./SmartSearch";
 import NotificationBell from "./chat/NotificationBell";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Users } from "lucide-react";
 import { logoutUser, selectUser } from "../store/slices/authSlice";
 import { openAuthModal } from "../store/slices/uiSlice";
 import AppIcon from "./AppIcon";
@@ -32,6 +32,11 @@ export default function Navbar() {
   const [notifications, setNotifications] = useState([]);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const unreadCount = notifications.filter((item) => !item.read).length;
+
+  const handleStartParty = () => {
+    const roomId = crypto.randomUUID().substring(0, 8);
+    router.push(`/watch-together/${roomId}?generic=true`);
+  };
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 40);
@@ -101,6 +106,7 @@ export default function Navbar() {
               const active = router.pathname === item.href;
               return (
                 <Link key={item.href} href={item.href}
+                  onClick={(e) => { if (active) e.preventDefault(); }}
                   className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-colors ${active ? "text-white" : "text-neutral-400 hover:text-white"}`}>
                   {active && <motion.span layoutId="nav-pill" className="absolute inset-0 bg-white/8 rounded-lg" transition={{ type: "spring", bounce: 0.2, duration: 0.4 }} />}
                   <span className="relative z-10">{item.name}</span>
@@ -117,6 +123,12 @@ export default function Navbar() {
             </div>
 
             {/* Social icons */}
+            <button
+              onClick={handleStartParty}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 mr-2 rounded-full bg-red-600/10 text-red-500 font-medium text-xs hover:bg-red-600 hover:text-white transition-colors border border-red-600/20"
+            >
+              <Users className="w-4 h-4" /> Start Party
+            </button>
             <ErrorBoundary>
               <NotificationBell />
             </ErrorBoundary>
@@ -190,6 +202,10 @@ export default function Navbar() {
                         </div>
                       ) : null}
                       <div className="border-t border-white/8 mt-1 pt-1">
+                        <button onClick={() => { setMenuOpen(false); window.dispatchEvent(new Event('open-feedback')); }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-neutral-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                          <MessageCircle size={14} className="text-neutral-500" /> Send Feedback
+                        </button>
                         <button onClick={() => { setMenuOpen(false); dispatch(logoutUser()); }}
                           className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:bg-red-500/8 rounded-xl transition-colors">
                           <AppIcon icon={Logout01Icon} size={11} /> Sign Out
@@ -218,12 +234,19 @@ export default function Navbar() {
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
               className="md:hidden border-t border-white/5 bg-black/95 backdrop-blur-2xl">
               <div className="px-5 py-4 flex flex-col gap-1">
-                {navItems.map((item) => (
-                  <Link key={item.href} href={item.href} onClick={() => setMobile(false)}
-                    className="px-3 py-3 text-neutral-300 hover:text-white text-sm font-medium rounded-xl hover:bg-white/5 transition-colors">
-                    {item.name}
-                  </Link>
-                ))}
+                {navItems.map((item) => {
+                  const active = router.pathname === item.href;
+                  return (
+                    <Link key={item.href} href={item.href} 
+                      onClick={(e) => { 
+                        setMobile(false); 
+                        if (active) e.preventDefault(); 
+                      }}
+                      className="px-3 py-3 text-neutral-300 hover:text-white text-sm font-medium rounded-xl hover:bg-white/5 transition-colors">
+                      {item.name}
+                    </Link>
+                  );
+                })}
               </div>
             </motion.div>
           )}

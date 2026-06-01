@@ -112,23 +112,50 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
 
         ytPlayer.current = new window.YT.Player(id, {
             videoId,
-            playerVars: { autoplay: 1, controls: 0, modestbranding: 1, rel: 0, loop: 1, playlist: videoId, playsinline: 1, vq: 'highres', iv_load_policy: 3 },
+            playerVars: {
+                autoplay: 1,
+                controls: 0,
+                modestbranding: 1,
+                rel: 0,
+                loop: 1,
+                playlist: videoId,
+                playsinline: 1,
+                vq: vqParam || 'hd2160',
+                iv_load_policy: 3,
+                showinfo: 0,
+                fs: 0,
+                disablekb: 1,
+                cc_load_policy: 0,
+                origin: typeof window !== 'undefined' ? window.location.origin : '',
+            },
             events: {
                 onReady: (e) => {
                     try {
                         e.target.setVolume(volume);
                         muted ? e.target.mute() : e.target.unMute();
-                        e.target.setPlaybackQuality('highres');
-                    } catch (e) { }
+                        // Request highest quality first — 4K > 1440p > 1080p
+                        const preferred = ytQuality || 'hd2160';
+                        e.target.setPlaybackQuality(preferred);
+                    } catch (err) { }
                 },
                 onStateChange: (e) => {
                     if (e.data === window.YT.PlayerState.PLAYING) {
                         setIsPlaying(true);
+                        // Attempt to enforce quality after playback starts
+                        try {
+                            const preferred = ytQuality || 'hd2160';
+                            const avail = e.target.getAvailableQualityLevels?.() || [];
+                            if (avail.includes(preferred)) {
+                                e.target.setPlaybackQuality(preferred);
+                            } else if (avail.length > 0) {
+                                e.target.setPlaybackQuality(avail[0]);
+                            }
+                        } catch (err) { }
                         if (!muted) {
                             let v = volume;
                             const fade = setInterval(() => {
                                 v = Math.min(100, v + 4);
-                                try { ytPlayer.current.setVolume(v); } catch (e) { }
+                                try { ytPlayer.current.setVolume(v); } catch (err) { }
                                 if (v >= volume) clearInterval(fade);
                             }, 120);
                         }
@@ -138,7 +165,7 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
                 },
             },
         });
-    }, [ensureYTApi, muted, volume]);
+    }, [ensureYTApi, muted, volume, vqParam, ytQuality]);
 
     useEffect(() => {
         if (!videoKey) {
@@ -330,10 +357,24 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
             {/* YouTube inline player */}
             <div
                 ref={ytContainer}
-                className="absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-[800ms] [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:absolute [&_iframe]:top-0 [&_iframe]:left-0"
+                className="absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-[800ms] [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:absolute [&_iframe]:top-0 [&_iframe]:left-0 [&_iframe]:border-0"
                 style={{ opacity: showVideo ? 1 : 0, transform: `translateX(${parallax.x * -5}px) translateY(${parallax.y * -3}px)` }}
                 aria-hidden={!showVideo}
             />
+
+            {/* YouTube UI overlay masks — hide branding without scaling */}
+            {showVideo && (
+                <div className="absolute inset-0 z-[5] pointer-events-none" aria-hidden>
+                    {/* Top mask — hides title bar, share button */}
+                    <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black via-black/70 to-transparent" />
+                    {/* Bottom mask — hides progress bar, YT logo */}
+                    <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black via-black/70 to-transparent" />
+                    {/* Bottom-right mask — hides watermark logo */}
+                    <div className="absolute bottom-0 right-0 w-28 h-16 bg-gradient-to-tl from-black/90 to-transparent" />
+                    {/* Top-right mask — hides settings/share */}
+                    <div className="absolute top-0 right-0 w-36 h-16 bg-gradient-to-bl from-black/80 to-transparent" />
+                </div>
+            )}
 
             {/* Glass info card */}
             <div className="absolute inset-0 z-40 flex items-end md:items-center px-6 md:px-12 pb-10 md:pb-16 pointer-events-none">
@@ -449,10 +490,13 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
             {/* Playback controls (bg video) */}
             {videoKey && showVideo && (
                 <div className="absolute bottom-6 left-6 z-50 flex items-center gap-3">
-                    <button onClick={handlePlayPause} className="rounded-xl border border-white/10 bg-black/60 px-4 py-2 text-white">
+                    <button onClick={handlePlayPause} className="rounded-xl border border-white/10 bg-black/60 px-4 py-2 text-white hover:bg-black/80 transition-colors">
                         {isPlaying ? <AppIcon icon={PauseIcon} size={18} /> : <AppIcon icon={PlayIcon} size={18} className="fill-current" />}
                     </button>
-                    <button onClick={() => setIndex((i) => (i + 1) % slides.length)} className="rounded-xl border border-white/10 bg-black/60 px-4 py-2 text-white">
+                    <button onClick={() => setMuted((m) => !m)} className="rounded-xl border border-white/10 bg-black/60 px-4 py-2 text-white hover:bg-black/80 transition-colors">
+                        {muted ? <AppIcon icon={VolumeMute02Icon} size={18} /> : <AppIcon icon={VolumeHighIcon} size={18} />}
+                    </button>
+                    <button onClick={() => setIndex((i) => (i + 1) % slides.length)} className="rounded-xl border border-white/10 bg-black/60 px-4 py-2 text-white hover:bg-black/80 transition-colors">
                         <AppIcon icon={NextIcon} size={18} />
                     </button>
                 </div>

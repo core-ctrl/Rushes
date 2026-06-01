@@ -4,17 +4,31 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import { getUserFromRequest } from "@/lib/auth";
 import { avatarOrDefault } from "@/lib/avatar";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "./[...nextauth]";
 
 export default async function handler(req, res) {
-  const decoded = getUserFromRequest(req);
+  let userId = null;
 
-  if (!decoded) {
+  // 1. Try Custom JWT Cookie
+  const decoded = getUserFromRequest(req);
+  if (decoded && decoded.id) {
+    userId = decoded.id;
+  } else {
+    // 2. Try NextAuth Session
+    const session = await getServerSession(req, res, authOptions);
+    if (session && session.user && session.user.id) {
+      userId = session.user.id;
+    }
+  }
+
+  if (!userId) {
     return res.status(401).json({ user: null });
   }
 
   try {
     await connectDB();
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(userId).select("-password");
 
     if (!user) {
       return res.status(401).json({ user: null });

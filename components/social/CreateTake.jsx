@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Eye, EyeOff } from 'lucide-react';
+import { Search, Eye, EyeOff, Image as ImageIcon, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import axios from 'axios';
@@ -25,6 +25,13 @@ export default function CreateTake({ onCreated }) {
   const [showMentions, setShowMentions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [searchingMovies, setSearchingMovies] = useState(false);
+  
+  // Media Upload State
+  const [mediaUrl, setMediaUrl] = useState(null);
+  const [mediaType, setMediaType] = useState('none');
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const fileInputRef = useRef(null);
+
   const textareaRef = useRef(null);
   const movieSearchTimer = useRef(null);
   const mentionSearchTimer = useRef(null);
@@ -92,6 +99,40 @@ export default function CreateTake({ onCreated }) {
     }, 300);
   };
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check size (e.g. 10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ type: 'error', message: 'File is too large. Max 10MB.' });
+      return;
+    }
+
+    setUploadingMedia(true);
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = async () => {
+        const base64data = reader.result;
+        const fileType = file.type.startsWith('video/') ? 'video' : 'image';
+        
+        const { data } = await axios.post('/api/takes/upload', {
+          file: base64data,
+          fileType
+        });
+        
+        setMediaUrl(data.url);
+        setMediaType(data.type);
+      };
+    } catch (err) {
+      console.error(err);
+      toast({ type: 'error', message: 'Failed to upload media.' });
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!content.trim() && !selectedMovie) return;
     setSubmitting(true);
@@ -108,9 +149,13 @@ export default function CreateTake({ onCreated }) {
         spoiler,
         privacy,
         mentions: extractMentions(content),
+        mediaUrl,
+        mediaType,
       });
       setContent('');
       setSelectedMovie(null);
+      setMediaUrl(null);
+      setMediaType('none');
       setRating(0);
       setMood('');
       setPrivacy('public');
@@ -183,6 +228,24 @@ export default function CreateTake({ onCreated }) {
               )}
             </AnimatePresence>
           </div>
+
+          {/* Media Preview */}
+          {mediaUrl && (
+            <div className="relative mb-3 rounded-xl overflow-hidden border border-neutral-800 bg-neutral-900 max-w-sm inline-block">
+              {mediaType === 'video' ? (
+                <video src={mediaUrl} controls className="w-full h-auto max-h-[300px] object-contain" />
+              ) : (
+                <img src={mediaUrl} alt="Upload preview" className="w-full h-auto max-h-[300px] object-contain" />
+              )}
+              <button
+                type="button"
+                onClick={() => { setMediaUrl(null); setMediaType('none'); }}
+                className="absolute top-2 right-2 bg-black/70 hover:bg-black text-white p-1 rounded-full transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {selectedMovie && (
             <div className="flex items-center gap-2 bg-neutral-800 rounded-xl p-2 mb-3">

@@ -23,6 +23,8 @@ import axios from "axios";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "../../lib/supabase";
+import { useDispatch } from "react-redux";
+import { startCall as startGlobalCall } from "../../store/slices/callSlice";
 import { TMDB_BLUR_DATA_URL } from "../../lib/imageBlur";
 import { toast } from "../ui/Toaster";
 import dynamic from "next/dynamic";
@@ -79,8 +81,9 @@ export default function ChatPanel({ conversation, currentUser }) {
   const [movieResults, setMovieResults] = useState([]);
   const [movieLoading, setMovieLoading] = useState(false);
   const [movieTouched, setMovieTouched] = useState(false);
-  const [callMode, setCallMode] = useState(null);
-  const [callRoomID, setCallRoomID] = useState(null);
+  const dispatch = useDispatch();
+
+  // === CALL STATE (No longer local Zego instances, just incoming invites) ===
   const [incomingCall, setIncomingCall] = useState(null);
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState(null);
@@ -141,8 +144,6 @@ export default function ChatPanel({ conversation, currentUser }) {
     })
     .on('broadcast', { event: 'call_declined' }, () => {
       toast({ type: 'info', message: `${otherUser?.displayName || otherUser?.username} declined the call.` });
-      setCallMode(null);
-      setCallRoomID(null);
     })
     .on('broadcast', { event: 'call_cancelled' }, () => {
       setIncomingCall(null);
@@ -154,12 +155,17 @@ export default function ChatPanel({ conversation, currentUser }) {
   }, [currentUserId, receiverId, channelRef.current]);
 
   // === START A CALL: Broadcast invite to the other user ===
-  const startCall = (mode) => {
+  const startCallAction = (mode) => {
     if (!channelRef.current) return;
 
     const roomID = `mf_${conversationId}_${Date.now()}`;
-    setCallRoomID(roomID);
-    setCallMode(mode);
+    
+    dispatch(startGlobalCall({
+      roomID,
+      mode,
+      otherUser,
+      currentUser
+    }));
 
     // Send invite on the shared conversation channel
     channelRef.current.send({
@@ -181,8 +187,14 @@ export default function ChatPanel({ conversation, currentUser }) {
   // === ACCEPT INCOMING CALL ===
   const acceptCall = () => {
     if (!incomingCall) return;
-    setCallRoomID(incomingCall.roomID);
-    setCallMode(incomingCall.callMode);
+    
+    dispatch(startGlobalCall({
+      roomID: incomingCall.roomID,
+      mode: incomingCall.callMode,
+      otherUser,
+      currentUser
+    }));
+    
     setIncomingCall(null);
   };
 
@@ -397,12 +409,12 @@ export default function ChatPanel({ conversation, currentUser }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => startCall("audio")} className="chat-icon-button" aria-label="Start audio call">
-            <Phone className="h-4 w-4" />
-          </button>
-          <button onClick={() => startCall("video")} className="chat-icon-button" aria-label="Start video call">
-            <Video className="h-4 w-4" />
-          </button>
+            <button onClick={() => startCallAction('voice')} className="p-2 text-neutral-400 hover:text-green-400 hover:bg-white/10 rounded-xl transition-all" aria-label="Start voice call">
+              <Phone className="w-5 h-5" />
+            </button>
+            <button onClick={() => startCallAction('video')} className="p-2 text-neutral-400 hover:text-blue-400 hover:bg-white/10 rounded-xl transition-all" aria-label="Start video call">
+              <Video className="w-5 h-5" />
+            </button>
           <button onClick={deleteChat} className="chat-icon-button transition hover:text-red-400" aria-label="Delete chat">
             <Trash2 className="h-4 w-4" />
           </button>
@@ -727,23 +739,11 @@ export default function ChatPanel({ conversation, currentUser }) {
         )}
       </div>
 
-      {/* Incoming call modal */}
       <IncomingCallModal
         callData={incomingCall}
         onAccept={acceptCall}
         onDecline={declineCall}
       />
-
-      {/* Active call panel */}
-      {callMode && callRoomID && (
-        <ZegoCallPanel
-          roomID={callRoomID}
-          mode={callMode}
-          otherUser={otherUser}
-          currentUser={currentUser}
-          onClose={() => { setCallMode(null); setCallRoomID(null); }}
-        />
-      )}
     </div>
   );
 }

@@ -3,14 +3,16 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Film, Users, Send, Copy, Check, ExternalLink, Mic, MicOff, Video, VideoOff, AlertTriangle, MonitorPlay, X, Chrome, Settings, Power, RefreshCw } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
+import { startWatchParty } from '../../store/slices/callSlice';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../components/ui/Toaster';
 import axios from 'axios';
 
 export default function WatchTogetherRoom() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const { roomId } = router.query;
   const user = useSelector(selectUser);
   const [messages, setMessages] = useState([]);
@@ -28,77 +30,20 @@ export default function WatchTogetherRoom() {
   const zegoContainerRef = useRef(null);
   const zpRef = useRef(null);
 
-  // Initialize ZEGOCLOUD for Watch Together (voice chat while watching)
+  // Initialize Global Watch Together (voice/video runs globally via _app.js)
   useEffect(() => {
-    if (!roomId || !user || !zegoContainerRef.current) return;
+    if (!roomId || !user) return;
     
-    let cancelled = false;
-
-    const initZego = async () => {
-      try {
-        const { data } = await axios.post('/api/watch-together/token', { roomID: `wt_${roomId}` });
-        if (cancelled) return;
-
-        if (!data.serverSecret || !data.appID) {
-          console.error('Watch Together: Missing serverSecret or appID from server');
-          setZegoReady(true); // still show the page, just without video
-          return;
-        }
-
-        const { ZegoUIKitPrebuilt } = await import('@zegocloud/zego-uikit-prebuilt');
-
-        const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-          data.appID,
-          data.serverSecret,
-          data.roomID,
-          String(data.userID),
-          data.userName
-        );
-
-        const zp = ZegoUIKitPrebuilt.create(kitToken);
-        zpRef.current = zp;
-
-        zp.joinRoom({
-          container: zegoContainerRef.current,
-          scenario: {
-            mode: ZegoUIKitPrebuilt.GroupCall,
-          },
-          turnOnMicrophoneWhenJoining: false,
-          turnOnCameraWhenJoining: false,
-          showMyCameraToggleButton: true,
-          showMyMicrophoneToggleButton: true,
-          showAudioVideoSettingsButton: false,
-          showScreenSharingButton: true,
-          showTextChat: false,
-          showUserList: false,
-          maxUsers: 10,
-          layout: 'Auto',
-          showLayoutButton: false,
-          showPreJoinView: false,
-          onLeaveRoom: () => {
-            router.push('/');
-          },
-        });
-
-        setZegoReady(true);
-      } catch (err) {
-        console.error('Watch Together init error:', err);
-        // Still allow the page to work (chat sidebar) even if video fails
-        setZegoReady(true);
-        toast({ type: 'error', message: 'Voice/video not available. Chat is still working!' });
-      }
-    };
-
-    initZego();
-
-    return () => {
-      cancelled = true;
-      if (zpRef.current) {
-        try { zpRef.current.destroy(); } catch {}
-        zpRef.current = null;
-      }
-    };
-  }, [roomId, user]);
+    // Start the global watch party
+    dispatch(startWatchParty({
+      roomID: `wt_${roomId}`,
+      movieTitle: movieTitle || 'Movie',
+      currentUser: user
+    }));
+    
+    setZegoReady(true);
+    
+  }, [roomId, user, movieTitle, dispatch]);
 
   // Supabase chat channel
   useEffect(() => {
@@ -195,15 +140,8 @@ export default function WatchTogetherRoom() {
   };
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      if (zegoContainerRef.current) {
-        zegoContainerRef.current.requestFullscreen().catch(err => {
-          toast({ type: 'error', message: 'Could not enter fullscreen mode.' });
-        });
-      }
-    } else {
-      document.exitFullscreen();
-    }
+    // Left empty. Fullscreen logic is handled by ZEGOCLOUD's internal UI if needed,
+    // or we can just leave this as a UI stub.
   };
 
   if (!user) {
@@ -275,7 +213,7 @@ export default function WatchTogetherRoom() {
             </div>
           </div>
 
-          {/* ZEGOCLOUD video/voice panel */}
+          {/* ZEGOCLOUD video/voice panel (Rendered Globally via GlobalCallOverlay) */}
           <div className="flex-1 relative bg-black min-h-[300px]">
             {!zegoReady && (
               <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -295,7 +233,7 @@ export default function WatchTogetherRoom() {
                 </div>
               </div>
             )}
-            <div ref={zegoContainerRef} className="w-full h-full" />
+            <div className="w-full h-full" />
           </div>
 
           {/* Anti-piracy */}

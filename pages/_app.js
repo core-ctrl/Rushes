@@ -32,6 +32,7 @@ import { readStoredPreferences } from "../lib/userPreferences";
 
 import OnlinePresence from '../components/social/OnlinePresence';
 import ConnectionStatusBanner from '../components/ConnectionStatusBanner';
+import GlobalCallOverlay from '../components/GlobalCallOverlay';
 import { Analytics } from '@vercel/analytics/react';
 
 const pageVariants = {
@@ -252,6 +253,9 @@ function AppInner({ Component, pageProps, router }) {
 
       {/* Social realtime presence */}
       <OnlinePresence />
+
+      {/* Global Call Overlay (PiP and persistent background calls) */}
+      <GlobalCallOverlay />
 
       <AuthWidget
         open={authOpen && !user}

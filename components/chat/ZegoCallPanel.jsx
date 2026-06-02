@@ -56,6 +56,7 @@ export default function ZegoCallPanel({ roomID, mode, otherUser, currentUser, on
           maxUsers: 2,
           layout: 'Auto',
           showLayoutButton: false,
+          showPreJoinView: false,
           onLeaveRoom: () => {
             onClose?.();
           },

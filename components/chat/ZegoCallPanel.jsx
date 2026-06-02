@@ -8,9 +8,10 @@ export default function ZegoCallPanel({ roomID, mode, otherUser, currentUser, on
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const zpRef = useRef(null);
+  const currentUserId = currentUser?.id || currentUser?._id;
 
   useEffect(() => {
-    if (!roomID || !currentUser || !containerRef.current) return;
+    if (!roomID || !currentUserId || !containerRef.current) return;
 
     let cancelled = false;
 
@@ -60,9 +61,6 @@ export default function ZegoCallPanel({ roomID, mode, otherUser, currentUser, on
           onLeaveRoom: () => {
             onClose?.();
           },
-          onUserLeave: () => {
-            onClose?.();
-          },
         });
 
         setLoading(false);
@@ -85,7 +83,7 @@ export default function ZegoCallPanel({ roomID, mode, otherUser, currentUser, on
         zpRef.current = null;
       }
     };
-  }, [roomID, currentUser, mode]);
+  }, [roomID, currentUserId, mode, isWatchTogether]);
 
   if (!roomID) return null;
 

@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     if (!take) return res.status(404).json({ error: 'Take not found' });
 
     // Check ownership
-    if (take.userId !== user.id) {
+    if (String(take.userId) !== String(user.id)) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 

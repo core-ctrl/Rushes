@@ -14,6 +14,7 @@ export default function UserSearch() {
     const [loading, setLoading] = useState(false);
     const [following, setFollowing] = useState({});
     const user = useSelector(selectUser);
+    const currentUserId = user?.id || user?._id;
 
     const searchUsers = useCallback(debounce(async (q) => {
         if (q.length < 1) {
@@ -46,6 +47,11 @@ export default function UserSearch() {
         searchUsers(query);
     }, [query, searchUsers]);
 
+    useEffect(() => {
+        const followingIds = user?.following || [];
+        setFollowing(Object.fromEntries(followingIds.map((id) => [String(id), true])));
+    }, [user?.following]);
+
     return (
         <div className="relative w-full max-w-md">
             <div className="relative">
@@ -73,8 +79,8 @@ export default function UserSearch() {
                             </div>
                         )}
                         {results.map((u) => {
-                            const isCurrentUser = user?._id === u._id;
-                            const isFollowing = following[u._id];
+                            const isCurrentUser = String(currentUserId) === String(u._id);
+                            const isFollowing = following[String(u._id)];
                             return (
                                 <motion.div
                                     key={u._id}
@@ -99,7 +105,7 @@ export default function UserSearch() {
                                             whileTap={{ scale: 0.98 }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                handleFollow(u._id);
+                                                handleFollow(String(u._id));
                                             }}
                                             className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isFollowing
                                                 ? 'bg-neutral-700/50 text-neutral-300 hover:bg-neutral-600/50 border border-neutral-500/50'

@@ -83,6 +83,8 @@ export default function TakePage({ take, notFound }) {
     : `${MOOD_EMOJI[take.mood] || '🎬'} Rated ${take.rating}/5 on Rushes`;
 
   const likesCount = take.likes?.length || 0;
+  const linkedMediaType = take.tmdbMediaType || (take.mediaType === 'tv' ? 'tv' : 'movie');
+  const attachmentType = take.attachmentType || (['image', 'video'].includes(take.mediaType) ? take.mediaType : 'none');
 
   return (
     <>
@@ -182,6 +184,16 @@ export default function TakePage({ take, notFound }) {
             ) : (
               <p className="text-white text-lg leading-relaxed whitespace-pre-wrap">{renderContent(take.content)}</p>
             )}
+
+            {take.mediaUrl && attachmentType !== 'none' && (
+              <div className="mt-5 overflow-hidden rounded-lg border border-white/10 bg-black">
+                {attachmentType === 'video' ? (
+                  <video src={take.mediaUrl} controls className="max-h-[560px] w-full object-contain" />
+                ) : (
+                  <img src={take.mediaUrl} alt="Take attachment" className="max-h-[560px] w-full object-cover" />
+                )}
+              </div>
+            )}
           </div>
 
           {/* Likes */}
@@ -201,7 +213,7 @@ export default function TakePage({ take, notFound }) {
             </Link>
             {take.tmdbId && (
                 <Link
-                  href={`/${take.mediaType === 'tv' ? 'series' : 'movies'}/${take.tmdbId}`}
+                  href={`/${linkedMediaType === 'tv' ? 'series' : 'movies'}/${take.tmdbId}`}
                   className="flex-1 text-center bg-neutral-800 hover:bg-neutral-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors border border-white/8"
                 >
                   View {take.movieTitle}

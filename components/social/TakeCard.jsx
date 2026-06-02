@@ -70,10 +70,12 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
     const [replyCount, setReplyCount] = useState(take.replyCount || 0);
 
     const user = useSelector(selectUser);
-    const isLiked = likes.includes(user?._id);
-    const isOwn = user?._id === currentTake.userId;
-
+    const currentUserId = user?.id || user?._id;
     const takeId = currentTake.id || currentTake._id;
+    const linkedMediaType = currentTake.tmdbMediaType || (currentTake.mediaType === 'tv' ? 'tv' : 'movie');
+    const attachmentType = currentTake.attachmentType || (['image', 'video'].includes(currentTake.mediaType) ? currentTake.mediaType : 'none');
+    const isLiked = likes.some((id) => String(id) === String(currentUserId));
+    const isOwn = String(currentUserId) === String(currentTake.userId);
     const isLongContent = (currentTake.content?.length || 0) > 280;
     
     const createdAt = new Date(currentTake.createdAt);
@@ -82,11 +84,12 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
     const canEdit = isOwn && diffMins <= 15;
 
     const toggleLike = async () => {
+        if (!currentUserId) return;
         const previousLikes = [...likes];
         if (isLiked) {
-            setLikes(likes.filter(id => id !== user?._id));
+            setLikes(likes.filter(id => String(id) !== String(currentUserId)));
         } else {
-            setLikes([...likes, user?._id]);
+            setLikes([...likes, currentUserId]);
         }
         try {
             const response = await axios.post('/api/takes/like', {
@@ -96,6 +99,7 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
             setLikes(response.data.likes);
         } catch (error) {
             setLikes(previousLikes);
+            toast({ type: 'error', message: 'Could not update like' });
         }
     };
 
@@ -150,7 +154,7 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
             setCommentText('');
             setReplyCount(prev => prev + 1);
         } catch (err) {
-            toast({ type: 'error', message: 'Failed to post reply' });
+            toast({ type: 'error', message: err.response?.data?.error || 'Failed to post reply' });
         } finally {
             setPostingComment(false);
         }
@@ -276,10 +280,21 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
                     )}
                 </div>
 
+                {/* Uploaded media */}
+                {currentTake.mediaUrl && attachmentType !== 'none' && !isEditing && (
+                    <div className="mb-3 overflow-hidden rounded-lg border border-white/10 bg-neutral-950">
+                        {attachmentType === 'video' ? (
+                            <video src={currentTake.mediaUrl} controls className="max-h-[520px] w-full bg-black object-contain" />
+                        ) : (
+                            <img src={currentTake.mediaUrl} alt="Take attachment" className="max-h-[520px] w-full object-cover" />
+                        )}
+                    </div>
+                )}
+
                 {/* Movie Attachment (Quoted Movie) */}
                 {currentTake.movieTitle && !isEditing && (
-                    <Link href={currentTake.mediaType === 'tv' ? `/series/${currentTake.tmdbId}` : `/movies/${currentTake.tmdbId}`}>
-                        <div className="mb-3 flex items-stretch border border-neutral-800 rounded-xl overflow-hidden hover:bg-white/[0.03] transition-colors max-w-lg cursor-pointer">
+                    <Link href={linkedMediaType === 'tv' ? `/series/${currentTake.tmdbId}` : `/movies/${currentTake.tmdbId}`}>
+                        <div className="mb-3 flex max-w-lg cursor-pointer items-stretch overflow-hidden rounded-lg border border-neutral-800 transition-colors hover:bg-white/[0.03]">
                             {currentTake.moviePoster && (
                                 <div className="w-20 sm:w-24 shrink-0 bg-neutral-900 relative">
                                     <Image src={`https://image.tmdb.org/t/p/w200${currentTake.moviePoster}`} alt={currentTake.movieTitle} fill className="object-cover" />
@@ -363,7 +378,7 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
 
                             {comments.map((comment) => {
                                 const cId = comment.id || comment._id;
-                                const isOwnComment = user?._id === comment.authorId;
+                                const isOwnComment = String(currentUserId) === String(comment.authorId);
                                 return (
                                     <div key={cId} className="flex gap-2 py-2 group/comment">
                                         <img

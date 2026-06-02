@@ -29,7 +29,6 @@ import { TMDB_BLUR_DATA_URL } from "../../lib/imageBlur";
 import { toast } from "../ui/Toaster";
 import dynamic from "next/dynamic";
 
-const ZegoCallPanel = dynamic(() => import('./ZegoCallPanel'), { ssr: false });
 const IncomingCallModal = dynamic(() => import('./IncomingCallModal'), { ssr: false });
 
 const REACTIONS = ["❤️", "🔥", "😂", "👏", "🎬"];
@@ -129,31 +128,6 @@ export default function ChatPanel({ conversation, currentUser }) {
     return () => clearInterval(presenceInterval);
   }, [receiverId]);
 
-  // === CALL SIGNALING: Listen for incoming calls on our conversation channel ===
-  useEffect(() => {
-    if (!channelRef.current) return;
-    
-    // We already have a subscription for messages, but we can add another handler
-    // Actually, we should just add the handler to the existing channel setup in subscribeToMessages
-    // Or we can add it here by listening to the exact same channel instance.
-    const callHandler = channelRef.current.on('broadcast', { event: 'call_invite' }, ({ payload }) => {
-      // If we receive an invite, and we didn't send it, show it
-      if (String(payload.callerId) !== String(currentUserId)) {
-        setIncomingCall(payload);
-      }
-    })
-    .on('broadcast', { event: 'call_declined' }, () => {
-      toast({ type: 'info', message: `${otherUser?.displayName || otherUser?.username} declined the call.` });
-    })
-    .on('broadcast', { event: 'call_cancelled' }, () => {
-      setIncomingCall(null);
-    });
-
-    return () => {
-      // Cannot easily remove individual event handlers in supabase v2 without removing all
-    };
-  }, [currentUserId, receiverId, channelRef.current]);
-
   // === START A CALL: Broadcast invite to the other user ===
   const startCallAction = (mode) => {
     if (!channelRef.current) return;
@@ -164,7 +138,8 @@ export default function ChatPanel({ conversation, currentUser }) {
       roomID,
       mode,
       otherUser,
-      currentUser
+      currentUser,
+      conversationId,
     }));
 
     // Send invite on the shared conversation channel
@@ -192,7 +167,8 @@ export default function ChatPanel({ conversation, currentUser }) {
       roomID: incomingCall.roomID,
       mode: incomingCall.callMode,
       otherUser,
-      currentUser
+      currentUser,
+      conversationId,
     }));
     
     setIncomingCall(null);
@@ -245,11 +221,22 @@ export default function ChatPanel({ conversation, currentUser }) {
             setMessages((prev) => prev.map((msg) => (String(msg.senderId) === String(currentUserId) ? { ...msg, status: "read" } : msg)));
           }
         })
+        .on("broadcast", { event: "call_invite" }, ({ payload }) => {
+          if (String(payload.callerId) !== String(currentUserId)) {
+            setIncomingCall(payload);
+          }
+        })
+        .on("broadcast", { event: "call_declined" }, () => {
+          toast({ type: "info", message: `${otherUser?.displayName || otherUser?.username || "User"} declined the call.` });
+        })
+        .on("broadcast", { event: "call_cancelled" }, () => {
+          setIncomingCall(null);
+        })
         .subscribe();
     } catch {
       return null;
     }
-  }, [conversationId, currentUserId]);
+  }, [conversationId, currentUserId, otherUser?.displayName, otherUser?.username]);
 
   useEffect(() => {
     loadMessages();

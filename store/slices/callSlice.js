@@ -12,6 +12,10 @@ const callSlice = createSlice({
   initialState,
   reducers: {
     startCall(state, action) {
+      if (state.activeCall?.roomID === action.payload.roomID) {
+        state.activeCall = { ...state.activeCall, ...action.payload };
+        return;
+      }
       state.activeCall = action.payload;
       state.isCallMinimized = false;
     },
@@ -26,6 +30,10 @@ const callSlice = createSlice({
       state.isCallMinimized = false;
     },
     startWatchParty(state, action) {
+      if (state.activeWatchParty?.roomID === action.payload.roomID) {
+        state.activeWatchParty = { ...state.activeWatchParty, ...action.payload };
+        return;
+      }
       state.activeWatchParty = action.payload;
       state.isWatchPartyMinimized = false;
     },

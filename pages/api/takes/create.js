@@ -17,6 +17,7 @@ export default async function handler(req, res) {
       content,
       tmdbId,
       mediaType,
+      tmdbMediaType,
       movieTitle,
       moviePoster,
       movieBackdrop,
@@ -26,8 +27,11 @@ export default async function handler(req, res) {
       privacy,
       mentions,
       mediaUrl,
-      mediaType: mediaTypeFromReq,
+      attachmentType,
     } = req.body;
+
+    const normalizedTmdbMediaType = (tmdbMediaType || mediaType) === 'tv' ? 'tv' : 'movie';
+    const normalizedAttachmentType = ['image', 'video'].includes(attachmentType) ? attachmentType : 'none';
 
     const newTake = await Take.create({
       userId: user.id,
@@ -36,7 +40,8 @@ export default async function handler(req, res) {
       avatar: user.avatar || null,
       content: sanitizeText(content || '', { maxLength: 280, preserveNewLines: true }),
       tmdbId: tmdbId ? Number(tmdbId) : null,
-      mediaType: mediaType || 'movie', // this is for the TMDB media type (movie vs tv)
+      mediaType: normalizedTmdbMediaType,
+      tmdbMediaType: normalizedTmdbMediaType,
       movieTitle: movieTitle || null,
       moviePoster: moviePoster || null,
       movieBackdrop: movieBackdrop || null,
@@ -47,7 +52,7 @@ export default async function handler(req, res) {
       mentions: Array.isArray(mentions) ? mentions : [],
       likes: [],
       mediaUrl: mediaUrl || null,
-      mediaType: mediaTypeFromReq || 'none', // this is for image vs video
+      attachmentType: normalizedAttachmentType,
     });
 
     if (Array.isArray(mentions) && mentions.length > 0) {

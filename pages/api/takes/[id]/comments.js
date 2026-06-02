@@ -46,7 +46,7 @@ export default async function handler(req, res) {
 
       await Take.findByIdAndUpdate(id, { $inc: { replyCount: 1 } });
 
-      if (take.userId !== user.id) {
+      if (String(take.userId) !== String(user.id)) {
         try {
           await Notification.create({
             userId: take.userId,
@@ -62,7 +62,10 @@ export default async function handler(req, res) {
         }
       }
 
-      return res.status(200).json({ comment: comment.toJSON() });
+      const savedComment = comment.toJSON();
+      return res.status(200).json({
+        comment: { ...savedComment, id: savedComment.id || savedComment._id?.toString() },
+      });
     }
 
     if (req.method === 'DELETE') {
@@ -74,7 +77,7 @@ export default async function handler(req, res) {
 
       const comment = await Comment.findById(commentId);
       if (!comment) return res.status(404).json({ error: 'Comment not found' });
-      if (comment.authorId !== user.id) return res.status(403).json({ error: 'Forbidden' });
+      if (String(comment.authorId) !== String(user.id)) return res.status(403).json({ error: 'Forbidden' });
 
       await Comment.findByIdAndDelete(commentId);
       await Take.findByIdAndUpdate(id, { $inc: { replyCount: -1 } });

@@ -18,13 +18,13 @@ export default async function handler(req, res) {
 
         const likes = take.likes || [];
         const updatedLikes = action === 'like'
-            ? [...new Set([...likes, user.id])]
-            : likes.filter(id => id !== user.id);
+            ? [...new Set([...likes.map(String), String(user.id)])]
+            : likes.map(String).filter(id => id !== String(user.id));
 
         take.likes = updatedLikes;
         await take.save();
 
-        if (action === 'like' && take.userId !== user.id) {
+        if (action === 'like' && String(take.userId) !== String(user.id)) {
             await Notification.create({
                 userId: take.userId,
                 fromUserId: user.id,

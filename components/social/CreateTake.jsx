@@ -140,7 +140,7 @@ export default function CreateTake({ onCreated }) {
       await axios.post('/api/takes/create', {
         content,
         tmdbId: selectedMovie?.id,
-        mediaType: selectedMovie?.media_type,
+        tmdbMediaType: selectedMovie?.media_type,
         movieTitle: selectedMovie?.title || selectedMovie?.name,
         moviePoster: selectedMovie?.poster_path,
         movieBackdrop: selectedMovie?.backdrop_path,
@@ -150,7 +150,7 @@ export default function CreateTake({ onCreated }) {
         privacy,
         mentions: extractMentions(content),
         mediaUrl,
-        mediaType,
+        attachmentType: mediaType,
       });
       setContent('');
       setSelectedMovie(null);
@@ -183,7 +183,7 @@ export default function CreateTake({ onCreated }) {
   const remaining = charLimit - content.length;
 
   return (
-    <div className="bg-neutral-900 border border-white/10 rounded-2xl p-4 mb-6">
+    <div className="border-b border-white/10 bg-black p-4">
       <div className="flex gap-3">
         <img
           src={currentUser?.avatar || '/avatar.svg'}

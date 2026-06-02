@@ -22,12 +22,32 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(true);
+    const [isOnline, setIsOnline] = useState(false);
     const bottomRef = useRef(null);
     const channelRef = useRef(null);
 
     const currentUserId = user?.id || user?._id;
+    const otherUserId = otherUser?.id || otherUser?._id;
 
     if (!user || !otherUser || !conversationId) return null;
+
+    // Fetch real presence from Supabase
+    useEffect(() => {
+        if (!supabase || !otherUserId) return;
+        const fetchPresence = async () => {
+            try {
+                const { data } = await supabase
+                    .from('presence')
+                    .select('is_online')
+                    .eq('user_id', otherUserId)
+                    .single();
+                if (data) setIsOnline(Boolean(data.is_online));
+            } catch {}
+        };
+        fetchPresence();
+        const interval = setInterval(fetchPresence, 15000);
+        return () => clearInterval(interval);
+    }, [otherUserId]);
 
     useEffect(() => {
         // Fetch messages
@@ -116,7 +136,7 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed bottom-20 right-6 w-80 h-[500px] bg-neutral-950 border-2 border-white/10 rounded-3xl shadow-2xl flex flex-col z-50 overflow-hidden"
+            className="fixed inset-0 md:inset-auto md:bottom-20 md:right-6 w-full md:w-80 h-full md:h-[500px] bg-neutral-950 md:border-2 border-white/10 md:rounded-3xl shadow-2xl flex flex-col z-50 overflow-hidden"
         >
             {/* Header */}
             <div className="flex items-center gap-3 p-5 border-b border-white/5 bg-neutral-900/50 backdrop-blur-sm">
@@ -127,14 +147,16 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
                         alt="avatar"
                     />
                     <motion.div
-                        className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-neutral-950 rounded-full"
-                        animate={{ scale: [1, 1.1, 1] }}
+                        className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-neutral-950 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-neutral-500'}`}
+                        animate={isOnline ? { scale: [1, 1.1, 1] } : {}}
                         transition={{ repeat: Infinity, duration: 2 }}
                     />
                 </div>
                 <div>
                     <p className="font-semibold text-white text-sm">@{otherUser?.username || 'User'}</p>
-                    <p className="text-xs text-emerald-400">🟢 Online</p>
+                    <p className={`text-xs ${isOnline ? 'text-emerald-400' : 'text-neutral-500'}`}>
+                        {isOnline ? '🟢 Online' : '⚫ Offline'}
+                    </p>
                 </div>
                 <div className="ml-auto">
                     <motion.button

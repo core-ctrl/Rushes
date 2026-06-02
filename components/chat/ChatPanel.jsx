@@ -28,6 +28,7 @@ import { toast } from "../ui/Toaster";
 import dynamic from "next/dynamic";
 
 const ZegoCallPanel = dynamic(() => import('./ZegoCallPanel'), { ssr: false });
+const IncomingCallModal = dynamic(() => import('./IncomingCallModal'), { ssr: false });
 
 const REACTIONS = ["❤️", "🔥", "😂", "👏", "🎬"];
 
@@ -64,46 +65,7 @@ function SearchSkeleton() {
   );
 }
 
-function CallOverlay({ mode, otherUser, onClose }) {
-  if (!mode) return null;
-
-  return (
-    <motion.div
-      className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 p-6 backdrop-blur-2xl"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.div
-        initial={{ scale: 0.94, y: 16 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.94, y: 16 }}
-        className="w-full max-w-sm rounded-[28px] border border-white/12 bg-white/[0.06] p-6 text-center shadow-[0_30px_120px_rgba(0,0,0,0.65)]"
-      >
-        <div className="mx-auto mb-4 h-24 w-24 overflow-hidden rounded-full border border-white/15 bg-white/10">
-          <img src={otherUser?.avatar || "/avatar.svg"} alt="" className="h-full w-full object-cover" />
-        </div>
-        <p className="text-xl font-black text-white">
-          {otherUser ? (otherUser.displayName || otherUser.username) : "User Unavailable"}
-        </p>
-        <p className="mt-1 text-sm text-neutral-400">{mode === "video" ? "Video call preview" : "Audio call preview"}</p>
-        <div className="mt-6 flex justify-center gap-3">
-          <button className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white transition hover:bg-white/15">
-            <Mic className="h-5 w-5" />
-          </button>
-          {mode === "video" ? (
-            <button className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white transition hover:bg-white/15">
-              <Video className="h-5 w-5" />
-            </button>
-          ) : null}
-          <button onClick={onClose} className="flex h-12 w-12 items-center justify-center rounded-full bg-red-600 text-white transition hover:bg-red-500">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
+// CallOverlay removed — replaced by IncomingCallModal + ZegoCallPanel signaling
 
 export default function ChatPanel({ conversation, currentUser }) {
   const [messages, setMessages] = useState([]);
@@ -118,24 +80,145 @@ export default function ChatPanel({ conversation, currentUser }) {
   const [movieLoading, setMovieLoading] = useState(false);
   const [movieTouched, setMovieTouched] = useState(false);
   const [callMode, setCallMode] = useState(null);
+  const [callRoomID, setCallRoomID] = useState(null);
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [isOnline, setIsOnline] = useState(false);
+  const [lastSeen, setLastSeen] = useState(null);
   const bottomRef = useRef(null);
   const typingTimeout = useRef(null);
   const channelRef = useRef(null);
   const fileInputRef = useRef(null);
+  const callChannelRef = useRef(null);
 
   const { isRecording, recordingTime, startRecording, stopRecording, cancelRecording } = useVoiceRecorder();
 
   const { otherUser, id: conversationId } = conversation;
   const currentUserId = currentUser?._id || currentUser?.id;
   const receiverId = otherUser?._id || otherUser?.id;
-  const isOnline = Boolean(otherUser?.isOnline);
   const isBlocked = (currentUser?.blockedUsers || []).includes(receiverId);
 
   const statusLabel = useMemo(() => {
     if (isOnline) return "Online";
-    if (otherUser?.lastSeen) return `Last seen ${formatDistanceToNow(new Date(otherUser.lastSeen), { addSuffix: true })}`;
+    if (lastSeen) return `Last seen ${formatDistanceToNow(new Date(lastSeen), { addSuffix: true })}`;
     return "Offline";
-  }, [isOnline, otherUser?.lastSeen]);
+  }, [isOnline, lastSeen]);
+
+  // === ONLINE/OFFLINE STATUS: Read from Supabase presence table ===
+  useEffect(() => {
+    if (!supabase || !receiverId) return;
+
+    // Initial fetch
+    const fetchPresence = async () => {
+      try {
+        const { data } = await supabase
+          .from('presence')
+          .select('is_online, last_seen')
+          .eq('user_id', receiverId)
+          .single();
+        if (data) {
+          setIsOnline(Boolean(data.is_online));
+          setLastSeen(data.last_seen);
+        }
+      } catch {}
+    };
+    fetchPresence();
+
+    // Poll every 15s for presence updates (Supabase broadcast doesn't cover DB changes)
+    const presenceInterval = setInterval(fetchPresence, 15000);
+
+    return () => clearInterval(presenceInterval);
+  }, [receiverId]);
+
+  // === CALL SIGNALING: Listen for incoming calls on our personal channel ===
+  useEffect(() => {
+    if (!supabase || !currentUserId) return;
+
+    const callChannel = supabase.channel(`calls:${currentUserId}`);
+    callChannel
+      .on('broadcast', { event: 'call_invite' }, ({ payload }) => {
+        // Only show if the call is from the user we're currently chatting with
+        if (String(payload.callerId) === String(receiverId)) {
+          setIncomingCall(payload);
+        }
+      })
+      .on('broadcast', { event: 'call_declined' }, () => {
+        // The person we called declined
+        toast({ type: 'info', message: `${otherUser?.displayName || otherUser?.username} declined the call.` });
+        setCallMode(null);
+        setCallRoomID(null);
+      })
+      .on('broadcast', { event: 'call_cancelled' }, () => {
+        // The caller cancelled before we picked up
+        setIncomingCall(null);
+      })
+      .subscribe();
+
+    callChannelRef.current = callChannel;
+
+    return () => {
+      if (callChannel && supabase) supabase.removeChannel(callChannel);
+    };
+  }, [currentUserId, receiverId]);
+
+  // === START A CALL: Broadcast invite to the other user ===
+  const startCall = (mode) => {
+    if (!supabase || !receiverId) return;
+
+    const roomID = `mf_${conversationId}_${Date.now()}`;
+    setCallRoomID(roomID);
+    setCallMode(mode);
+
+    // Send invite to the other user's personal channel
+    const otherChannel = supabase.channel(`calls:${receiverId}`);
+    otherChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        otherChannel.send({
+          type: 'broadcast',
+          event: 'call_invite',
+          payload: {
+            roomID,
+            callMode: mode,
+            callerId: currentUserId,
+            callerName: currentUser?.displayName || currentUser?.username || 'Someone',
+            callerAvatar: currentUser?.avatar,
+            conversationId,
+          },
+        });
+        // Unsubscribe after sending (we don't need to keep listening on their channel)
+        setTimeout(() => supabase.removeChannel(otherChannel), 2000);
+      }
+    });
+
+    toast({ type: 'info', message: `Calling ${otherUser?.displayName || otherUser?.username}...` });
+  };
+
+  // === ACCEPT INCOMING CALL ===
+  const acceptCall = () => {
+    if (!incomingCall) return;
+    setCallRoomID(incomingCall.roomID);
+    setCallMode(incomingCall.callMode);
+    setIncomingCall(null);
+  };
+
+  // === DECLINE INCOMING CALL ===
+  const declineCall = () => {
+    if (!incomingCall || !supabase) return;
+
+    // Notify the caller that we declined
+    const callerChannel = supabase.channel(`calls:${incomingCall.callerId}`);
+    callerChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        callerChannel.send({
+          type: 'broadcast',
+          event: 'call_declined',
+          payload: { declinedBy: currentUserId },
+        });
+        setTimeout(() => supabase.removeChannel(callerChannel), 2000);
+      }
+    });
+
+    setIncomingCall(null);
+  };
 
   const loadMessages = useCallback(async () => {
     setLoading(true);
@@ -334,10 +417,10 @@ export default function ChatPanel({ conversation, currentUser }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setCallMode("audio")} className="chat-icon-button" aria-label="Start audio call">
+          <button onClick={() => startCall("audio")} className="chat-icon-button" aria-label="Start audio call">
             <Phone className="h-4 w-4" />
           </button>
-          <button onClick={() => setCallMode("video")} className="chat-icon-button" aria-label="Start video call">
+          <button onClick={() => startCall("video")} className="chat-icon-button" aria-label="Start video call">
             <Video className="h-4 w-4" />
           </button>
           <button onClick={deleteChat} className="chat-icon-button transition hover:text-red-400" aria-label="Delete chat">
@@ -664,13 +747,21 @@ export default function ChatPanel({ conversation, currentUser }) {
         )}
       </div>
 
-      {callMode && (
+      {/* Incoming call modal */}
+      <IncomingCallModal
+        callData={incomingCall}
+        onAccept={acceptCall}
+        onDecline={declineCall}
+      />
+
+      {/* Active call panel */}
+      {callMode && callRoomID && (
         <ZegoCallPanel
-          roomID={`mf_${conversationId}_${Date.now()}`}
+          roomID={callRoomID}
           mode={callMode}
           otherUser={otherUser}
           currentUser={currentUser}
-          onClose={() => setCallMode(null)}
+          onClose={() => { setCallMode(null); setCallRoomID(null); }}
         />
       )}
     </div>

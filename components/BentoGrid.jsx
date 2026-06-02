@@ -75,7 +75,7 @@ export default function BentoGrid({ items = [], title }) {
       )}
 
       {/* Bento Layout */}
-      <div className="grid grid-cols-2 md:grid-cols-4 grid-rows-2 gap-3 h-[480px] md:h-[520px]">
+      <div className="grid grid-cols-2 md:grid-cols-4 grid-rows-2 gap-3 h-auto min-h-[320px] md:h-[520px]">
         {/* Large feature — col 1-2, row 1-2 */}
         <div className="col-span-2 row-span-2">
           <BentoCell item={a} size="large" />

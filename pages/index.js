@@ -169,7 +169,7 @@ export default function Home({
         keywords={["movie discovery", "series recommendations", "anime picks", "watch trailers", "where to watch"]}
       />
 
-      <main className="min-h-screen bg-black text-white">
+      <main className="min-h-screen bg-black text-white pb-20 md:pb-0">
         <ErrorBoundary>
           <HeroSlider slides={heroSlides} onPlayTrailer={openTrailer} openAuth={openAuth} />
 

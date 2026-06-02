@@ -57,11 +57,17 @@ export default async function handler(req, res) {
   const { roomID } = req.body;
   if (!roomID) return res.status(400).json({ error: 'Room ID is required' });
 
-  const appID = parseInt(process.env.NEXT_PUBLIC_ZEGO_APP_ID, 10);
-  const serverSecret = process.env.ZEGO_SERVER_SECRET;
+  let appID = parseInt(process.env.NEXT_PUBLIC_ZEGO_APP_ID, 10);
+  let serverSecret = process.env.ZEGO_SERVER_SECRET;
+
+  // Fallback to Watch Together keys if regular call keys are missing (useful if not configured in Vercel yet)
+  if (!appID || !serverSecret) {
+    appID = parseInt(process.env.NEXT_PUBLIC_ZEGO_WT_APP_ID, 10);
+    serverSecret = process.env.ZEGO_WT_SERVER_SECRET;
+  }
 
   if (!appID || !serverSecret) {
-    return res.status(500).json({ error: 'ZEGOCLOUD not configured' });
+    return res.status(500).json({ error: 'ZEGOCLOUD not configured in Vercel environment variables' });
   }
 
   const userID = String(user.id || user._id);

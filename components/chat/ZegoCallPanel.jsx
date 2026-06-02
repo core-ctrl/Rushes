@@ -60,7 +60,8 @@ export default function ZegoCallPanel({ roomID, mode, otherUser, currentUser, on
       } catch (err) {
         console.error('Call init error:', err);
         if (!cancelled) {
-          setError('Failed to start call. Please try again.');
+          const errMsg = err.response?.data?.error || err.message || 'Failed to start call. Please try again.';
+          setError(`Error: ${errMsg}`);
           setLoading(false);
         }
       }

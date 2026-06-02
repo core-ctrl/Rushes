@@ -129,64 +129,53 @@ export default function ChatPanel({ conversation, currentUser }) {
     return () => clearInterval(presenceInterval);
   }, [receiverId]);
 
-  // === CALL SIGNALING: Listen for incoming calls on our personal channel ===
+  // === CALL SIGNALING: Listen for incoming calls on our conversation channel ===
   useEffect(() => {
-    if (!supabase || !currentUserId) return;
-
-    const callChannel = supabase.channel(`calls:${currentUserId}`);
-    callChannel
-      .on('broadcast', { event: 'call_invite' }, ({ payload }) => {
-        // Only show if the call is from the user we're currently chatting with
-        if (String(payload.callerId) === String(receiverId)) {
-          setIncomingCall(payload);
-        }
-      })
-      .on('broadcast', { event: 'call_declined' }, () => {
-        // The person we called declined
-        toast({ type: 'info', message: `${otherUser?.displayName || otherUser?.username} declined the call.` });
-        setCallMode(null);
-        setCallRoomID(null);
-      })
-      .on('broadcast', { event: 'call_cancelled' }, () => {
-        // The caller cancelled before we picked up
-        setIncomingCall(null);
-      })
-      .subscribe();
-
-    callChannelRef.current = callChannel;
+    if (!channelRef.current) return;
+    
+    // We already have a subscription for messages, but we can add another handler
+    // Actually, we should just add the handler to the existing channel setup in subscribeToMessages
+    // Or we can add it here by listening to the exact same channel instance.
+    const callHandler = channelRef.current.on('broadcast', { event: 'call_invite' }, ({ payload }) => {
+      // If we receive an invite, and we didn't send it, show it
+      if (String(payload.callerId) !== String(currentUserId)) {
+        setIncomingCall(payload);
+      }
+    })
+    .on('broadcast', { event: 'call_declined' }, () => {
+      toast({ type: 'info', message: `${otherUser?.displayName || otherUser?.username} declined the call.` });
+      setCallMode(null);
+      setCallRoomID(null);
+    })
+    .on('broadcast', { event: 'call_cancelled' }, () => {
+      setIncomingCall(null);
+    });
 
     return () => {
-      if (callChannel && supabase) supabase.removeChannel(callChannel);
+      // Cannot easily remove individual event handlers in supabase v2 without removing all
     };
-  }, [currentUserId, receiverId]);
+  }, [currentUserId, receiverId, channelRef.current]);
 
   // === START A CALL: Broadcast invite to the other user ===
   const startCall = (mode) => {
-    if (!supabase || !receiverId) return;
+    if (!channelRef.current) return;
 
     const roomID = `mf_${conversationId}_${Date.now()}`;
     setCallRoomID(roomID);
     setCallMode(mode);
 
-    // Send invite to the other user's personal channel
-    const otherChannel = supabase.channel(`calls:${receiverId}`);
-    otherChannel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        otherChannel.send({
-          type: 'broadcast',
-          event: 'call_invite',
-          payload: {
-            roomID,
-            callMode: mode,
-            callerId: currentUserId,
-            callerName: currentUser?.displayName || currentUser?.username || 'Someone',
-            callerAvatar: currentUser?.avatar,
-            conversationId,
-          },
-        });
-        // Unsubscribe after sending (we don't need to keep listening on their channel)
-        setTimeout(() => supabase.removeChannel(otherChannel), 2000);
-      }
+    // Send invite on the shared conversation channel
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'call_invite',
+      payload: {
+        roomID,
+        callMode: mode,
+        callerId: currentUserId,
+        callerName: currentUser?.displayName || currentUser?.username || 'Someone',
+        callerAvatar: currentUser?.avatar,
+        conversationId,
+      },
     });
 
     toast({ type: 'info', message: `Calling ${otherUser?.displayName || otherUser?.username}...` });
@@ -202,19 +191,13 @@ export default function ChatPanel({ conversation, currentUser }) {
 
   // === DECLINE INCOMING CALL ===
   const declineCall = () => {
-    if (!incomingCall || !supabase) return;
+    if (!incomingCall || !channelRef.current) return;
 
     // Notify the caller that we declined
-    const callerChannel = supabase.channel(`calls:${incomingCall.callerId}`);
-    callerChannel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        callerChannel.send({
-          type: 'broadcast',
-          event: 'call_declined',
-          payload: { declinedBy: currentUserId },
-        });
-        setTimeout(() => supabase.removeChannel(callerChannel), 2000);
-      }
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'call_declined',
+      payload: { declinedBy: currentUserId },
     });
 
     setIncomingCall(null);

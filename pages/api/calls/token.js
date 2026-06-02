@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'ZEGOCLOUD not configured' });
   }
 
-  const userID = user.id;
+  const userID = String(user.id || user._id);
   const userName = user.username || user.name || 'User';
 
   const token = generateKitToken(appID, serverSecret, roomID, userID, userName);

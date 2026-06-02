@@ -7,14 +7,15 @@ export default function OnlinePresence() {
     const user = useSelector(selectUser);
 
     useEffect(() => {
-        if (!user?.id) return;
+        const userId = user?.id || user?._id;
+        if (!userId) return;
 
         const updatePresence = async (isOnline) => {
             try {
                 const { error } = await supabase
                     .from('presence')
                     .upsert({
-                        user_id: user.id,
+                        user_id: userId,
                         username: user.username || user.name,
                         avatar: user.avatar,
                         is_online: isOnline,
@@ -55,7 +56,7 @@ export default function OnlinePresence() {
             window.removeEventListener('beforeunload', handleBeforeUnload);
             window.removeEventListener('pagehide', handleBeforeUnload);
         };
-    }, [user?.id]);
+    }, [user?.id, user?._id]);
 
     return null; // Invisible component
 }

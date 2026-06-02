@@ -1,15 +1,15 @@
 import { connectDB } from '../../../lib/mongodb';
 import Take from '../../../models/Take';
 import Notification from '../../../models/Notification';
-import { getUserFromRequest } from '../../../lib/auth';
+import { requireApiAuth } from '../../../lib/apiAuth';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
         await connectDB();
-        const user = getUserFromRequest(req);
-        if (!user) return res.status(401).json({ error: 'Unauthorized' });
+        const user = await requireApiAuth(req, res, { fromDb: true });
+        if (!user) return;
 
         const { takeId, action } = req.body;
 

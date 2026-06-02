@@ -11,6 +11,7 @@ import AppIcon from "./AppIcon";
 import {
   ALL_GENRES,
   LANGUAGE_OPTIONS,
+  OTT_PLATFORMS,
   REGION_GROUPS,
 } from "../lib/preferenceOptions";
 import {
@@ -39,6 +40,12 @@ const STEPS = [
     description: "Search, choose specific genres, or keep everything broad with All genres.",
     icon: SparklesIcon,
   },
+  {
+    key: "platforms",
+    title: "Which OTT platforms do you use?",
+    description: "Pick the services you actually have so recommendations can prioritize what you can watch.",
+    icon: CheckmarkCircle01Icon,
+  },
 ];
 
 function Pill({ active, onClick, children }) {
@@ -57,7 +64,7 @@ function Pill({ active, onClick, children }) {
   );
 }
 
-export default function PreferencesGate({ user, onComplete }) {
+export default function PreferencesGate({ user, onComplete, forceOpen = false, onClose }) {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
@@ -85,8 +92,8 @@ export default function PreferencesGate({ user, onComplete }) {
   useEffect(() => {
     if (!mounted) return;
     setPreferences(initialState);
-    setOpen(!initialState.completed);
-  }, [initialState, mounted]);
+    setOpen(forceOpen || !initialState.completed);
+  }, [forceOpen, initialState, mounted]);
 
   const visibleLanguages = LANGUAGE_OPTIONS.filter((language) =>
     !languageSearch.trim() || language.label.toLowerCase().includes(languageSearch.trim().toLowerCase())
@@ -102,8 +109,10 @@ export default function PreferencesGate({ user, onComplete }) {
       languages: nextPreferences.languages || [],
       regions: [],
       regionGroup: nextPreferences.regionGroup || "",
+      platforms: nextPreferences.platforms || [],
       allowLocationRecommendations: false,
       completed: true,
+      hasCompletedOnboarding: true,
       syncedUserId: user?.id || user?._id || "",
     };
 
@@ -125,6 +134,7 @@ export default function PreferencesGate({ user, onComplete }) {
       setPreferences((current) => ({ ...current, ...payload }));
       setOpen(false);
       onComplete?.(payload);
+      onClose?.();
     } catch (saveError) {
       setError(saveError.message || "Could not save preferences");
     } finally {
@@ -146,17 +156,21 @@ export default function PreferencesGate({ user, onComplete }) {
   const handleSkip = async () => {
     setError("");
 
+    const skippedPreferences = {
+      ...preferences,
+      ...(currentStep.key === "region" ? { regionGroup: "" } : {}),
+      ...(currentStep.key === "languages" ? { languages: [] } : {}),
+      ...(currentStep.key === "genres" ? { genres: [] } : {}),
+      ...(currentStep.key === "platforms" ? { platforms: [] } : {}),
+    };
+
     if (step < STEPS.length - 1) {
+      setPreferences(skippedPreferences);
       setStep((current) => current + 1);
       return;
     }
 
-    await submitPreferences({
-      ...preferences,
-      regionGroup: "",
-      languages: [],
-      genres: [],
-    });
+    await submitPreferences(skippedPreferences);
   };
 
   if (!mounted || !open) return null;
@@ -311,6 +325,41 @@ export default function PreferencesGate({ user, onComplete }) {
                     }
                   >
                     {genre.name}
+                  </Pill>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {currentStep.key === "platforms" ? (
+            <div className="space-y-5">
+              <div className="flex flex-wrap gap-3">
+                <Pill
+                  active={preferences.platforms.length === 0}
+                  onClick={() => setPreferences((current) => ({ ...current, platforms: [] }))}
+                >
+                  I will choose later
+                </Pill>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                {OTT_PLATFORMS.map((platform) => (
+                  <Pill
+                    key={platform.id}
+                    active={preferences.platforms.includes(platform.id)}
+                    onClick={() =>
+                      setPreferences((current) => ({
+                        ...current,
+                        platforms: current.platforms.includes(platform.id)
+                          ? current.platforms.filter((item) => item !== platform.id)
+                          : [...current.platforms, platform.id].slice(0, 12),
+                      }))
+                    }
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <img src={platform.logo} alt="" className="h-4 w-4 rounded-sm" />
+                      {platform.name}
+                    </span>
                   </Pill>
                 ))}
               </div>

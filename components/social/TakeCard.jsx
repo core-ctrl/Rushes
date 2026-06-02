@@ -50,6 +50,10 @@ function renderContent(content) {
     });
 }
 
+function getCommentId(comment) {
+    return String(comment?.id || comment?._id || '');
+}
+
 export default function TakeCard({ take, index, onTakeDeleted }) {
     const [likes, setLikes] = useState(take.likes || []);
     const [spoilerRevealed, setSpoilerRevealed] = useState(false);
@@ -67,6 +71,9 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
     const [loadingComments, setLoadingComments] = useState(false);
     const [commentText, setCommentText] = useState('');
     const [postingComment, setPostingComment] = useState(false);
+    const [replyingTo, setReplyingTo] = useState(null);
+    const [replyDrafts, setReplyDrafts] = useState({});
+    const [postingReplyId, setPostingReplyId] = useState('');
     const [replyCount, setReplyCount] = useState(take.replyCount || 0);
 
     const user = useSelector(selectUser);
@@ -145,29 +152,124 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
         }
     };
 
-    const handlePostComment = async () => {
-        if (!commentText.trim() || postingComment) return;
-        setPostingComment(true);
+    const commentsByParent = comments.reduce((groups, comment) => {
+        const parentKey = comment.parentId ? String(comment.parentId) : 'root';
+        if (!groups[parentKey]) groups[parentKey] = [];
+        groups[parentKey].push(comment);
+        return groups;
+    }, {});
+
+    const handlePostComment = async (parentId = null) => {
+        const draft = parentId ? (replyDrafts[parentId] || '') : commentText;
+        if (!draft.trim() || postingComment || postingReplyId) return;
+
+        if (parentId) setPostingReplyId(parentId);
+        else setPostingComment(true);
+
         try {
-            const { data } = await axios.post(`/api/takes/${takeId}/comments`, { content: commentText });
+            const { data } = await axios.post(`/api/takes/${takeId}/comments`, {
+                content: draft,
+                parentId,
+            });
             setComments(prev => [...prev, data.comment]);
-            setCommentText('');
+            if (parentId) {
+                setReplyDrafts(prev => ({ ...prev, [parentId]: '' }));
+                setReplyingTo(null);
+            } else {
+                setCommentText('');
+            }
             setReplyCount(prev => prev + 1);
         } catch (err) {
             toast({ type: 'error', message: err.response?.data?.error || 'Failed to post reply' });
         } finally {
             setPostingComment(false);
+            setPostingReplyId('');
         }
     };
 
     const handleDeleteComment = async (commentId) => {
         try {
-            await axios.delete(`/api/takes/${takeId}/comments`, { data: { commentId } });
-            setComments(prev => prev.filter(c => (c.id || c._id) !== commentId));
-            setReplyCount(prev => Math.max(0, prev - 1));
+            const { data } = await axios.delete(`/api/takes/${takeId}/comments`, { data: { commentId } });
+            const deletedCount = data.deletedCount || 1;
+            setComments(prev => prev.filter((comment) => {
+                const id = getCommentId(comment);
+                const ancestorIds = String(comment.path || '').split('.').filter(Boolean);
+                return id !== String(commentId) && !ancestorIds.includes(String(commentId));
+            }));
+            setReplyCount(prev => Math.max(0, prev - deletedCount));
         } catch (err) {
             toast({ type: 'error', message: 'Failed to delete reply' });
         }
+    };
+
+    const renderComment = (comment, depth = 0) => {
+        const cId = getCommentId(comment);
+        const children = commentsByParent[cId] || [];
+        const isOwnComment = String(currentUserId) === String(comment.authorId);
+        const canDeleteComment = isOwnComment || isOwn;
+        const isReplying = replyingTo === cId;
+
+        return (
+            <div key={cId} className={`${depth > 0 ? 'ml-6 border-l border-white/10 pl-3' : ''}`}>
+                <div className="group/comment flex gap-2 py-2">
+                    <img
+                        src={comment.authorCache?.avatar || '/avatar.svg'}
+                        className="mt-0.5 h-6 w-6 shrink-0 rounded-full object-cover"
+                        alt=""
+                    />
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-white text-xs">{comment.authorCache?.displayName || 'User'}</span>
+                            <span className="text-neutral-500 text-xs">@{comment.authorCache?.username || 'user'}</span>
+                            <span className="text-neutral-600 text-xs">·</span>
+                            <span className="text-neutral-600 text-xs">{formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}</span>
+                            {canDeleteComment && (
+                                <button
+                                    onClick={() => handleDeleteComment(cId)}
+                                    className="ml-auto rounded p-1 text-neutral-600 opacity-0 transition-all hover:text-red-500 group-hover/comment:opacity-100"
+                                    aria-label="Delete reply"
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </button>
+                            )}
+                        </div>
+                        <p className="mt-0.5 whitespace-pre-wrap text-sm text-neutral-200">{comment.content}</p>
+                        <button
+                            type="button"
+                            onClick={() => setReplyingTo(isReplying ? null : cId)}
+                            className="mt-1 text-xs font-semibold text-neutral-500 transition hover:text-blue-400"
+                        >
+                            Reply
+                        </button>
+
+                        {isReplying && (
+                            <div className="mt-2 flex items-center gap-2">
+                                <img src={user?.avatar || '/avatar.svg'} className="h-6 w-6 shrink-0 rounded-full object-cover" alt="" />
+                                <div className="flex flex-1 items-center rounded-full border border-neutral-800 bg-neutral-900 focus-within:border-blue-500">
+                                    <input
+                                        value={replyDrafts[cId] || ''}
+                                        onChange={(event) => setReplyDrafts(prev => ({ ...prev, [cId]: event.target.value }))}
+                                        onKeyDown={(event) => event.key === 'Enter' && handlePostComment(cId)}
+                                        placeholder={`Reply to @${comment.authorCache?.username || 'user'}`}
+                                        maxLength={280}
+                                        className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-white outline-none placeholder-neutral-600"
+                                    />
+                                    <button
+                                        onClick={() => handlePostComment(cId)}
+                                        disabled={!(replyDrafts[cId] || '').trim() || postingReplyId === cId}
+                                        className="p-2 text-blue-500 transition hover:text-blue-400 disabled:opacity-30"
+                                        aria-label="Post nested reply"
+                                    >
+                                        <Send className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+                {children.map((child) => renderComment(child, depth + 1))}
+            </div>
+        );
     };
 
     return (
@@ -353,7 +455,7 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
                                             className="flex-1 bg-transparent text-white text-sm px-3 py-2 outline-none placeholder-neutral-600"
                                         />
                                         <button
-                                            onClick={handlePostComment}
+                                            onClick={() => handlePostComment()}
                                             disabled={!commentText.trim() || postingComment}
                                             className="p-2 text-blue-500 hover:text-blue-400 disabled:opacity-30 transition-colors"
                                         >
@@ -376,35 +478,7 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
                                 <p className="text-xs text-neutral-600 py-2">No replies yet. Be the first!</p>
                             )}
 
-                            {comments.map((comment) => {
-                                const cId = comment.id || comment._id;
-                                const isOwnComment = String(currentUserId) === String(comment.authorId);
-                                return (
-                                    <div key={cId} className="flex gap-2 py-2 group/comment">
-                                        <img
-                                            src={comment.authorCache?.avatar || '/avatar.svg'}
-                                            className="w-6 h-6 rounded-full object-cover mt-0.5 shrink-0"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="font-bold text-white text-xs">{comment.authorCache?.displayName || 'User'}</span>
-                                                <span className="text-neutral-500 text-xs">@{comment.authorCache?.username || 'user'}</span>
-                                                <span className="text-neutral-600 text-xs">·</span>
-                                                <span className="text-neutral-600 text-xs">{formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}</span>
-                                                {isOwnComment && (
-                                                    <button
-                                                        onClick={() => handleDeleteComment(cId)}
-                                                        className="ml-auto opacity-0 group-hover/comment:opacity-100 p-1 rounded text-neutral-600 hover:text-red-500 transition-all"
-                                                    >
-                                                        <Trash2 className="w-3 h-3" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <p className="text-sm text-neutral-200 whitespace-pre-wrap mt-0.5">{comment.content}</p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                            {(commentsByParent.root || []).map((comment) => renderComment(comment))}
                         </motion.div>
                     )}
                 </AnimatePresence>

@@ -14,6 +14,14 @@ function providerLabel(provider) {
     return provider === "google" ? "Google" : provider === "github" ? "GitHub" : "email and password";
 }
 
+function hasCustomAvatar(avatar = "") {
+    return Boolean(
+        avatar &&
+        avatar !== "/avatar.svg" &&
+        !String(avatar).includes("api.dicebear.com")
+    );
+}
+
 function credentialsEnabled(user) {
     return Array.isArray(user.authProviders) && user.authProviders.includes("credentials");
 }
@@ -211,7 +219,9 @@ export async function loginOrCreateSocialUser({
         });
     } else {
         user.name = user.name || name?.trim() || normalizedEmail.split("@")[0];
-        user.avatar = avatarOrDefault(avatar || user.avatar, user.username || normalizedEmail);
+        user.avatar = hasCustomAvatar(user.avatar)
+            ? user.avatar
+            : avatarOrDefault(avatar || user.avatar, user.username || normalizedEmail);
         user.email = normalizedEmail;
         user.displayName = user.displayName || user.username || user.name;
         user[providerIdField] = providerId;

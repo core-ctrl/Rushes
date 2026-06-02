@@ -21,6 +21,14 @@ function fallbackUsername(email = "") {
   return `${base}${Math.floor(Math.random() * 999)}`;
 }
 
+function hasCustomAvatar(avatar = "") {
+  return Boolean(
+    avatar &&
+    avatar !== "/avatar.svg" &&
+    !String(avatar).includes("api.dicebear.com")
+  );
+}
+
 async function migrateMissingEmailVerification(user) {
   const storedUser = await User.collection.findOne(
     { _id: user._id },
@@ -113,7 +121,9 @@ export const authOptions = {
           });
         } else {
           existingUser.isEmailVerified = true;
-          existingUser.avatar = avatarOrDefault(user.image || existingUser.avatar, existingUser.username || email);
+          existingUser.avatar = hasCustomAvatar(existingUser.avatar)
+            ? existingUser.avatar
+            : avatarOrDefault(user.image || existingUser.avatar, existingUser.username || email);
           existingUser.displayName = existingUser.displayName || user.name || existingUser.username || existingUser.name;
           existingUser.name = existingUser.name || user.name || existingUser.username || email.split("@")[0];
           existingUser[providerIdField] = account.providerAccountId;

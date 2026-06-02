@@ -29,6 +29,7 @@ import {
   selectAuthModalOpen, selectTrailer,
 } from "../store/slices/uiSlice";
 import { readStoredPreferences } from "../lib/userPreferences";
+import PreferencesGate from "../components/PreferencesGate";
 
 import OnlinePresence from '../components/social/OnlinePresence';
 import ConnectionStatusBanner from '../components/ConnectionStatusBanner';
@@ -134,12 +135,13 @@ function AppInner({ Component, pageProps, router }) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            genres: stored.genres,
-            languages: stored.languages,
-            regions: stored.regions,
-            regionGroup: stored.regionGroup,
-            allowLocationRecommendations: stored.allowLocationRecommendations,
-          }),
+          genres: stored.genres,
+          languages: stored.languages,
+          regions: stored.regions,
+          platforms: stored.platforms,
+          regionGroup: stored.regionGroup,
+          allowLocationRecommendations: stored.allowLocationRecommendations,
+        }),
         });
 
         if (!response.ok) throw new Error("Preference sync failed");
@@ -153,6 +155,8 @@ function AppInner({ Component, pageProps, router }) {
             preferredLanguages: stored.languages,
             preferredRegions: stored.regions,
             preferredRegionGroup: stored.regionGroup,
+            preferredPlatforms: stored.platforms,
+            ottPlatforms: stored.platforms,
             allowLocationRecommendations: stored.allowLocationRecommendations,
           }));
         }
@@ -253,6 +257,24 @@ function AppInner({ Component, pageProps, router }) {
 
       {/* Social realtime presence */}
       <OnlinePresence />
+
+      <PreferencesGate
+        user={user}
+        onComplete={(preferences) => {
+          if (!user) return;
+          dispatch(setUser({
+            ...user,
+            preferredGenres: preferences.genres || [],
+            preferredLanguages: preferences.languages || [],
+            preferredRegions: preferences.regions || [],
+            preferredRegionGroup: preferences.regionGroup || "",
+            preferredPlatforms: preferences.platforms || [],
+            ottPlatforms: preferences.platforms || [],
+            allowLocationRecommendations: Boolean(preferences.allowLocationRecommendations),
+            hasCompletedOnboarding: true,
+          }));
+        }}
+      />
 
       {/* Global Call Overlay (PiP and persistent background calls) */}
       <GlobalCallOverlay />

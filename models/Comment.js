@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const CommentSchema = new mongoose.Schema({
   postId: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', index: true, required: true },
   authorId: { type: String, required: true },
+  parentId: { type: String, default: null, index: true },
   
   // Materialized Path pattern for infinite nesting: "ancestorId.parentId"
   // e.g. "60d...123.60d...456"

@@ -2,7 +2,7 @@ import { connectDB } from '../../../lib/mongodb';
 import User from '../../../models/User';
 import Take from '../../../models/Take';
 import Notification from '../../../models/Notification';
-import { getUserFromRequest } from '../../../lib/auth';
+import { requireApiAuth } from '../../../lib/apiAuth';
 import { sanitizeText } from '../../../lib/security';
 
 export default async function handler(req, res) {
@@ -10,8 +10,8 @@ export default async function handler(req, res) {
 
   try {
     await connectDB();
-    const user = getUserFromRequest(req);
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    const user = await requireApiAuth(req, res, { fromDb: true });
+    if (!user) return;
 
     const {
       content,

@@ -1,13 +1,13 @@
 import { connectDB } from '../../../lib/mongodb';
 import User from '../../../models/User';
-import { getUserFromRequest } from '../../../lib/auth';
+import { requireApiAuth } from '../../../lib/apiAuth';
 import { supabase } from '../../../lib/supabase';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const user = getUserFromRequest(req);
-  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  const user = await requireApiAuth(req, res, { fromDb: true });
+  if (!user) return;
 
   await connectDB();
   const { targetUserId, action } = req.body;

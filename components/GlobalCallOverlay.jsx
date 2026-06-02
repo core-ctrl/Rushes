@@ -12,16 +12,18 @@ export default function GlobalCallOverlay() {
   const router = useRouter();
 
   const isWTPage = router.pathname.startsWith('/watch-together');
+  const currentWatchRoomID = router.query?.roomId ? `wt_${router.query.roomId}` : null;
+  const isActiveWTPage = Boolean(activeWatchParty && isWTPage && activeWatchParty.roomID === currentWatchRoomID);
 
   // Auto-minimize when navigating away
   useEffect(() => {
     if (activeCall && !router.pathname.startsWith('/messages')) {
       dispatch(minimizeCall());
     }
-    if (activeWatchParty && !isWTPage) {
+    if (activeWatchParty && !isActiveWTPage) {
       dispatch(minimizeWatchParty());
     }
-  }, [router.pathname, activeCall, activeWatchParty, dispatch, isWTPage]);
+  }, [router.pathname, activeCall, activeWatchParty, dispatch, isActiveWTPage]);
 
   if (!activeCall && !activeWatchParty) return null;
 
@@ -54,9 +56,9 @@ export default function GlobalCallOverlay() {
         otherUser={{ username: 'Watch Party' }}
         currentUser={activeWatchParty.currentUser}
         onClose={() => dispatch(endWatchParty())}
-        isMinimized={!isWTPage} // ALWAYS minimized if not on WT page
+        isMinimized={!isActiveWTPage}
         onMinimize={() => {
-          if (isWTPage) router.push('/');
+          if (isActiveWTPage) router.push('/');
         }}
         onMaximize={() => {
           if (!isWTPage) {

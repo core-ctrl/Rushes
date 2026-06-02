@@ -1,13 +1,14 @@
 import { connectDB } from '../../../../lib/mongodb';
 import Take from '../../../../models/Take';
-import { getUserFromRequest } from '../../../../lib/auth';
+import Comment from '../../../../models/Comment';
+import { requireApiAuth } from '../../../../lib/apiAuth';
 import { sanitizeText } from '../../../../lib/security';
 
 export default async function handler(req, res) {
   try {
     await connectDB();
-    const user = getUserFromRequest(req);
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    const user = await requireApiAuth(req, res);
+    if (!user) return;
 
     const { id } = req.query;
     if (!id) return res.status(400).json({ error: 'Missing take ID' });
@@ -22,6 +23,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'DELETE') {
       await Take.findByIdAndDelete(id);
+      await Comment.deleteMany({ postId: id });
       return res.status(200).json({ success: true });
     }
 

@@ -9,6 +9,7 @@ import { Search01Icon, Logout01Icon, LockIcon, UserIcon } from "@hugeicons/core-
 import { ALL_GENRES, LANGUAGE_OPTIONS, REGION_GROUPS, REGION_OPTIONS, OTT_PLATFORMS } from "../../lib/preferenceOptions";
 import AppIcon from "../../components/AppIcon";
 import OnboardingFlow from "../../components/OnboardingFlow";
+import { toast } from "../../components/ui/Toaster";
 
 const GENRE_MAP = {
   28: "Action",
@@ -62,6 +63,7 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar || "");
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
 
   // Logout loading state
   const [loggingOut, setLoggingOut] = useState(false);
@@ -116,6 +118,7 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
       platforms: selectedPlatforms,
       regionGroup: selectedRegionGroup,
       allowLocationRecommendations,
+      hasCompletedOnboarding: true,
     });
     dispatch(setUser({
       ...user,
@@ -123,8 +126,10 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
       preferredLanguages: selectedLanguages,
       preferredRegions: selectedRegions,
       preferredPlatforms: selectedPlatforms,
+      ottPlatforms: selectedPlatforms,
       preferredRegionGroup: selectedRegionGroup,
       allowLocationRecommendations,
+      hasCompletedOnboarding: true,
     }));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -134,14 +139,18 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
   // Handle avatar update
   const handleUpdateAvatar = async (e) => {
     e.preventDefault();
+    setAvatarError("");
     setUpdatingAvatar(true);
     try {
       const { data } = await axios.put("/api/user/profile", { avatar: avatarUrl });
       dispatch(setUser(data.user));
       setShowAvatarModal(false);
+      toast({ type: "success", message: "Profile picture updated" });
     } catch (error) {
       console.error("Avatar update failed:", error);
-      alert("Failed to update profile picture");
+      const message = error.response?.data?.error || "Failed to update profile picture";
+      setAvatarError(message);
+      toast({ type: "error", message });
     } finally {
       setUpdatingAvatar(false);
     }
@@ -154,17 +163,22 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file.');
+      const message = 'Please upload an image file.';
+      setAvatarError(message);
+      toast({ type: "error", message });
       return;
     }
 
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be under 5MB.');
+      const message = 'Image must be under 5MB.';
+      setAvatarError(message);
+      toast({ type: "error", message });
       return;
     }
 
     try {
+      setAvatarError("");
       setUpdatingAvatar(true);
 
       // Convert to base64
@@ -179,10 +193,13 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
             setAvatarUrl(data.avatar);
             dispatch(setUser({ ...user, avatar: data.avatar }));
             setShowAvatarModal(false);
+            toast({ type: "success", message: "Profile picture updated" });
           }
         } catch (error) {
           console.error('Upload error:', error);
-          alert(error.response?.data?.error || 'Failed to upload image.');
+          const message = error.response?.data?.error || 'Failed to upload image.';
+          setAvatarError(message);
+          toast({ type: "error", message });
         } finally {
           setUpdatingAvatar(false);
         }
@@ -218,7 +235,7 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
       router.push('/');
     } catch (error) {
       console.error('Delete account failed:', error);
-      alert('Failed to delete account');
+      toast({ type: "error", message: "Failed to delete account" });
     } finally {
       setDeleting(false);
     }
@@ -283,6 +300,7 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
               className="relative w-20 h-20 rounded-full bg-red-600 flex items-center justify-center text-3xl font-bold overflow-hidden cursor-pointer group"
               onClick={() => {
                 setAvatarUrl(user.avatar || "");
+                setAvatarError("");
                 setShowAvatarModal(true);
               }}
             >
@@ -298,7 +316,7 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
               </div>
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{user.name}</h1>
+              <h1 className="text-2xl font-bold">Hi, {user.displayName || user.name || user.username}</h1>
               <p className="text-neutral-400 text-sm">{user.email}</p>
             </div>
           </div>
@@ -617,7 +635,7 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-xl font-bold text-white">Update Profile Picture</h2>
               <button
-                onClick={() => setShowAvatarModal(false)}
+                onClick={() => { setAvatarError(""); setShowAvatarModal(false); }}
                 className="text-neutral-400 hover:text-white"
               >
                 ✕
@@ -626,6 +644,11 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
 
             <form onSubmit={handleUpdateAvatar}>
               <div className="space-y-4">
+                {avatarError && (
+                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                    {avatarError}
+                  </div>
+                )}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-neutral-300">
                     Upload new picture
@@ -662,7 +685,7 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
               <div className="mt-6 flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowAvatarModal(false)}
+                  onClick={() => { setAvatarError(""); setShowAvatarModal(false); }}
                   className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-neutral-300 transition hover:bg-white/10"
                 >
                   Cancel
@@ -777,7 +800,20 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
           </div>
         </div>
       )}
-      {showOnboarding && <OnboardingFlow forceOpen onClose={() => setShowOnboarding(false)} />}
+      {showOnboarding && (
+        <OnboardingFlow
+          forceOpen
+          onClose={() => setShowOnboarding(false)}
+          onComplete={(preferences) => {
+            setSelectedGenres(preferences.genres || []);
+            setSelectedLanguages(preferences.languages || []);
+            setSelectedRegions(preferences.regions || []);
+            setSelectedRegionGroup(preferences.regionGroup || "");
+            setSelectedPlatforms(preferences.platforms || []);
+            setAllowLocationRecommendations(Boolean(preferences.allowLocationRecommendations));
+          }}
+        />
+      )}
     </div>
   );
 }

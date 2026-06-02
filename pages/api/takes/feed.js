@@ -1,12 +1,12 @@
 import { connectDB } from '../../../lib/mongodb';
 import User from '../../../models/User';
 import Take from '../../../models/Take';
-import { getUserFromRequest } from '../../../lib/auth';
+import { getApiAuthUser } from '../../../lib/apiAuth';
 
 export default async function handler(req, res) {
   try {
     await connectDB();
-    const user = getUserFromRequest(req);
+    const user = await getApiAuthUser(req, res);
     let allowedUserIds = [];
     let blockedIds = [];
 

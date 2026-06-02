@@ -1,10 +1,10 @@
 import { connectDB } from "../../../lib/mongodb";
 import User from "../../../models/User";
-import { requireAuth } from "../../../middleware/requireAuth";
+import { getApiAuthUser } from "../../../lib/apiAuth";
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
-    const decoded = requireAuth(req);
+    const decoded = await getApiAuthUser(req, res);
 
     try {
       await connectDB();
@@ -25,6 +25,8 @@ export default async function handler(req, res) {
       };
       if (typeof req.body.hasCompletedOnboarding === "boolean") {
         updateData.hasCompletedOnboarding = req.body.hasCompletedOnboarding;
+      } else if (req.body.completed === true) {
+        updateData.hasCompletedOnboarding = true;
       }
 
       let user;

@@ -1,7 +1,7 @@
 import dbConnect from "../../../lib/mongodb";
 import User from "../../../models/User";
-import jwt from "jsonwebtoken";
 import { avatarOrDefault } from "../../../lib/avatar";
+import { requireApiAuth } from "../../../lib/apiAuth";
 
 function normalizeUsername(value) {
   return String(value || "")
@@ -18,19 +18,14 @@ export default async function handler(req, res) {
   try {
     await dbConnect();
 
-    const token = req.cookies.token;
-    if (!token) return res.status(401).json({ error: "Not authenticated" });
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (!decoded || !decoded.id) {
-      return res.status(401).json({ error: "Invalid token" });
-    }
+    const authUser = await requireApiAuth(req, res, { fromDb: true });
+    if (!authUser) return;
 
     const { avatar, username, displayName, bio } = req.body;
     const update = {};
 
     if (typeof avatar === "string") {
-      update.avatar = avatarOrDefault(avatar, decoded.email || decoded.name || decoded.id);
+      update.avatar = avatarOrDefault(avatar, authUser.email || authUser.username || authUser.id);
     }
 
     if (typeof displayName === "string") {
@@ -48,13 +43,13 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Username must be 3-20 letters, numbers, or underscores." });
       }
 
-      const taken = await User.findOne({ username: nextUsername, _id: { $ne: decoded.id } });
+      const taken = await User.findOne({ username: nextUsername, _id: { $ne: authUser.id } });
       if (taken) return res.status(409).json({ error: "Username is already taken." });
       update.username = nextUsername;
     }
 
     const user = await User.findByIdAndUpdate(
-      decoded.id,
+      authUser.id,
       { $set: update },
       { new: true, runValidators: true }
     ).select("-password -resetPasswordToken -resetPasswordExpiry -verificationToken -verificationTokenExpiry");

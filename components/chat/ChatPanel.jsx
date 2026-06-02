@@ -110,14 +110,11 @@ export default function ChatPanel({ conversation, currentUser }) {
     // Initial fetch
     const fetchPresence = async () => {
       try {
-        const { data } = await supabase
-          .from('presence')
-          .select('is_online, last_seen')
-          .eq('user_id', receiverId)
-          .single();
-        if (data) {
-          setIsOnline(Boolean(data.is_online));
-          setLastSeen(data.last_seen);
+        const res = await fetch(`/api/presence/${receiverId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setIsOnline(Boolean(data.isOnline));
+          setLastSeen(data.lastSeen);
         }
       } catch {}
     };

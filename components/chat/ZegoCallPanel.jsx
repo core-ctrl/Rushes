@@ -27,7 +27,15 @@ export default function ZegoCallPanel({ roomID, mode, otherUser, currentUser, on
         // Dynamically import ZEGOCLOUD (client-only)
         const { ZegoUIKitPrebuilt } = await import('@zegocloud/zego-uikit-prebuilt');
 
-        const zp = ZegoUIKitPrebuilt.create(data.appID, data.token);
+        const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+          data.appID,
+          data.serverSecret,
+          data.roomID,
+          String(data.userID),
+          data.userName
+        );
+
+        const zp = ZegoUIKitPrebuilt.create(kitToken);
         zpRef.current = zp;
 
         zp.joinRoom({

@@ -23,6 +23,7 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(true);
     const [isOnline, setIsOnline] = useState(false);
+    const [lastSeen, setLastSeen] = useState(null);
     const bottomRef = useRef(null);
     const channelRef = useRef(null);
 
@@ -33,15 +34,15 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
 
     // Fetch real presence from Supabase
     useEffect(() => {
-        if (!supabase || !otherUserId) return;
+        if (!otherUserId) return;
         const fetchPresence = async () => {
             try {
-                const { data } = await supabase
-                    .from('presence')
-                    .select('is_online')
-                    .eq('user_id', otherUserId)
-                    .single();
-                if (data) setIsOnline(Boolean(data.is_online));
+                const res = await fetch(`/api/presence/${otherUserId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setIsOnline(Boolean(data.isOnline));
+                    setLastSeen(data.lastSeen);
+                }
             } catch {}
         };
         fetchPresence();

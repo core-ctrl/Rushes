@@ -12,17 +12,9 @@ export default function OnlinePresence() {
 
         const updatePresence = async (isOnline) => {
             try {
-                const { error } = await supabase
-                    .from('presence')
-                    .upsert({
-                        user_id: userId,
-                        username: user.username || user.name,
-                        avatar: user.avatar,
-                        is_online: isOnline,
-                        last_seen: new Date().toISOString()
-                    });
-
-                if (error) console.error('Presence update error:', error);
+                if (isOnline) {
+                    await fetch('/api/presence/heartbeat', { method: 'POST' });
+                }
             } catch (error) {
                 console.error('Presence error:', error);
             }

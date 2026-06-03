@@ -65,6 +65,27 @@ We utilize a wide array of modern technologies to deliver a premium user experie
 
 ---
 
+## 🏛️ Admin Portal Architecture
+
+MovieFinder includes a highly secure, decoupled **Administration Console** (`rushes-admin`) built to run on a separate port or isolated server.
+- **Tech Stack:** Next.js 14 (App Router), Tremor (Data Visualization), Tailwind CSS.
+- **Authentication:** Isolated JWT-based auth via NextAuth, restricting access strictly to superuser credentials (e.g., `admin@rushes.dev`).
+- **Capabilities:** 
+  - **Global Dashboard:** Real-time metrics on user signups, total Takes, lists, and engagement.
+  - **Content Moderation:** Review user reports, delete abusive Takes, and manage community standards.
+  - **User Management:** Suspend, ban, or unblock users globally across the platform.
+
+---
+
+## 💾 Automated Backup System
+
+We implemented a robust, Node.js-powered disaster recovery and backup architecture located in the `/scripts` directory.
+- **Automated Scheduler (`backup-scheduler.js`):** Runs cron jobs to periodically dump the entire MongoDB database without manual intervention.
+- **Backup Service (`backup-service.js`):** Connects directly to the MongoDB cluster, executes `mongodump`, compresses the BSON outputs into secure `.gz` archives, and stores them locally with timestamps.
+- **Restoration Utility (`restore-system.js`):** A one-click disaster recovery script that parses the latest backup archives and restores the complete database state via `mongorestore` in case of catastrophic failure.
+
+---
+
 ## 🚀 Quick Start
 
 <details>

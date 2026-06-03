@@ -24,7 +24,7 @@ const uiSlice = createSlice({
       state.authModalOpen = false;
     },
     openTrailer: (state, action) => {
-      state.trailer = { open: true, ...initialTrailer, ...action.payload };
+      state.trailer = { ...initialTrailer, ...action.payload, open: true };
     },
     closeTrailer: (state) => {
       state.trailer = initialTrailer;

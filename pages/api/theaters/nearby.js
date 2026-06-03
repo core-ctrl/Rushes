@@ -71,7 +71,7 @@ export default async function handler(req, res) {
         }
 
         return {
-          id: place.place_id || \`th_\${index}\`,
+          id: place.place_id || `th_${index}`,
           name: place.title,
           distance: distance,
           address: place.address || "Local Theater",

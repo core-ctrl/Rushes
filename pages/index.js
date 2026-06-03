@@ -26,7 +26,6 @@ import BentoGrid from "../components/BentoGrid";
 import AdBanner from "../components/AdBanner";
 import AdSlot from "../components/AdSlot";
 import SEOMeta from "../components/SEOMeta";
-import NearbyTheaters from "../components/NearbyTheaters";
 import { SkeletonRow } from "../components/SkeletonCard";
 import { selectUser } from "../store/slices/authSlice";
 import { selectWatchlist } from "../store/slices/watchlistSlice";
@@ -181,8 +180,6 @@ export default function Home({
             title={<TitleWithIcon icon={FireIcon} title="Trending Now" subtitle="What people are watching right now" />}
             {...rowProps}
           />
-
-          <NearbyTheaters />
 
           {user ? (
             <section className="mb-14">

@@ -55,12 +55,17 @@ export default function HoverCard({ item, index, showTopBadge = false, onPlayTra
   const provider = hasOTT ? flatrate[0].provider_name || flatrate[0] : null;
 
   const handleTrailer = async (e) => {
+    e.preventDefault();
     e.stopPropagation();
     const mediaType = item.media_type || (isTV ? 'tv' : 'movie');
     const title = item.title || item.name;
 
     const playTrailer = (key) => {
-      dispatch(openTrailer({ key, title, id: item.id, type: mediaType }));
+      if (onPlayTrailer) {
+        onPlayTrailer(key, title, item.id, mediaType);
+      } else {
+        dispatch(openTrailer({ key, title, id: item.id, type: mediaType }));
+      }
     };
 
     if (item.trailerKey) {
@@ -69,18 +74,17 @@ export default function HoverCard({ item, index, showTopBadge = false, onPlayTra
     }
 
     try {
+      toast({ type: "info", message: "Searching for trailer..." });
       const response = await fetch(`/api/trailer?id=${item.id}&media_type=${mediaType}`);
       const data = await response.json();
       const key = data.trailer?.key || null;
       if (key) {
         playTrailer(key);
       } else {
-        toast({ type: "error", message: "Trailer unavailable, redirecting to movie page..." });
-        router.push(`/${mediaType === 'tv' ? 'series' : 'movies'}/${item.id}`);
+        toast({ type: "error", message: "Trailer unavailable for this title." });
       }
     } catch {
-      toast({ type: "error", message: "Trailer unavailable, redirecting to movie page..." });
-      router.push(`/${mediaType === 'tv' ? 'series' : 'movies'}/${item.id}`);
+      toast({ type: "error", message: "Trailer unavailable for this title." });
     }
   };
 

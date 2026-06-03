@@ -77,7 +77,6 @@ export default function CreatePost({ onPostCreated }) {
   };
 
   const handleSubmit = async () => {
-  const handleSubmit = async () => {
     if (!content.trim() && postType === 'text' && !selectedMovie) return;
     
     setIsSubmitting(true);

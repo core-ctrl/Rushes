@@ -232,6 +232,12 @@ export default function ChatPanel({ conversation, currentUser }) {
         .on("broadcast", { event: "call_cancelled" }, () => {
           setIncomingCall(null);
         })
+        .on("broadcast", { event: "message_deleted" }, ({ payload }) => {
+          setMessages((prev) => prev.filter(msg => msg._id !== payload.messageId));
+        })
+        .on("broadcast", { event: "chat_deleted" }, () => {
+          setMessages([]);
+        })
         .subscribe();
     } catch {
       return null;
@@ -373,9 +379,29 @@ export default function ChatPanel({ conversation, currentUser }) {
     try {
       await axios.delete(`/api/messages/${conversationId}`);
       setMessages([]);
+      channelRef.current?.send({
+        type: "broadcast",
+        event: "chat_deleted",
+        payload: { conversationId },
+      });
       toast({ type: "success", message: "Chat deleted." });
     } catch {
       toast({ type: "error", message: "Failed to delete chat." });
+    }
+  };
+
+  const deleteMessage = async (messageId) => {
+    if (!window.confirm("Delete this message?")) return;
+    try {
+      await axios.patch(`/api/messages/${conversationId}`, { action: "delete", messageId });
+      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+      channelRef.current?.send({
+        type: "broadcast",
+        event: "message_deleted",
+        payload: { messageId },
+      });
+    } catch {
+      toast({ type: "error", message: "Failed to delete message." });
     }
   };
 
@@ -387,14 +413,32 @@ export default function ChatPanel({ conversation, currentUser }) {
           <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-black ${otherUser ? (isOnline ? "bg-emerald-400" : "bg-neutral-500") : "bg-red-500"}`} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-white">
-            {otherUser ? (otherUser.displayName || otherUser.username) : "User Unavailable"}
-          </p>
-          <p className={`flex items-center gap-1 text-xs ${otherUser ? (isOnline ? "text-emerald-300" : "text-neutral-500") : "text-red-400"}`}>
-            {otherUser ? (isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />) : <WifiOff className="h-3 w-3" />}
-            {otherUser ? statusLabel : "Account Deleted"}
-          </p>
+          <div className="flex flex-col">
+            <span className="font-bold text-white">{otherUser?.displayName || otherUser?.username || "Unknown"}</span>
+            <span className="text-xs font-semibold text-neutral-400">
+              {otherUser ? statusLabel : "Account Deleted"}
+            </span>
+          </div>
+          
+          {otherUser && (
+            <button
+              onClick={async () => {
+                try {
+                  const isFollowing = currentUser?.following?.includes(receiverId);
+                  const action = isFollowing ? 'unfollow' : 'follow';
+                  await axios.post('/api/users/follow', { targetUserId: receiverId, action });
+                  toast({ type: 'success', message: `${action === 'follow' ? 'Followed' : 'Unfollowed'} ${otherUser.username}` });
+                } catch {
+                  toast({ type: 'error', message: 'Follow action failed' });
+                }
+              }}
+              className="ml-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-white hover:bg-white/10"
+            >
+              {currentUser?.following?.includes(receiverId) ? 'Following' : 'Follow'}
+            </button>
+          )}
         </div>
+
         <div className="flex items-center gap-2">
             <button onClick={() => startCallAction('voice')} className="p-2 text-neutral-400 hover:text-green-400 hover:bg-white/10 rounded-xl transition-all" aria-label="Start voice call">
               <Phone className="w-5 h-5" />
@@ -525,6 +569,15 @@ export default function ChatPanel({ conversation, currentUser }) {
                         {reaction}
                       </button>
                     ))}
+                    {mine && (
+                      <button
+                        onClick={() => deleteMessage(msg._id)}
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-sm text-red-400 transition hover:bg-white/10"
+                        title="Delete Message"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>

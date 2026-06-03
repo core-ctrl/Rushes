@@ -10,6 +10,8 @@ import TakeCard from '../../components/social/TakeCard';
 import VerifiedBadge from '../../components/VerifiedBadge';
 import ReportModal from '../../components/ReportModal';
 import { toast } from '../../components/ui/Toaster';
+import ProfileCardModal from '../../components/ProfileCardModal';
+import { MessageCircle } from 'lucide-react';
 
 export default function UserProfile() {
     const router = useRouter();
@@ -23,13 +25,12 @@ export default function UserProfile() {
     const [isBlocked, setIsBlocked] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
+    const [lists, setLists] = useState([]);
+    const [activeTab, setActiveTab] = useState('takes');
+    const [showShareCard, setShowShareCard] = useState(false);
 
     const handleShare = () => {
-        if (!profile) return;
-        const url = `${window.location.origin}/u/${profile.username}`;
-        navigator.clipboard.writeText(url).then(() => {
-            toast({ type: 'success', message: 'Profile link copied!' });
-        });
+        setShowShareCard(true);
     };
 
     useEffect(() => {
@@ -48,6 +49,9 @@ export default function UserProfile() {
 
                 const { data } = await axios.get('/api/takes/feed');
                 setTakes(data.takes.filter(t => t.username === username));
+
+                const { data: listsData } = await axios.get(`/api/lists?userId=${profileData.user._id}`);
+                setLists(listsData.lists || []);
             } catch (error) {
                 console.error('Profile error:', error);
             } finally {
@@ -232,48 +236,114 @@ export default function UserProfile() {
                         )}
 
                         {!isOwnProfile && (
-                            <motion.button
-                                whileTap={{ scale: 0.98 }}
-                                onClick={handleFollow}
-                                disabled={followLoading || isBlocked}
-                                className={`px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg transition-all disabled:opacity-50 ${following
-                                    ? 'bg-neutral-800 text-neutral-200 border-2 border-neutral-600/50 hover:border-neutral-500 hover:bg-neutral-700'
-                                    : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-600 text-white shadow-glow-red'
-                                    }`}
-                            >
-                                {followLoading ? (
-                                    <span className="flex items-center gap-2">
-                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        {following ? 'Unfollowing...' : 'Following...'}
-                                    </span>
-                                ) : isBlocked ? 'Blocked' : following ? 'Following' : 'Follow'}
-                            </motion.button>
+                            <div className="flex items-center justify-center gap-4">
+                                <motion.button
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={handleFollow}
+                                    disabled={followLoading || isBlocked}
+                                    className={`flex-1 max-w-[200px] py-4 rounded-2xl font-semibold text-lg shadow-lg transition-all disabled:opacity-50 ${following
+                                        ? 'bg-neutral-800 text-neutral-200 border-2 border-neutral-600/50 hover:border-neutral-500 hover:bg-neutral-700'
+                                        : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-600 text-white shadow-glow-red'
+                                        }`}
+                                >
+                                    {followLoading ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        </span>
+                                    ) : isBlocked ? 'Blocked' : following ? 'Following' : 'Follow'}
+                                </motion.button>
+
+                                <motion.button
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => router.push(`/messages?user=${profile.username}`)}
+                                    className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-semibold text-lg bg-white/10 hover:bg-white/20 text-white transition-all border border-white/5 shadow-lg"
+                                >
+                                    <MessageCircle className="w-5 h-5" />
+                                    Message
+                                </motion.button>
+                            </div>
                         )}
                     </motion.div>
 
+                    {/* Tabs */}
+                    <div className="flex items-center justify-center gap-8 mb-8 border-b border-white/10">
+                        <button
+                            onClick={() => setActiveTab('takes')}
+                            className={`pb-4 text-lg font-bold transition-all relative ${activeTab === 'takes' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        >
+                            Takes
+                            {activeTab === 'takes' && (
+                                <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 rounded-t-full" />
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('lists')}
+                            className={`pb-4 text-lg font-bold transition-all relative ${activeTab === 'lists' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        >
+                            Movie Lists
+                            {activeTab === 'lists' && (
+                                <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 rounded-t-full" />
+                            )}
+                        </button>
+                    </div>
+
                     {/* Content */}
                     <div className="space-y-6">
-                        {takes.length === 0 ? (
+                        <AnimatePresence mode="wait">
                             <motion.div
-                                className="text-center py-24 rounded-3xl border border-dashed border-neutral-700 bg-neutral-900/50"
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
+                                key={activeTab}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
                             >
-                                <Film className="w-20 h-20 text-neutral-600 mx-auto mb-6" />
-                                <h3 className="text-2xl font-bold text-neutral-400 mb-3">
-                                    No takes yet
-                                </h3>
-                                <p className="text-neutral-500 max-w-md mx-auto">
-                                    {isOwnProfile ? 'Share your first movie take!' : `@${profile.username} hasn't shared any takes yet.`}
-                                </p>
+                                {activeTab === 'takes' ? (
+                                    takes.length === 0 ? (
+                                        <div className="text-center py-24 rounded-3xl border border-dashed border-neutral-700 bg-neutral-900/50">
+                                            <Film className="w-20 h-20 text-neutral-600 mx-auto mb-6" />
+                                            <h3 className="text-2xl font-bold text-neutral-400 mb-3">No takes yet</h3>
+                                            <p className="text-neutral-500 max-w-md mx-auto">{isOwnProfile ? 'Share your first movie take!' : `@${profile.username} hasn't shared any takes yet.`}</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {takes.map((take, index) => (
+                                                <TakeCard key={take.id} take={take} index={index} />
+                                            ))}
+                                        </div>
+                                    )
+                                ) : (
+                                    lists.length === 0 ? (
+                                        <div className="text-center py-24 rounded-3xl border border-dashed border-neutral-700 bg-neutral-900/50">
+                                            <Film className="w-20 h-20 text-neutral-600 mx-auto mb-6" />
+                                            <h3 className="text-2xl font-bold text-neutral-400 mb-3">No lists yet</h3>
+                                            <p className="text-neutral-500 max-w-md mx-auto">{isOwnProfile ? 'Create your first movie list!' : `@${profile.username} hasn't created any public lists.`}</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {lists.map((list) => (
+                                                <div key={list._id} className="relative overflow-hidden rounded-3xl border border-white/10 bg-neutral-900 transition-all hover:border-white/20 hover:shadow-2xl">
+                                                    <div className="aspect-video w-full bg-neutral-800">
+                                                        {list.coverImage ? (
+                                                            <img src={`https://image.tmdb.org/t/p/w500${list.coverImage}`} className="h-full w-full object-cover opacity-80" alt="" />
+                                                        ) : (
+                                                            <div className="flex h-full items-center justify-center text-neutral-600"><Film className="h-8 w-8" /></div>
+                                                        )}
+                                                    </div>
+                                                    <div className="p-5">
+                                                        <h3 className="text-xl font-bold text-white mb-2">{list.title}</h3>
+                                                        <p className="text-sm text-neutral-400 line-clamp-2 mb-4">{list.description}</p>
+                                                        <div className="flex items-center gap-4 text-xs font-semibold text-neutral-500">
+                                                            <span>{list.movies?.length || 0} movies</span>
+                                                            <span className="capitalize">{list.privacy}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )
+                                )}
                             </motion.div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {takes.map((take, index) => (
-                                    <TakeCard key={take.id} take={take} index={index} />
-                                ))}
-                            </div>
-                        )}
+                        </AnimatePresence>
                     </div>
                 </div>
             </div>
@@ -285,6 +355,14 @@ export default function UserProfile() {
                 targetUsername={profile.username}
                 targetId={profile._id}
                 targetType="user"
+            />
+            
+            <ProfileCardModal 
+                open={showShareCard} 
+                onClose={() => setShowShareCard(false)} 
+                profile={profile}
+                takesCount={takes.length}
+                listsCount={lists.length}
             />
         </>
     );

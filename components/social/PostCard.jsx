@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 
-export default function PostCard({ post, onLike, onComment, onRepost, onSave, onDelete, onReport, currentUser }) {
+export default function PostCard({ post, onLike, onComment, onRepost, onSave, onDelete, onReport, onVote, onShare, currentUser }) {
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
   const [isSaved, setIsSaved] = useState(post.isSaved || false);
@@ -193,7 +193,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onSave, on
                   const percent = post.poll.totalVotes > 0 ? Math.round((opt.votes.length / post.poll.totalVotes) * 100) : 0;
                   const hasVoted = opt.votes.includes(currentUser?.id);
                   return (
-                    <div key={i} className="relative h-10 rounded-xl overflow-hidden bg-white/5 flex items-center px-4 cursor-pointer hover:bg-white/10 transition-colors">
+                    <div key={i} onClick={() => onVote && !hasVoted && onVote(post.id, i)} className={`relative h-10 rounded-xl overflow-hidden bg-white/5 flex items-center px-4 transition-colors ${!hasVoted ? 'cursor-pointer hover:bg-white/10' : ''}`}>
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${percent}%` }}
@@ -251,7 +251,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onSave, on
           <button onClick={handleSave} className="group p-2 rounded-full hover:bg-white/10 hover:text-white transition-colors">
             <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-white text-white' : ''}`} />
           </button>
-          <button className="group p-2 rounded-full hover:bg-white/10 hover:text-white transition-colors">
+          <button onClick={() => onShare && onShare(post.id)} className="group p-2 rounded-full hover:bg-white/10 hover:text-white transition-colors">
             <Share className="w-5 h-5" />
           </button>
         </div>

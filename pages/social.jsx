@@ -93,6 +93,26 @@ export default function SocialFeed() {
     }
   };
 
+  const handleShare = (id) => {
+    const url = `${window.location.origin}/post/${id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      alert('Link copied to clipboard!');
+    });
+  };
+
+  const handleVote = async (id, optionIndex) => {
+    try {
+      await fetch(`/api/posts/${id}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ optionIndex })
+      });
+      mutate();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-[#e50914] selection:text-white">
       <Head>
@@ -170,6 +190,8 @@ export default function SocialFeed() {
                     onRepost={handleRepost}
                     onSave={handleSave}
                     onDelete={handleDelete}
+                    onVote={handleVote}
+                    onShare={handleShare}
                   />
                 ))}
                 

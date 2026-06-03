@@ -260,7 +260,6 @@ export default function CreatePost({ onPostCreated }) {
                     >
                       <ImageIcon className="w-5 h-5" />
                     </button>
-                    </button>
                     <button 
                       onClick={() => setShowMovieSearch(!showMovieSearch)}
                       className={`p-2 rounded-full transition-colors ${showMovieSearch || selectedMovie ? 'bg-[#e50914]/20 text-[#e50914]' : 'hover:bg-white/10 text-gray-400 hover:text-[#e50914]'}`}

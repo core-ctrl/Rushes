@@ -14,6 +14,7 @@ export default function HoverCard({ item, index, showTopBadge = false, landscape
 
   const rating = item.vote_average?.toFixed(1);
   const runtime = item.runtime ? `${item.runtime}min` : null;
+  const year = (item.release_date || item.first_air_date || '').slice(0, 4);
 
   // Availability logic
   const flatrate = item.providers?.flatrate || item.availability?.flatrate || [];

@@ -63,6 +63,36 @@ export default function SocialFeed() {
     }
   };
 
+  const handleComment = async (id) => {
+    const text = window.prompt("Write a comment:");
+    if (!text) return;
+    try {
+      await fetch(`/api/posts/${id}/comments`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: text })
+      });
+      mutate();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleRepost = async (id) => {
+    if (confirm('Repost this to your followers?')) {
+      try {
+        await fetch('/api/posts/create', { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postType: 'repost', parentPostId: id })
+        });
+        mutate();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-[#e50914] selection:text-white">
       <Head>
@@ -136,6 +166,8 @@ export default function SocialFeed() {
                     post={post} 
                     currentUser={session?.user}
                     onLike={handleLike}
+                    onComment={handleComment}
+                    onRepost={handleRepost}
                     onSave={handleSave}
                     onDelete={handleDelete}
                   />

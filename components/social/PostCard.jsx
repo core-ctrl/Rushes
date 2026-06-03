@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 
-export default function PostCard({ post, onLike, onComment, onSave, onDelete, onReport, currentUser }) {
+export default function PostCard({ post, onLike, onComment, onRepost, onSave, onDelete, onReport, currentUser }) {
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
   const [isSaved, setIsSaved] = useState(post.isSaved || false);
@@ -240,7 +240,7 @@ export default function PostCard({ post, onLike, onComment, onSave, onDelete, on
           <span className="text-sm">{post.commentCount || ''}</span>
         </button>
 
-        <button className="group flex items-center gap-2 hover:text-green-400 transition-colors">
+        <button onClick={() => onRepost && onRepost(post.id)} className="group flex items-center gap-2 hover:text-green-400 transition-colors">
           <div className="p-2 rounded-full group-hover:bg-green-400/10 transition-colors">
             <Repeat2 className="w-5 h-5" />
           </div>

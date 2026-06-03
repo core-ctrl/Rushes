@@ -50,6 +50,10 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
         return () => clearInterval(interval);
     }, [otherUserId]);
 
+    const [isTyping, setIsTyping] = useState(false);
+    const [typingTimer, setTypingTimer] = useState(null);
+    const [otherUserTyping, setOtherUserTyping] = useState(false);
+
     useEffect(() => {
         // Fetch messages
         fetch(`/api/messages/${conversationId}`)
@@ -58,6 +62,9 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
                 setMessages((messages || []).map(normalizeMessage));
                 setLoading(false);
             });
+            
+        // Explicitly patch mark read to ensure badges clear on backend
+        axios.patch(`/api/messages/${conversationId}`, { action: 'markRead' }).catch(() => {});
 
         if (supabase) {
             const channel = supabase.channel(`chat:${conversationId}`);
@@ -71,6 +78,11 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
                 .on("broadcast", { event: "read_receipt" }, ({ payload }) => {
                     if (String(payload.userId) !== String(currentUserId)) {
                         setMessages((prev) => prev.map((msg) => (String(msg.senderId) === String(currentUserId) ? { ...msg, status: "read" } : msg)));
+                    }
+                })
+                .on("broadcast", { event: "typing" }, ({ payload }) => {
+                    if (String(payload.userId) !== String(currentUserId)) {
+                        setOtherUserTyping(payload.isTyping);
                     }
                 })
                 .subscribe();
@@ -94,13 +106,34 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [messages, otherUserTyping]);
+
+    const handleInput = (e) => {
+        setInput(e.target.value);
+        if (channelRef.current) {
+            if (!isTyping) {
+                setIsTyping(true);
+                channelRef.current.send({ type: "broadcast", event: "typing", payload: { userId: currentUserId, isTyping: true } });
+            }
+            if (typingTimer) clearTimeout(typingTimer);
+            setTypingTimer(setTimeout(() => {
+                setIsTyping(false);
+                channelRef.current.send({ type: "broadcast", event: "typing", payload: { userId: currentUserId, isTyping: false } });
+            }, 3000));
+        }
+    };
 
     const sendMessage = async (e) => {
         e.preventDefault();
         const content = input.trim();
         if (!content) return;
         setInput('');
+        
+        if (isTyping && channelRef.current) {
+            setIsTyping(false);
+            if (typingTimer) clearTimeout(typingTimer);
+            channelRef.current.send({ type: "broadcast", event: "typing", payload: { userId: currentUserId, isTyping: false } });
+        }
 
         const optimistic = normalizeMessage({
             _id: `tmp-${Date.now()}`,
@@ -251,6 +284,15 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
                         );
                     })
                 )}
+                {otherUserTyping && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start mt-2">
+                        <div className="bg-neutral-800/80 text-neutral-400 px-4 py-3 rounded-2xl rounded-bl-sm text-sm flex gap-1 items-center w-fit">
+                            <motion.span animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0 }} className="w-1.5 h-1.5 bg-neutral-400 rounded-full" />
+                            <motion.span animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }} className="w-1.5 h-1.5 bg-neutral-400 rounded-full" />
+                            <motion.span animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }} className="w-1.5 h-1.5 bg-neutral-400 rounded-full" />
+                        </div>
+                    </motion.div>
+                )}
                 <div ref={bottomRef} />
             </div>
 
@@ -259,7 +301,7 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
                 <div className="flex items-center gap-2">
                     <input
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={handleInput}
                         placeholder="Type a message..."
                         className="flex-1 bg-neutral-800/50 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 transition-all placeholder-neutral-500"
                     />

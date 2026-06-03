@@ -44,12 +44,11 @@ export default function ZegoCallPanel({ roomID, mode, otherUser, currentUser, on
           scenario: {
             mode: isWatchTogether 
               ? ZegoUIKitPrebuilt.GroupCall 
-              : (mode === 'video' ? ZegoUIKitPrebuilt.VideoConference : ZegoUIKitPrebuilt.GroupCall),
+              : (mode === 'video' ? ZegoUIKitPrebuilt.VideoConference : ZegoUIKitPrebuilt.OneONoneCall),
           },
           turnOnMicrophoneWhenJoining: isWatchTogether ? false : true,
-          turnOnCameraWhenJoining: isWatchTogether ? false : mode === 'video',
-          showMyCameraToggleButton: isWatchTogether ? true : mode === 'video',
-          showMyMicrophoneToggleButton: true,
+          turnOnCameraWhenJoining: mode === 'video',
+          showMyCameraToggleButton: mode === 'video',
           showAudioVideoSettingsButton: true,
           showScreenSharingButton: isWatchTogether ? true : mode === 'video',
           showTextChat: false,

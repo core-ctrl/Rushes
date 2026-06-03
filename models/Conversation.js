@@ -23,6 +23,13 @@ const ConversationSchema = new mongoose.Schema(
     // CHANNEL SUPPORT (public groups)
     isChannel: { type: Boolean, default: false },
     channelSlug: { type: String, lowercase: true, trim: true, sparse: true, unique: true },
+
+    // Message management
+    pinnedMessages: [{ type: mongoose.Schema.Types.ObjectId, ref: "Message" }],
+    mutedBy: [{
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      mutedUntil: Date
+    }],
   },
   { timestamps: true }
 );

@@ -44,6 +44,30 @@ const PostSchema = new mongoose.Schema({
   hashtags: [{ type: String, index: true }],
   mentions: [{ type: String }],
   
+  // Poll support
+  poll: {
+    question: String,
+    options: [{
+      text: String,
+      votes: [{ type: String }] // userIds
+    }],
+    expiresAt: Date,
+    totalVotes: { type: Number, default: 0 }
+  },
+
+  // Extended social features
+  likes: [{ type: String }], // userId array for quick lookup
+  savedBy: [{ type: String }], // userId array
+  shareCount: { type: Number, default: 0 },
+  saveCount: { type: Number, default: 0 },
+  reportCount: { type: Number, default: 0 },
+
+  visibility: { type: String, enum: ['public', 'followers', 'private'], default: 'public' },
+  trendingScore: { type: Number, default: 0, index: true },
+
+  // Mood & Spoiler
+  mood: { type: String, default: null },
+  
   // Basic author cache for quick renders
   authorCache: {
     username: String,
@@ -55,6 +79,9 @@ const PostSchema = new mongoose.Schema({
 // Compound Indexes for Feed Generation
 PostSchema.index({ createdAt: -1, authorId: 1 });
 PostSchema.index({ 'stats.likes': -1, createdAt: -1 }); // Trending
+PostSchema.index({ trendingScore: -1, createdAt: -1 });
+PostSchema.index({ visibility: 1, createdAt: -1 });
+PostSchema.index({ 'likes': 1 });
 
 PostSchema.virtual("id").get(function () {
   return this._id.toString();

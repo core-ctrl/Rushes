@@ -1,42 +1,60 @@
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../auth/[...nextauth]";
-import { connectDB } from "../../../../lib/mongodb";
-import Post from "../../../../models/Post";
+import { connectDB } from '@/lib/mongodb';
+import { requireApiAuth } from '@/lib/apiAuth';
+import Post from '@/models/Post';
+import Notification from '@/models/Notification';
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).end();
-  
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
   await connectDB();
-  const session = await getServerSession(req, res, authOptions);
-  if (!session?.user) return res.status(401).json({ error: "Unauthorized" });
+  const user = await requireApiAuth(req, res);
+  if (!user) return;
 
   const { id } = req.query;
 
   try {
     const post = await Post.findById(id);
-    if (!post || post.isDeleted) return res.status(404).json({ error: "Post not found" });
+    if (!post || post.isDeleted) return res.status(404).json({ error: 'Post not found' });
 
-    // In a production app, we would have a 'Like' collection to track who liked what.
-    // For this architecture demo, we are doing a denormalized toggle using MongoDB $inc
-    
-    // Toggle logic (pseudo):
-    // const existingLike = await Like.findOne({ postId: id, userId: session.user.id });
-    // if (existingLike) {
-    //   await existingLike.deleteOne();
-    //   await Post.findByIdAndUpdate(id, { $inc: { "stats.likes": -1 } });
-    // } else {
-    //   await Like.create({ postId: id, userId: session.user.id });
-    //   await Post.findByIdAndUpdate(id, { $inc: { "stats.likes": 1 } });
-    // }
+    const isLiked = (post.likes || []).includes(user.id);
 
-    // Mocking increment for now
-    await Post.findByIdAndUpdate(id, { $inc: { "stats.likes": 1 } });
+    if (isLiked) {
+      // Unlike
+      post.likes = post.likes.filter(uid => uid !== user.id);
+      post.stats.likes = Math.max(0, (post.stats.likes || 0) - 1);
+    } else {
+      // Like
+      post.likes.push(user.id);
+      post.stats.likes = (post.stats.likes || 0) + 1;
 
-    // Emit realtime event for live counter ticking
-    // io.to(`feed`).emit('feed:stat_update', { postId: id, type: 'like', delta: 1 });
+      // Create notification (don't notify self)
+      if (post.authorId !== user.id) {
+        await Notification.create({
+          userId: post.authorId,
+          fromUserId: user.id,
+          fromUsername: user.username || user.name,
+          fromAvatar: user.avatar,
+          type: 'like',
+          category: 'social',
+          content: `liked your post`,
+          referenceId: post._id.toString(),
+          referenceType: 'post',
+          groupKey: `like:${post._id}`,
+        });
+      }
+    }
 
-    return res.status(200).json({ success: true });
+    // Update trending score
+    post.trendingScore = (post.stats.likes || 0) + ((post.stats.replies || 0) * 2) + ((post.stats.reposts || 0) * 3);
+    await post.save();
+
+    res.status(200).json({
+      success: true,
+      isLiked: !isLiked,
+      likeCount: post.likes.length,
+    });
   } catch (error) {
-    return res.status(500).json({ error: "Failed to like post" });
+    console.error('[Like Post Error]', error);
+    res.status(500).json({ error: 'Failed to like post' });
   }
 }

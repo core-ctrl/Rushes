@@ -71,6 +71,54 @@ export default async function handler(req, res) {
     return res.json({ message, conversationId: conversation._id.toString() });
   }
 
+  if (req.method === "PATCH") {
+    const { action, messageId, content, emoji } = req.body;
+    const Message = require("../../../models/Message.js").default || require("../../../models/Message.js");
+    
+    if (action === 'markRead') {
+      await markAsRead(conversation._id, currentUserId);
+      return res.json({ success: true });
+    }
+    
+    if (action === 'react' && messageId && emoji) {
+      const msg = await Message.findById(messageId);
+      if (msg) {
+        msg.reactions = msg.reactions || [];
+        const existingIdx = msg.reactions.findIndex(r => r.userId === currentUserId && r.emoji === emoji);
+        if (existingIdx >= 0) msg.reactions.splice(existingIdx, 1);
+        else msg.reactions.push({ userId: currentUserId, emoji, createdAt: new Date() });
+        await msg.save();
+        return res.json({ success: true, message: msg });
+      }
+    }
+    
+    if (action === 'edit' && messageId && content) {
+      const msg = await Message.findOne({ _id: messageId, senderId: currentUserId });
+      if (msg) {
+        msg.editHistory = msg.editHistory || [];
+        msg.editHistory.push({ content: msg.content, editedAt: new Date() });
+        msg.content = content;
+        msg.editedAt = new Date();
+        await msg.save();
+        return res.json({ success: true, message: msg });
+      }
+    }
+    
+    if (action === 'delete' && messageId) {
+      const msg = await Message.findOne({ _id: messageId, senderId: currentUserId });
+      if (msg) {
+        msg.isDeleted = true;
+        msg.deletedAt = new Date();
+        msg.content = "This message was deleted";
+        msg.movieCard = null;
+        msg.mediaUrl = null;
+        await msg.save();
+        return res.json({ success: true, message: msg });
+      }
+    }
+    return res.status(400).json({ error: "Invalid action" });
+  }
+
   if (req.method === "DELETE") {
     await clearConversationMessages(conversation._id);
     return res.json({ success: true });

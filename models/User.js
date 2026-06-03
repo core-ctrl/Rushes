@@ -86,7 +86,8 @@ const UserSchema = new mongoose.Schema(
       type: Date,
     },
     blockedUsers: [{
-      type: String,
+      userId: { type: String, required: true },
+      blockedAt: { type: Date, default: Date.now }
     }],
     preferredGenres: {
       type: [Number],
@@ -210,10 +211,39 @@ const UserSchema = new mongoose.Schema(
       topLanguages: [String],
       avgRating: Number,
       totalWatched: Number
-    }
+    },
+    // MODERATION
+    reportCount: { type: Number, default: 0 },
+    warningCount: { type: Number, default: 0 },
+    suspensionHistory: [{
+      reason: String,
+      duration: String,
+      suspendedAt: Date,
+      expiresAt: Date,
+      suspendedBy: String
+    }],
+    // NOTIFICATION PREFERENCES
+    notificationPreferences: {
+      push: { type: Boolean, default: true },
+      email: { type: Boolean, default: true },
+      inApp: { type: Boolean, default: true },
+      likes: { type: Boolean, default: true },
+      comments: { type: Boolean, default: true },
+      follows: { type: Boolean, default: true },
+      mentions: { type: Boolean, default: true },
+      messages: { type: Boolean, default: true },
+      calls: { type: Boolean, default: true }
+    },
+    lastNotificationRead: { type: Date, default: null },
   },
   { timestamps: true }
 );
+
+UserSchema.index({ 'blockedUsers.userId': 1 });
+UserSchema.index({ following: 1 });
+UserSchema.index({ followers: 1 });
+UserSchema.index({ email: 1 });
+UserSchema.index({ username: 1 });
 
 UserSchema.pre("save", async function savePassword(next) {
   if (!this.isModified("password")) return next();

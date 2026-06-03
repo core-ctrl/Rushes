@@ -18,6 +18,9 @@ const CommentSchema = new mongoose.Schema({
     replies: { type: Number, default: 0 } 
   },
   
+  likes: [{ type: String }], // userId array
+  reportCount: { type: Number, default: 0 },
+  
   // Basic author cache for quick renders
   authorCache: {
     username: String,

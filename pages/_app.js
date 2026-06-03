@@ -304,10 +304,15 @@ function AppInner({ Component, pageProps, router }) {
   );
 }
 
+import { SessionProvider } from 'next-auth/react';
+
 export default function App(props) {
+  const { pageProps } = props;
   return (
-    <Provider store={store}>
-      <AppInner {...props} />
-    </Provider>
+    <SessionProvider session={pageProps?.session}>
+      <Provider store={store}>
+        <AppInner {...props} />
+      </Provider>
+    </SessionProvider>
   );
 }

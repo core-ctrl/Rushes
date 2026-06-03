@@ -178,9 +178,9 @@ export default function PreferencesGate({ user, onComplete, forceOpen = false, o
   const StepIcon = currentStep.icon;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 px-4 py-8 backdrop-blur-md">
-      <div className="w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/10 bg-neutral-950 shadow-[0_30px_100px_rgba(0,0,0,0.65)]">
-        <div className="border-b border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(229,9,20,0.22),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] px-6 py-5 md:px-8">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 px-4 py-4 md:py-8 backdrop-blur-md">
+      <div className="flex w-full max-h-[90dvh] max-w-4xl flex-col overflow-hidden rounded-[28px] border border-white/10 bg-neutral-950 shadow-[0_30px_100px_rgba(0,0,0,0.65)]">
+        <div className="flex-shrink-0 border-b border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(229,9,20,0.22),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] px-6 py-5 md:px-8">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-red-400">Personalize your feed</p>
@@ -198,7 +198,7 @@ export default function PreferencesGate({ user, onComplete, forceOpen = false, o
           </div>
         </div>
 
-        <div className="px-6 py-6 md:px-8 md:py-8">
+        <div className="flex-1 overflow-y-auto px-6 py-6 md:px-8 md:py-8">
           <div className="mb-6">
             <h3 className="text-xl font-semibold text-white">{currentStep.title}</h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-400">{currentStep.description}</p>
@@ -368,7 +368,7 @@ export default function PreferencesGate({ user, onComplete, forceOpen = false, o
 
           {error ? <p className="mt-5 text-sm text-red-400">{error}</p> : null}
 
-          <div className="mt-8 flex flex-col gap-3 border-t border-white/8 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-8 flex flex-col gap-3 border-t border-white/8 pb-4 pt-5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-neutral-500">You can update these anytime from your profile.</p>
 
             <div className="flex items-center gap-3">

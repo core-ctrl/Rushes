@@ -26,11 +26,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid option' });
     }
 
-    // Check if user already voted
-    const hasVoted = post.poll.options.some(opt => opt.votes.includes(user.id));
-    if (hasVoted) {
-      return res.status(400).json({ error: 'Already voted' });
-    }
+    // Remove previous vote if any
+    post.poll.options.forEach(opt => {
+      opt.votes = opt.votes.filter(v => v !== user.id);
+    });
 
     post.poll.options[optionIndex].votes.push(user.id);
     post.poll.totalVotes = post.poll.options.reduce((sum, opt) => sum + opt.votes.length, 0);

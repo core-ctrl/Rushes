@@ -2,7 +2,7 @@ import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Heart, Film, MoreHorizontal, ShieldAlert, Ban, Flag } from 'lucide-react';
+import { Users, Heart, Film, MoreHorizontal, ShieldAlert, Ban, Flag, Share2 } from 'lucide-react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
@@ -23,6 +23,14 @@ export default function UserProfile() {
     const [isBlocked, setIsBlocked] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
+
+    const handleShare = () => {
+        if (!profile) return;
+        const url = `${window.location.origin}/u/${profile.username}`;
+        navigator.clipboard.writeText(url).then(() => {
+            toast({ type: 'success', message: 'Profile link copied!' });
+        });
+    };
 
     useEffect(() => {
         if (!username) return;
@@ -117,43 +125,52 @@ export default function UserProfile() {
                         animate={{ opacity: 1, y: 0 }}
                         className="text-center mb-12 relative"
                     >
-                        {/* Three-dot menu for other users */}
-                        {!isOwnProfile && currentUser && (
-                            <div className="absolute top-0 right-0">
-                                <button
-                                    onClick={() => setShowMenu(!showMenu)}
-                                    className="p-2 rounded-xl text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
-                                >
-                                    <MoreHorizontal className="w-5 h-5" />
-                                </button>
+                        <div className="absolute top-0 right-0 flex items-center gap-2">
+                            <button
+                                onClick={handleShare}
+                                className="p-2 rounded-xl text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
+                                title="Share Profile"
+                            >
+                                <Share2 className="w-5 h-5" />
+                            </button>
 
-                                <AnimatePresence>
-                                    {showMenu && (
-                                        <motion.div
-                                            initial={{ opacity: 0, scale: 0.9, y: -4 }}
-                                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.9, y: -4 }}
-                                            className="absolute right-0 mt-1 w-56 bg-neutral-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
-                                        >
-                                            <button
-                                                onClick={handleBlock}
-                                                className="flex items-center gap-3 w-full px-4 py-3 text-sm text-left hover:bg-white/5 transition-colors text-neutral-300 hover:text-white"
+                            {!isOwnProfile && currentUser && (
+                                <div className="relative z-50">
+                                    <button
+                                        onClick={() => setShowMenu(!showMenu)}
+                                        className="p-2 rounded-xl text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
+                                    >
+                                        <MoreHorizontal className="w-5 h-5" />
+                                    </button>
+
+                                    <AnimatePresence>
+                                        {showMenu && (
+                                            <motion.div
+                                                initial={{ opacity: 0, scale: 0.9, y: -4 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.9, y: -4 }}
+                                                className="absolute right-0 mt-1 w-56 bg-neutral-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
                                             >
-                                                <Ban className="w-4 h-4" />
-                                                {isBlocked ? `Unblock @${profile.username}` : `Block @${profile.username}`}
-                                            </button>
-                                            <button
-                                                onClick={() => { setShowReportModal(true); setShowMenu(false); }}
-                                                className="flex items-center gap-3 w-full px-4 py-3 text-sm text-left hover:bg-white/5 transition-colors text-red-400 hover:text-red-300"
-                                            >
-                                                <Flag className="w-4 h-4" />
-                                                Report @{profile.username}
-                                            </button>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        )}
+                                                <button
+                                                    onClick={handleBlock}
+                                                    className="flex items-center gap-3 w-full px-4 py-3 text-sm text-left hover:bg-white/5 transition-colors text-neutral-300 hover:text-white"
+                                                >
+                                                    <Ban className="w-4 h-4" />
+                                                    {isBlocked ? `Unblock @${profile.username}` : `Block @${profile.username}`}
+                                                </button>
+                                                <button
+                                                    onClick={() => { setShowReportModal(true); setShowMenu(false); }}
+                                                    className="flex items-center gap-3 w-full px-4 py-3 text-sm text-left hover:bg-white/5 transition-colors text-red-400 hover:text-red-300"
+                                                >
+                                                    <Flag className="w-4 h-4" />
+                                                    Report @{profile.username}
+                                                </button>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            )}
+                        </div>
 
                         <div className="relative inline-block mb-6">
                             <img

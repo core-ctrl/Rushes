@@ -30,7 +30,7 @@ export default async function handler(req, res) {
 
   let userGenres = [];
   try {
-    const decoded = requireAuth(req);
+    const decoded = await requireAuth(req, res);
     if (decoded) {
       await connectDB();
       const user = await User.findById(decoded.id).select("preferredGenres");

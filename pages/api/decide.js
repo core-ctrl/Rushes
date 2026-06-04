@@ -30,7 +30,7 @@ export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const decoded = requireAuth(req);
+    const decoded = await requireAuth(req, res);
     let user = null;
 
     if (decoded) {

@@ -45,7 +45,7 @@ export default async function handler(req, res) {
 
   setImmediate(() => {
     try {
-      const decoded = requireAuth(req);
+      const decoded = await requireAuth(req, res);
       const payload = {
         ...data,
         query: data.query ? sanitizeSearchQuery(data.query) : undefined,

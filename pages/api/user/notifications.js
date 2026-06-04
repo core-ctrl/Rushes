@@ -3,7 +3,7 @@ import { requireAuth } from "@/middleware/requireAuth";
 import User from "@/models/User";
 
 export default async function handler(req, res) {
-  const decoded = requireAuth(req);
+  const decoded = await requireAuth(req, res);
   if (!decoded) return res.status(401).json({ error: "Not authenticated" });
 
   await connectDB();

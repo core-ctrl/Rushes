@@ -48,7 +48,7 @@ function limitDailyPicks(recs) {
 export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
-  const decoded = requireAuth(req);
+  const decoded = await requireAuth(req, res);
 
   if (!decoded) {
     return res.status(401).json({

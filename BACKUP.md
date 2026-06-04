@@ -8,11 +8,11 @@ The Rushes ecosystem features an automated, Node.js-powered database backup, sch
 
 ```mermaid
 sequenceDiagram
-    participant Scheduler as backup-scheduler.js (cron)
-    participant Service as backup-service.js (mongodump)
-    participant MongoDB as MongoDB Database Cluster
-    participant Logs as logs/ (logs folder)
-    participant Dump as database/ (backup directory)
+    participant Scheduler as "backup-scheduler.js (cron)"
+    participant Service as "backup-service.js (mongodump)"
+    participant MongoDB as "MongoDB Database Cluster"
+    participant Logs as "logs/ (logs folder)"
+    participant Dump as "database/ (backup directory)"
 
     Note over Scheduler: Daily at 3:00 AM
     Scheduler->>Service: Launch child process
@@ -21,7 +21,7 @@ sequenceDiagram
         MongoDB-->>Service: Return binary database dumps
         Service->>Dump: Save BSON structures in dump-[timestamp]/
         Service->>Logs: Append log line to backup-success.log
-    else Backup Failure (e.g. DB Down)
+    else Backup Failure
         MongoDB-->>Service: Fail with connection error
         Service->>Logs: Append error details to backup-error.log
     end

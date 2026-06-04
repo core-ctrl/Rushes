@@ -51,14 +51,14 @@ rushes-admin/
 
 ```mermaid
 graph LR
-    UI[Admin Dashboard UI]
-    API[Admin API Endpoints]
-    DB[(MongoDB Shared Database)]
-    Sys[System Utilities]
+    UI["Admin Dashboard UI"]
+    API["Admin API Endpoints"]
+    DB[("MongoDB Shared Database")]
+    Sys["System Utilities"]
 
-    UI <-->|Axios Requests & JWT| API
-    API <-->|Mongoose queries| DB
-    API <-->|OS / Docker / DNS queries| Sys
+    UI <-->|"Axios Requests & JWT"| API
+    API <-->|"Mongoose queries"| DB
+    API <-->|"OS / Docker / DNS queries"| Sys
 ```
 
 1.  **Administrative Actions**: When an admin suspends a user or deletes an abusive post:

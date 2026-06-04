@@ -19,18 +19,18 @@
 
 ```mermaid
 graph TD
-    UI[Frontend: React 18, Next.js, Redux, Lenis, Framer Motion]
-    Server[Backend: Standalone Express.js API & Next.js API Routes]
-    DB[(Database: MongoDB Atlas, Mongoose ODM)]
-    Cache[(Cache: Upstash Redis Serverless Cache)]
-    WS[Real-time WebSocket: Supabase Channels]
-    External[External APIs: TMDB Movie DB API, SMTP Mail Servers]
+    UI["Frontend: React 18, Next.js, Redux, Lenis, Framer Motion"]
+    Server["Backend: Standalone Express.js API & Next.js API Routes"]
+    DB[("Database: MongoDB Atlas, Mongoose ODM")]
+    Cache[("Cache: Upstash Redis Serverless Cache")]
+    WS["Real-time WebSocket: Supabase Channels"]
+    External["External APIs: TMDB Movie DB API, SMTP Mail Servers"]
 
-    UI <-->|HTTP REST & Cookies| Server
-    UI <-->|WebSockets| WS
-    Server <-->|Mongoose TCP| DB
-    Server <-->|Redis REST| Cache
-    Server <-->|REST API| External
+    UI <-->|"HTTP REST & Cookies"| Server
+    UI <-->|"WebSockets"| WS
+    Server <-->|"Mongoose TCP"| DB
+    Server <-->|"Redis REST"| Cache
+    Server <-->|"REST API"| External
 ```
 
 ### 1. Frontend Technologies

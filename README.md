@@ -39,10 +39,71 @@
 
 It has evolved far beyond a simple movie lookup tool into a complete social network for cinephiles. Next.js handles both the stunning React frontend and the powerful Node.js backend API routes.
 
-For an in-depth breakdown of how the systems communicate, caching strategies, and database schemas, please read our **[Architecture Documentation (ARCHITECTURE.md)](ARCHITECTURE.md)** and **[(DIRECTORY_TREE.md)](DIRECTORY_TREE.md)**
+For an in-depth breakdown of how the systems communicate, caching strategies, and database schemas, please review the breakdown below.
 
+---
 
+## 🏗️ Architecture & Directory Structure
 
+Rushes is built as a robust Next.js monolith, structured for scalable future extraction into microservices.
+
+<details>
+<summary><b>📂 View Full Directory Tree</b></summary>
+<br/>
+
+```text
+Rushes/
+├── components/          # Reusable React UI Components
+│   ├── admin/           # Admin Dashboard Visualizations
+│   ├── chat/            # Real-time Messaging Components (WebSockets)
+│   ├── search/          # Intelligent Search & Filters
+│   ├── social/          # Social Feed, Takes, and Friend Activity
+│   ├── ui/              # Base UI Elements (Buttons, Modals, Cards)
+│   └── ...              # Core App Components (Navbar, MediaCards, HeroSlider)
+├── lib/                 # Core Libraries & Integrations
+│   ├── dbConnect.js     # MongoDB Connection Logic
+│   ├── redis.js         # Upstash Redis Caching Engine
+│   ├── supabase.js      # Supabase Realtime Client
+│   ├── tmdb.js          # TMDB API Handlers & Formatters
+│   └── decisionEngine.js# Algorithmic Recommendation Engine
+├── middleware/          # Security & Validation Middleware
+│   ├── requireAuth.js   # JWT & NextAuth Hybrid Authentication
+│   └── validate.js      # Zod Schema Validation
+├── models/              # Mongoose Database Schemas
+│   ├── User.js          # Core User Profiles & Watchlists
+│   ├── Take.js          # User Reviews & Social Posts
+│   └── Notification.js  # Real-time User Alerts
+├── pages/               # Next.js Pages (App Routing & API)
+│   ├── api/             # Backend API Routes
+│   │   ├── admin/       # Secured Admin API Endpoints
+│   │   ├── auth/        # NextAuth & Custom JWT Endpoints
+│   │   ├── media/       # TMDB Proxy & Formatting API
+│   │   ├── user/        # Watchlist, History, Preferences API
+│   │   └── takes/       # Social Feed API
+│   ├── admin/           # Admin Portal UI Pages
+│   ├── movies/          # SSR Movie Detail Pages
+│   ├── series/          # SSR Series Detail Pages
+│   ├── u/               # Public User Profiles
+│   └── index.js         # Dynamic Home Feed
+├── scripts/             # DevOps & Operations
+│   ├── backup-scheduler.js # Automated Database Backups
+│   └── backup-service.js   # BSON/GZ Compression Engine
+├── services/            # Business Logic Abstraction Layer
+│   └── authService.js   # Centralized Auth Logic
+├── store/               # Redux Toolkit State Management
+│   ├── slices/          # User, UI, Watchlist, Location Slices
+│   └── index.js         # Redux Store Configuration
+├── styles/              # Global Tailwind & Lenis CSS
+└── utils/               # Helper Functions (Formatting, Math, Hooks)
+```
+</details>
+
+### Architectural Highlights
+
+1. **The Backend for Frontend (BFF):** Next.js `pages/api` acts as a secure proxy, hiding TMDB API keys and performing heavy server-side formatting before data reaches the client.
+2. **Hybrid State Management:** Redux handles transient UI state and Guest `localStorage`, while MongoDB maintains persistent global state for authenticated users. 
+3. **Real-Time Layer:** Supabase WebSockets handle instantaneous Chat and Watch Party synchronization completely independent of the Node.js API routes.
+4. **Resilient Caching:** Upstash Redis sits in front of the TMDB API calls, ensuring high availability even if TMDB rate limits are hit.
 ---
 
 ## ✨ Features & Tech Stack
@@ -77,12 +138,98 @@ MovieFinder includes a highly secure, decoupled **Administration Console** (`rus
 
 ---
 
-## 💾 Automated Backup System
+## 💾 Automated Backup & Disaster Recovery System
 
-We implemented a robust, Node.js-powered disaster recovery and backup architecture located in the `/scripts` directory.
-- **Automated Scheduler (`backup-scheduler.js`):** Runs cron jobs to periodically dump the entire MongoDB database without manual intervention.
-- **Backup Service (`backup-service.js`):** Connects directly to the MongoDB cluster, executes `mongodump`, compresses the BSON outputs into secure `.gz` archives, and stores them locally with timestamps.
-- **Restoration Utility (`restore-system.js`):** A one-click disaster recovery script that parses the latest backup archives and restores the complete database state via `mongorestore` in case of catastrophic failure.
+The application features a complete, Node.js-powered database backup, scheduling, and disaster recovery framework located in the `/scripts` directory. This system ensures high availability and resilience against data corruption, hardware failures, or connection issues.
+
+```mermaid
+sequenceDiagram
+    participant Scheduler as backup-scheduler.js (cron)
+    participant Service as backup-service.js
+    participant DB as MongoDB Instance
+    participant Logs as logs/ (logs folder)
+    participant Dump as database/ (backup directory)
+
+    Note over Scheduler: Daily at 3:00 AM
+    Scheduler->>Service: Spawns backup process
+    Service->>DB: mongodump --uri="..." --out="..."
+    alt Backup Success
+        DB-->>Service: Return binary database dumps
+        Service->>Dump: Save BSON structures in dump-[timestamp]/
+        Service->>Logs: Append log line to backup-success.log
+    else Backup Failure (e.g. DB Down)
+        DB-->>Service: Fail with connection error
+        Service->>Logs: Append error details to backup-error.log
+    end
+```
+
+### 1. Architectural Components
+
+#### ⏰ Automated Scheduler (`scripts/backup-scheduler.js`)
+*   **Purpose**: Continually schedules and triggers database backups automatically in the background.
+*   **How it works**: Uses `node-cron` to schedule backup events.
+*   **Default Schedule**: Runs **daily at 3:00 AM** (`0 3 * * *`).
+*   **Execution**: When triggered, it spawns `node scripts/backup-service.js` as a child process and handles execution errors.
+
+#### ⚙️ Backup Service (`scripts/backup-service.js`)
+*   **Purpose**: The execution engine that connects to MongoDB, extracts schemas/data, and compresses them.
+*   **How it works**:
+    1. Reads MongoDB credentials from environment variables (`MONGODB_URI`).
+    2. Generates a timestamped backup directory (e.g., `C:\RUSHUES BACKUP\database\dump-2026-06-04T12-30-00-000Z`).
+    3. Spawns the native `mongodump` utility, dumping all collections as BSON files into the database subdirectory.
+    4. Evaluates exit codes:
+        *   **On Success**: Appends a timestamped confirmation message to `/logs/backup-success.log`.
+        *   **On Failure**: Catches stdout/stderr details and appends the trace to `/logs/backup-error.log`.
+
+#### 🔄 Restoration Utility (`scripts/restore-system.js`)
+*   **Purpose**: Disaster recovery tool to restore the database to a previous point in time.
+*   **How it works**: Uses the native `mongorestore` tool to parse database BSON dumps and load them back into the active database instance.
+*   **Usage**: Run the script and pass the folder name of the target backup directory as an argument.
+
+#### 🔧 Account Helper (`scripts/fix-account.js`)
+*   **Purpose**: CLI script for administrative user management (quick verification or deletion of test accounts).
+*   **Usage**: Run `node scripts/fix-account.js <email> [verify|delete]`
+
+---
+
+### 2. Output File System Mapping
+All backup actions output to dedicated folders located in the root of the workspace directory:
+*   `database/dump-[timestamp]/`: Stores the raw BSON files and JSON metadata schemas for all collections.
+*   `logs/backup-success.log`: Appends confirmation timestamps of successful backups.
+*   `logs/backup-error.log`: Diagnostic logs containing stack traces if a backup fails (e.g., database connection timeout or missing `mongodump`).
+
+---
+
+### 3. Usage & CLI Commands
+
+#### Start the Background Backup Daemon:
+```bash
+# Start scheduler (keeps running in the background)
+node scripts/backup-scheduler.js
+```
+
+#### Trigger a Manual Backup immediately:
+```bash
+# Run the backup service manually
+node scripts/backup-service.js
+```
+
+#### Restore the Database from a Snapshot:
+```bash
+# Syntax: node scripts/restore-system.js <dump-folder-name>
+node scripts/restore-system.js dump-2026-06-04T12-30-00-000Z
+```
+
+#### Verify or Delete a User Account via CLI:
+```bash
+# Mark user as verified
+node scripts/fix-account.js test@gmail.com verify
+
+# Delete user account for clean re-registration
+node scripts/fix-account.js test@gmail.com delete
+```
+
+---
 
 ---
 

@@ -22,7 +22,7 @@ export const watchlistSchema = z.object({
     mediaId: z.number().int().positive(),
     mediaType: z.enum(["movie", "tv"]),
     title: z.string().min(1),
-    posterPath: z.string().optional(),
+    posterPath: z.string().nullable().optional(),
 });
 
 export const feedbackSchema = z.object({

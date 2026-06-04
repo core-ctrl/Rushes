@@ -39,11 +39,7 @@ export const toggleWatchlist = createAsyncThunk(
     }
 );
 
-// Guest watchlist (localStorage) actions — no API call
-export const toggleGuestWatchlist = (movie) => ({
-    type: "watchlist/toggleGuest",
-    payload: movie,
-});
+// Guest watchlist handled via slice actions
 
 const watchlistSlice = createSlice({
     name: "watchlist",
@@ -57,10 +53,19 @@ const watchlistSlice = createSlice({
             if (exists) {
                 state.items = state.items.filter((m) => m.id !== movie.id);
             } else {
-                state.items = [...state.items, movie];
+                const minMovie = {
+                    id: movie.id,
+                    media_type: movie.media_type || (movie.title ? "movie" : "tv"),
+                    title: movie.title || movie.name,
+                    poster_path: movie.poster_path,
+                    vote_average: movie.vote_average,
+                    release_date: movie.release_date,
+                    first_air_date: movie.first_air_date
+                };
+                state.items = [...state.items, minMovie];
             }
             // Persist to localStorage
-            try { localStorage.setItem("watchlist", JSON.stringify(state.items)); } catch { }
+            try { localStorage.setItem("watchlist", JSON.stringify(state.items)); } catch (err) { console.error("localStorage error:", err); }
         },
     },
     extraReducers: (builder) => {
@@ -68,13 +73,25 @@ const watchlistSlice = createSlice({
             .addCase(fetchWatchlist.fulfilled, (s, a) => { s.items = a.payload; s.status = "succeeded"; })
             .addCase(toggleWatchlist.fulfilled, (s, a) => {
                 const { movie, inList } = a.payload;
-                if (inList) s.items = s.items.filter((m) => m.id !== movie.id);
-                else s.items = [...s.items, movie];
+                if (inList) {
+                    s.items = s.items.filter((m) => m.id !== movie.id);
+                } else {
+                    const minMovie = {
+                        id: movie.id,
+                        media_type: movie.media_type || (movie.title ? "movie" : "tv"),
+                        title: movie.title || movie.name,
+                        poster_path: movie.poster_path,
+                        vote_average: movie.vote_average,
+                        release_date: movie.release_date,
+                        first_air_date: movie.first_air_date
+                    };
+                    s.items = [...s.items, minMovie];
+                }
             });
     },
 });
 
-export const { setWatchlist, clearWatchlist } = watchlistSlice.actions;
+export const { setWatchlist, clearWatchlist, toggleGuest: toggleGuestWatchlist } = watchlistSlice.actions;
 export const selectWatchlist = (s) => s.watchlist.items;
 export const selectInWatchlist = (id) => (s) => s.watchlist.items.some((m) => m.id === id);
 export default watchlistSlice.reducer;

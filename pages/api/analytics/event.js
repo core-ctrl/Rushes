@@ -43,7 +43,7 @@ export default async function handler(req, res) {
 
   res.status(200).json({ ok: true });
 
-  setImmediate(() => {
+  setImmediate(async () => {
     try {
       const decoded = await requireAuth(req, res);
       const payload = {

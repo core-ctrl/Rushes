@@ -310,6 +310,16 @@ NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_key
 
 ---
 
+## 🗺️ Master Documentation Hub
+
+For detailed guides on specific modules of the ecosystem, refer to these dedicated documents:
+
+*   📖 **[PROJECT.md](./PROJECT.md)**: Overall **Rushes Ecosystem Blueprint** including project goals, technological stack, data streams, and database configurations.
+*   💾 **[BACKUP.md](./BACKUP.md)**: Complete guide to the **Database Backup Pipeline**, cron scheduler configurations, manual backup triggers, and restore processes.
+*   🛡️ **[ADMIN.md](./ADMIN.md)**: In-depth analysis of the **Admin Portal Architecture**, folder mappings, API endpoints, moderation interfaces, and system health monitors.
+
+---
+
 ## 📜 License
 
 This project is open-sourced software licensed under the **MIT License**. See the [LICENSE](LICENSE) file for more information.

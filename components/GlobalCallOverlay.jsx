@@ -47,26 +47,5 @@ export default function GlobalCallOverlay() {
     );
   }
 
-  if (activeWatchParty) {
-    return (
-      <ZegoCallPanel
-        roomID={activeWatchParty.roomID}
-        mode="video"
-        isWatchTogether={true}
-        otherUser={{ username: 'Watch Party' }}
-        currentUser={activeWatchParty.currentUser}
-        onClose={() => dispatch(endWatchParty())}
-        isMinimized={!isActiveWTPage}
-        onMinimize={() => {
-          if (isActiveWTPage) router.push('/');
-        }}
-        onMaximize={() => {
-          if (!isWTPage) {
-            router.push(`/watch-together/${activeWatchParty.roomID.replace('wt_', '')}`);
-          }
-        }}
-        movieTitle={activeWatchParty.movieTitle}
-      />
-    );
-  }
+  return null;
 }

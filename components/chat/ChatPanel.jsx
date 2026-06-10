@@ -66,7 +66,7 @@ function SearchSkeleton() {
   );
 }
 
-// CallOverlay removed — replaced by IncomingCallModal + ZegoCallPanel signaling
+// CallOverlay removed — replaced by IncomingCallModal + WebRTCCallPanel signaling
 
 export default function ChatPanel({ conversation, currentUser }) {
   const [messages, setMessages] = useState([]);
@@ -82,7 +82,7 @@ export default function ChatPanel({ conversation, currentUser }) {
   const [movieTouched, setMovieTouched] = useState(false);
   const dispatch = useDispatch();
 
-  // === CALL STATE (No longer local Zego instances, just incoming invites) ===
+  // === CALL STATE (incoming invites, handled by WebRTCCallPanel) ===
   const [incomingCall, setIncomingCall] = useState(null);
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState(null);

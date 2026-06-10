@@ -1,27 +1,31 @@
-import { connectDB } from '../../lib/mongodb';
+import connectDB from '../../lib/mongodb';
+import mongoose from 'mongoose';
 
-// Simple health check — can be extended to check DB, cache, etc.
 export default async function handler(req, res) {
-  // Check for maintenance mode via env variable
-  if (process.env.MAINTENANCE_MODE === 'true') {
-    return res.status(503).json({
-      status: 'maintenance',
-      message: process.env.MAINTENANCE_MESSAGE || 'We\'re making MovieFinder even better. Back soon!',
-      estimatedTime: process.env.MAINTENANCE_ETA || null,
-    });
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    return res.status(405).end();
   }
 
   try {
     await connectDB();
-    res.json({
-      status: 'ok',
-      message: 'All systems operational',
-      timestamp: new Date().toISOString(),
-    });
+    const isDbConnected = mongoose.connection.readyState === 1;
+
+    if (!isDbConnected) {
+      if (req.method === 'HEAD') {
+        return res.status(503).end();
+      }
+      return res.status(503).json({ status: 'Database unavailable' });
+    }
+
+    if (req.method === 'HEAD') {
+      return res.status(200).end();
+    }
+
+    return res.status(200).json({ status: 'OK' });
   } catch (error) {
-    res.status(503).json({
-      status: 'degraded',
-      message: 'Some services are experiencing issues. We\'re on it.',
-    });
+    if (req.method === 'HEAD') {
+      return res.status(503).end();
+    }
+    return res.status(503).json({ status: 'Service unavailable' });
   }
 }

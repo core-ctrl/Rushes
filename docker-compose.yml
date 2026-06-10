@@ -18,6 +18,26 @@ services:
       - .env.local
     environment:
       - NODE_ENV=production
+      - ADMIN_PANEL_URL=http://localhost:3001
+    depends_on:
+      - mongo
+    restart: unless-stopped
+    networks:
+      - moviefinder-net
+
+  # ── Rushes Admin Panel ───────────────────────────────────────────
+  admin:
+    build:
+      context: C:/rushes-admin
+      dockerfile: C:/movie-finder-v2/Dockerfile.admin
+    container_name: rushes-admin
+    ports:
+      - "3001:3001"
+    env_file:
+      - C:/rushes-admin/.env.local
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
     depends_on:
       - mongo
     restart: unless-stopped

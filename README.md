@@ -130,7 +130,7 @@ We utilize a wide array of modern technologies to deliver a premium user experie
 
 MovieFinder includes a highly secure, decoupled **Administration Console** (`rushes-admin`) built to run on a separate port or isolated server.
 - **Tech Stack:** Next.js 14 (App Router), Tremor (Data Visualization), Tailwind CSS.
-- **Authentication:** Isolated JWT-based auth via NextAuth, restricting access strictly to superuser credentials (e.g., `admin@rushes.dev`).
+- **Authentication:** Isolated JWT-based auth via the decoupled `rushes-admin` panel, restricting access to users with administrative privileges.
 - **Capabilities:** 
   - **Global Dashboard:** Real-time metrics on user signups, total Takes, lists, and engagement.
   - **Content Moderation:** Review user reports, delete abusive Takes, and manage community standards.

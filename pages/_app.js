@@ -53,6 +53,7 @@ function AppInner({ Component, pageProps, router }) {
   const [authFeedback, setAuthFeedback] = useState({ type: "", message: "" });
   const currentUser = useSelector(selectUser);
   const [routeLoading, setRouteLoading] = useState(false);
+  const [isMaintenance, setIsMaintenance] = useState(false);
 
   // Route change loading with ClapperLoader
   useEffect(() => {
@@ -71,11 +72,16 @@ function AppInner({ Component, pageProps, router }) {
   // Maintenance mode check
   useEffect(() => {
     fetch('/api/health').then(r => r.json()).then(d => {
-      if (d.status === 'maintenance' && router.pathname !== '/maintenance') {
-        router.replace('/maintenance');
+      if (d.status === 'maintenance') {
+        setIsMaintenance(true);
+        if (router.pathname !== '/maintenance') {
+          router.replace('/maintenance');
+        }
+      } else {
+        setIsMaintenance(false);
       }
     }).catch(() => {});
-  }, []);
+  }, [router.pathname]);
 
   // Location hook - runs silently after consent
   useLocation();
@@ -214,6 +220,15 @@ function AppInner({ Component, pageProps, router }) {
     openAuth: (mode) => dispatch(openAuthModal(mode || "login")),
     openTrailer: handleOpenTrailer,
   };
+
+  if (isMaintenance) {
+    return (
+      <div className="bg-black min-h-screen text-white">
+        <Component {...pageProps} {...sharedProps} />
+        <Toaster />
+      </div>
+    );
+  }
 
   if (!initialized) {
     return (

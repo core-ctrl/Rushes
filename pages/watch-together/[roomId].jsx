@@ -354,18 +354,23 @@ export default function WatchTogetherRoom() {
     // Connect to custom Socket.IO backend
     const SOCKET_URL = process.env.NEXT_PUBLIC_WATCH_TOGETHER_URL || 'https://rushes-watchtogether.onrender.com';
     
-    // Read JWT token from cookie for cross-origin socket auth
-    const getToken = () => {
-      const match = document.cookie.match(/(?:^|;\s*)token=([^;]*)/);
-      return match ? decodeURIComponent(match[1]) : null;
-    };
+    let socket;
+    let isCleanedUp = false;
     
-    const socket = io(SOCKET_URL, {
-      auth: { token: getToken() },
-      withCredentials: true,
-      transports: ['websocket', 'polling']
-    });
-    socketRef.current = socket;
+    const initSocket = async () => {
+      try {
+        // Fetch JWT token for cross-origin socket auth (since cookie is HttpOnly)
+        const res = await axios.get('/api/auth/socket-token');
+        const token = res.data.token;
+        
+        if (isCleanedUp) return;
+
+        socket = io(SOCKET_URL, {
+          auth: { token },
+          withCredentials: true,
+          transports: ['websocket', 'polling']
+        });
+        socketRef.current = socket;
 
     socket.on('connect', () => {
       console.log('🔌 Connected to watch-together socket server');
@@ -505,8 +510,16 @@ export default function WatchTogetherRoom() {
       syncLocalPlayer(null, currentTime);
     });
 
+      } catch (err) {
+        console.error('Failed to initialize socket:', err);
+      }
+    };
+
+    initSocket();
+
     return () => {
-      socket.disconnect();
+      isCleanedUp = true;
+      if (socket) socket.disconnect();
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop());
         localStreamRef.current = null;

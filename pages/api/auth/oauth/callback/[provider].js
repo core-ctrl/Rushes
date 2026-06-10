@@ -61,7 +61,7 @@ export default async function handler(req, res) {
 
         return res.redirect(authRedirect(req, {
             authSuccess: isNewUser
-                ? `Thanks for joining Movie Finder with ${config.label}.`
+                ? `Thanks for joining Rushes with ${config.label}.`
                 : `Thanks for signing in with ${config.label}.`,
             authMode: "login",
         }));

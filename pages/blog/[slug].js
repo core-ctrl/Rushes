@@ -90,7 +90,7 @@ export default function BlogArticlePage({ article, relatedArticles }) {
         <aside className="space-y-6 lg:sticky lg:top-24 lg:h-fit">
           <AdSlot slot="4040404040" label="Sponsored" />
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <h3 className="mb-3 text-lg font-semibold">More from Movie Finder</h3>
+            <h3 className="mb-3 text-lg font-semibold">More from Rushes</h3>
             <div className="space-y-3">
               <Link href="/movies" className="block text-sm text-neutral-300 transition hover:text-white">Browse top movies</Link>
               <Link href="/series" className="block text-sm text-neutral-300 transition hover:text-white">Browse top series</Link>

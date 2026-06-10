@@ -79,7 +79,7 @@ export default function VerifyEmailPage() {
     return (
         <>
             <Head>
-                <title>Verify Your Account — MovieFinder</title>
+                <title>Verify Your Account — Rushes</title>
             </Head>
 
             <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
@@ -205,7 +205,7 @@ export default function VerifyEmailPage() {
                                 </motion.div>
                                 <h1 className="text-2xl font-black text-white mb-2">Account Activated!</h1>
                                 <p className="text-neutral-400 text-sm mb-8 max-w-xs mx-auto">
-                                    Your email has been verified. Welcome to MovieFinder! Let's get you signed in.
+                                    Your email has been verified. Welcome to Rushes! Let's get you signed in.
                                 </p>
                                 <Link
                                     href="/login"

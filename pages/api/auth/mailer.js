@@ -7,7 +7,7 @@
 //   EMAIL_PORT=587
 //   EMAIL_USER=your@gmail.com
 //   EMAIL_PASS=your-app-password   (Gmail: use App Password, not your main password)
-//   EMAIL_FROM="Movie Finder <your@gmail.com>"
+//   EMAIL_FROM="Rushes <your@gmail.com>"
 
 import nodemailer from "nodemailer";
 
@@ -33,12 +33,12 @@ export async function sendVerificationEmail(to, name) {
     const transporter = getTransporter();
 
     await transporter.sendMail({
-        from: process.env.EMAIL_FROM || `"Movie Finder" <${process.env.EMAIL_USER}>`,
+        from: process.env.EMAIL_FROM || `"Rushes" <${process.env.EMAIL_USER}>`,
         to,
-        subject: "Welcome to Movie Finder 🎬",
+        subject: "Welcome to Rushes 🎬",
         html: `
       <div style="font-family:sans-serif;background:#0a0a0a;color:#fff;padding:40px;max-width:500px;margin:auto;border-radius:16px;">
-        <h1 style="color:#e50914;margin-bottom:8px;">🎬 Movie Finder</h1>
+        <h1 style="color:#e50914;margin-bottom:8px;">🎬 Rushes</h1>
         <h2 style="font-weight:600;margin-bottom:16px;">Welcome, ${name}!</h2>
         <p style="color:#aaa;line-height:1.7;">
           Your account has been created successfully.<br/>
@@ -64,12 +64,12 @@ export async function sendPasswordResetEmail(to, resetToken) {
     const transporter = getTransporter();
 
     await transporter.sendMail({
-        from: process.env.EMAIL_FROM || `"Movie Finder" <${process.env.EMAIL_USER}>`,
+        from: process.env.EMAIL_FROM || `"Rushes" <${process.env.EMAIL_USER}>`,
         to,
-        subject: "Reset your Movie Finder password",
+        subject: "Reset your Rushes password",
         html: `
       <div style="font-family:sans-serif;background:#0a0a0a;color:#fff;padding:40px;max-width:500px;margin:auto;border-radius:16px;">
-        <h1 style="color:#e50914;">🎬 Movie Finder</h1>
+        <h1 style="color:#e50914;">🎬 Rushes</h1>
         <h2>Password Reset</h2>
         <p style="color:#aaa;">Click the button below to reset your password. This link expires in 1 hour.</p>
         <a href="${resetUrl}" style="display:inline-block;margin-top:20px;background:#e50914;color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:600;">

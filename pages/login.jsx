@@ -64,7 +64,7 @@ export default function LoginPage() {
     return (
         <>
             <Head>
-                <title>Sign In — MovieFinder</title>
+                <title>Sign In — Rushes</title>
             </Head>
 
             <div className="min-h-screen flex items-center justify-center p-4 bg-neutral-950">

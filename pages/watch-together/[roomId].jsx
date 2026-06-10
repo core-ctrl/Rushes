@@ -743,7 +743,7 @@ export default function WatchTogetherRoom() {
     return (
       <>
         <Head>
-          <title>Watch Together Setup - {movieTitle || 'MovieFinder'}</title>
+          <title>Watch Together Setup - {movieTitle || 'Rushes'}</title>
         </Head>
         <main className="min-h-screen bg-neutral-950 pt-20 text-white">
           <section className="mx-auto grid min-h-[calc(100vh-80px)] max-w-6xl grid-cols-1 gap-6 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-6">
@@ -840,7 +840,7 @@ export default function WatchTogetherRoom() {
   return (
     <>
       <Head>
-        <title>Watch Together — {movieTitle} | MovieFinder</title>
+        <title>Watch Together — {movieTitle} | Rushes</title>
       </Head>
       <div className="min-h-screen bg-neutral-950 pt-20 flex flex-col lg:flex-row">
 

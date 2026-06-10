@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
         return (
             <>
                 <Head>
-                    <title>Reset Link Sent — MovieFinder</title>
+                    <title>Reset Link Sent — Rushes</title>
                 </Head>
                 <div className="min-h-screen flex items-center justify-center p-4 bg-neutral-950">
                     <motion.div
@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
     return (
         <>
             <Head>
-                <title>Forgot Password — MovieFinder</title>
+                <title>Forgot Password — Rushes</title>
             </Head>
             <div className="min-h-screen flex items-center justify-center p-4 bg-neutral-950">
                 <motion.div

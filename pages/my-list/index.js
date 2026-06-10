@@ -18,7 +18,7 @@ export default function MyListPage({ wishlist = [], addToWishlist, user, openAut
   if (!user) {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-4 pt-20">
-        <Head><title>My List — Movie Finder</title></Head>
+        <Head><title>My List — Rushes</title></Head>
         <p className="text-4xl">🔒</p>
         <p className="text-xl font-bold">Sign in to see your list</p>
         <p className="text-neutral-400 text-sm">Save movies and series to watch later</p>
@@ -34,7 +34,7 @@ export default function MyListPage({ wishlist = [], addToWishlist, user, openAut
 
   return (
     <div className="min-h-screen bg-black text-white pt-28 px-4 md:px-6">
-      <Head><title>My List — Movie Finder</title></Head>
+      <Head><title>My List — Rushes</title></Head>
 
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">❤️ My List</h1>

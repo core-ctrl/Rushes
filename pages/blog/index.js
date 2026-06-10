@@ -21,7 +21,7 @@ export default function BlogIndexPage({ articles }) {
       <section className="mx-auto max-w-7xl">
         <header className="mb-8">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-red-400">Editorial</p>
-          <h1 className="text-3xl font-bold md:text-5xl">Movie Finder Blog</h1>
+          <h1 className="text-3xl font-bold md:text-5xl">Rushes Blog</h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-neutral-400">
             Deep practical guides for discovery quality, streaming choices, consent-safe analytics, and performance engineering.
           </p>

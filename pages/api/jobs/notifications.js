@@ -44,7 +44,7 @@ async function pushNotification(user, payload) {
   user.notificationInbox = user.notificationInbox.slice(0, 50);
 
   if (user.notificationSettings?.email !== false) {
-    await sendDecisionAlertEmail(user.email, user.name, payload.message, "Movie Finder alert");
+    await sendDecisionAlertEmail(user.email, user.name, payload.message, "Rushes alert");
   }
 
   return true;

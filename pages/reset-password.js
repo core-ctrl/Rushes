@@ -40,7 +40,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-black px-4">
       <Head>
-        <title>Reset Password — Movie Finder</title>
+        <title>Reset Password — Rushes</title>
       </Head>
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-neutral-900 p-8">
         <h1 className="mb-2 text-2xl font-bold text-white">Reset Password</h1>

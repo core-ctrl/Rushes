@@ -119,7 +119,7 @@ export default function UserProfile() {
     return (
         <>
             <Head>
-                <title>@{profile.username} | MovieFinder</title>
+                <title>@{profile.username} | Rushes</title>
             </Head>
             <div className="min-h-screen bg-gradient-to-br from-neutral-900 to-black pt-24 pb-12">
                 <div className="max-w-4xl mx-auto px-4">

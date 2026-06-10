@@ -53,8 +53,8 @@ export default function SharedWatchlist() {
   return (
     <>
       <Head>
-        <title>{data.displayName || data.username}'s Watchlist — MovieFinder</title>
-        <meta name="description" content={`Check out ${data.username}'s watchlist with ${data.totalItems} titles on MovieFinder`} />
+        <title>{data.displayName || data.username}'s Watchlist — Rushes</title>
+        <meta name="description" content={`Check out ${data.username}'s watchlist with ${data.totalItems} titles on Rushes`} />
       </Head>
       <div className="min-h-screen bg-neutral-950 pt-24 pb-16">
         <div className="max-w-5xl mx-auto px-4">

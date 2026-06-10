@@ -57,7 +57,7 @@ export default function SettingsPage() {
     return (
         <>
             <Head>
-                <title>Settings — MovieFinder</title>
+                <title>Settings — Rushes</title>
             </Head>
             <div className="min-h-screen bg-neutral-950 pt-24 pb-16">
                 <div className="max-w-2xl mx-auto px-4">

@@ -102,7 +102,7 @@ export default function SearchPage() {
     return (
         <>
             <Head>
-                <title>Search — MovieFinder</title>
+                <title>Search — Rushes</title>
             </Head>
 
             <div className="min-h-screen bg-neutral-950 px-4 pt-24 pb-20">

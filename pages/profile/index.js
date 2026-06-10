@@ -71,7 +71,7 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
   if (!user) {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-4">
-        <Head><title>Profile — Movie Finder</title></Head>
+        <Head><title>Profile — Rushes</title></Head>
         <p className="text-4xl">👤</p>
         <p className="text-xl font-bold">Sign in to view your profile</p>
         <button onClick={openAuth} className="mt-4 bg-red-600 text-white px-6 py-3 rounded-xl font-medium">
@@ -290,7 +290,7 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
 
   return (
     <div className="min-h-screen bg-black text-white pt-28 px-4 md:px-6">
-      <Head><title>Profile — Movie Finder</title></Head>
+      <Head><title>Profile — Rushes</title></Head>
 
       <div className="max-w-3xl mx-auto">
         {/* Avatar + Name */}

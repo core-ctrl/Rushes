@@ -75,7 +75,7 @@ export default function MessagesPage({ openAuth }) {
   if (!currentUser) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,rgba(229,9,20,0.14),transparent_34%),#050505] p-8 text-white">
-        <Head><title>Messages | MovieFinder</title></Head>
+        <Head><title>Messages | Rushes</title></Head>
         <div className="max-w-md rounded-[28px] border border-white/10 bg-white/[0.05] p-8 text-center shadow-[0_30px_120px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
           <MessageCircle className="mx-auto mb-6 h-16 w-16 text-red-300" />
           <h1 className="mb-2 text-3xl font-black text-white">Messages are locked</h1>
@@ -90,7 +90,7 @@ export default function MessagesPage({ openAuth }) {
 
   return (
     <>
-      <Head><title>Messages | MovieFinder</title></Head>
+      <Head><title>Messages | Rushes</title></Head>
       <div className="flex h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(229,9,20,0.13),transparent_28%),#050505] pt-16 text-white md:pt-20">
         <div className={`${showChatMobile ? "hidden md:flex" : "flex"} w-full flex-col overflow-hidden border-r border-white/10 bg-black/35 backdrop-blur-2xl md:w-96`}>
           <div className="border-b border-white/8 p-4">

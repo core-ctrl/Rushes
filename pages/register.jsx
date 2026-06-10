@@ -145,7 +145,7 @@ export default function RegisterPage() {
     return (
         <>
             <Head>
-                <title>Create Account — MovieFinder</title>
+                <title>Create Account — Rushes</title>
             </Head>
             <div className="min-h-screen flex items-center justify-center p-4 bg-neutral-950">
                 <motion.div
@@ -163,7 +163,7 @@ export default function RegisterPage() {
                             🎬
                         </motion.div>
                         <h1 className="text-xl font-bold text-white">Create your account</h1>
-                        <p className="text-neutral-500 text-sm mt-1">Join MovieFinder and discover cinema that moves you</p>
+                        <p className="text-neutral-500 text-sm mt-1">Join Rushes and discover cinema that moves you</p>
                     </div>
 
                     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">

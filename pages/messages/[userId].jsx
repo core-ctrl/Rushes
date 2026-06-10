@@ -48,7 +48,7 @@ export default function ChatPage() {
     return (
         <>
             <Head>
-                <title>Chat | MovieFinder</title>
+                <title>Chat | Rushes</title>
             </Head>
             <ChatWindow otherUser={otherUser} onClose={() => router.back()} />
         </>

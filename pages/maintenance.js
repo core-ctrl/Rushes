@@ -7,7 +7,7 @@ export default function MaintenancePage() {
   return (
     <>
       <Head>
-        <title>We'll Be Right Back — MovieFinder</title>
+        <title>We'll Be Right Back — Rushes</title>
         <meta name="robots" content="noindex" />
       </Head>
 
@@ -40,7 +40,7 @@ export default function MaintenancePage() {
           </h1>
 
           <p className="text-lg text-neutral-400 mb-8 leading-relaxed">
-            We're making MovieFinder even better for you. 
+            We're making Rushes even better for you. 
             <br />
             <span className="text-neutral-500">Our team is working behind the scenes 🎬</span>
           </p>
@@ -84,7 +84,7 @@ export default function MaintenancePage() {
           </div>
 
           <p className="text-[10px] text-neutral-800 mt-6">
-            🎬 MovieFinder — Watch What Moves You
+            🎬 Rushes — Watch What Moves You
           </p>
         </motion.div>
       </div>

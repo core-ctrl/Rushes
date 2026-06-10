@@ -353,7 +353,15 @@ export default function WatchTogetherRoom() {
 
     // Connect to custom Socket.IO backend
     const SOCKET_URL = process.env.NEXT_PUBLIC_WATCH_TOGETHER_URL || 'https://rushes-watchtogether.onrender.com';
+    
+    // Read JWT token from cookie for cross-origin socket auth
+    const getToken = () => {
+      const match = document.cookie.match(/(?:^|;\s*)token=([^;]*)/);
+      return match ? decodeURIComponent(match[1]) : null;
+    };
+    
     const socket = io(SOCKET_URL, {
+      auth: { token: getToken() },
       withCredentials: true,
       transports: ['websocket', 'polling']
     });

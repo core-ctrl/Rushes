@@ -11,7 +11,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://image.tmdb.org https://www.themoviedb.org https://i.ytimg.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://images.unsplash.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://secure.gravatar.com https://api.dicebear.com https://res.cloudinary.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://api.themoviedb.org https://nominatim.openstreetmap.org https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://region1.google-analytics.com https://pagead2.googlesyndication.com wss: ws:",
+  "connect-src 'self' https://api.themoviedb.org https://nominatim.openstreetmap.org https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://region1.google-analytics.com https://pagead2.googlesyndication.com https://*.googleapis.com https://*.firebaseio.com https://rushes-watchtogether.onrender.com wss://rushes-watchtogether.onrender.com wss: ws:",
   "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://googleads.g.doubleclick.net",
   "media-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
   isProduction ? "upgrade-insecure-requests" : "",

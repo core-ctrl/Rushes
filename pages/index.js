@@ -38,6 +38,7 @@ import {
   fetchTopRatedMovies,
   fetchTopRatedTV,
   fetchByGenre,
+  fetchNowPlaying,
 } from "../lib/tmdb";
 import axios from "axios";
 import { readStoredPreferences } from "../lib/userPreferences";
@@ -177,7 +178,7 @@ export default function Home({
 
           <TopCarousel
             items={trendingItems}
-            title={<TitleWithIcon icon={FireIcon} title="Trending Now" subtitle="What people are watching right now" />}
+            title={<TitleWithIcon icon={FireIcon} title="Trending Now" subtitle="Top OTT hits and latest theater releases" />}
             {...rowProps}
           />
 
@@ -350,6 +351,7 @@ export async function getServerSideProps() {
   try {
     const [
       trendingRaw,
+      nowPlayingRaw,
       trendingMoviesRaw,
       trendingTVRaw,
       goatedMoviesRaw,
@@ -366,6 +368,7 @@ export async function getServerSideProps() {
       fantasyRaw,
     ] = await Promise.all([
       fetchTrending(),
+      fetchNowPlaying("US"), // Theater movies
       fetchTrendingMovies(),
       fetchTrendingTV(),
       fetchTopRatedMovies(2),
@@ -393,10 +396,26 @@ export async function getServerSideProps() {
       })
     );
 
+    // Mix OTT (Trending) and Theater (Now Playing) together
+    const mixedTrending = [];
+    const maxLen = Math.max(trendingRaw.length, nowPlayingRaw.length);
+    const seenIds = new Set();
+    
+    for (let i = 0; i < maxLen; i++) {
+      if (trendingRaw[i] && !seenIds.has(trendingRaw[i].id)) {
+        mixedTrending.push(trendingRaw[i]);
+        seenIds.add(trendingRaw[i].id);
+      }
+      if (nowPlayingRaw[i] && !seenIds.has(nowPlayingRaw[i].id)) {
+        mixedTrending.push({ ...nowPlayingRaw[i], media_type: "movie" });
+        seenIds.add(nowPlayingRaw[i].id);
+      }
+    }
+
     return {
       props: {
         heroSlides,
-        trendingItems: sortByNewest(trendingRaw).slice(0, 12).map((item) => compactMedia(item)),
+        trendingItems: mixedTrending.slice(0, 16).map((item) => compactMedia(item)),
         trendingMovies: sortByNewest(trendingMoviesRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
         trendingTV: sortByNewest(trendingTVRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "tv" })),
         goatedMovies: sortByRating(goatedMoviesRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),

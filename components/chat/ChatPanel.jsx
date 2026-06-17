@@ -132,6 +132,11 @@ export default function ChatPanel({ conversation, currentUser }) {
   const startCallAction = (mode) => {
     if (!channelRef.current) return;
 
+    if (!isOnline) {
+      toast({ type: 'error', message: `${otherUser?.displayName || otherUser?.username || 'User'} is offline. They cannot receive calls right now.` });
+      return;
+    }
+
     const roomID = `mf_${conversationId}_${Date.now()}`;
     
     dispatch(startGlobalCall({

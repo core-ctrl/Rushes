@@ -78,6 +78,9 @@ function AppInner({ Component, pageProps, router }) {
         }
       } else {
         setIsMaintenance(false);
+        if (router.pathname === '/maintenance') {
+          router.replace('/');
+        }
       }
     }).catch(() => {});
   }, [router.pathname]);

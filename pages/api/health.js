@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import SystemSettings from '../../models/SystemSettings';
 
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     return res.status(405).end();
   }

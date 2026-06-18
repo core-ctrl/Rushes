@@ -66,7 +66,7 @@ export default function RushesCallPanel({
     });
 
     // Tell server to resume (we start paused per server logic)
-    socketRef.current.emit('webrtc:consumer-resume', { consumerId: consumer.id });
+    socketRef.current.emit('webrtc:resume-consumer', { consumerId: consumer.id });
 
     setRemoteStreams(prev => {
       const stream = prev[peerId] ? prev[peerId] : new MediaStream();

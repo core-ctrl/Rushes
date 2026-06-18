@@ -4,6 +4,7 @@ import { Heart, MessageCircle, Repeat2, Share, Bookmark, MoreHorizontal, AlertTr
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from '../ui/Toaster';
 
 export default function PostCard({ post, onLike, onComment, onRepost, onSave, onDelete, onReport, onVote, onShare, currentUser }) {
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
@@ -13,6 +14,10 @@ export default function PostCard({ post, onLike, onComment, onRepost, onSave, on
   const [showMenu, setShowMenu] = useState(false);
   const [showSpoiler, setShowSpoiler] = useState(!post.isSpoiler);
   const [likeAnimation, setLikeAnimation] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(post.content);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isLocalDeleted, setIsLocalDeleted] = useState(false);
 
   const isAuthor = currentUser?.id === post.authorId;
 
@@ -74,6 +79,39 @@ export default function PostCard({ post, onLike, onComment, onRepost, onSave, on
     );
   };
 
+  const handleConfirmDelete = async () => {
+    setShowDeleteConfirm(false);
+    try {
+      await fetch(`/api/posts/${post.id}`, { 
+        method: 'DELETE', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ softDelete: true })
+      });
+      setIsLocalDeleted(true);
+      toast({ type: 'success', message: 'Post deleted successfully.' });
+      if (onDelete) onDelete(post.id, true);
+    } catch (err) {
+      toast({ type: 'error', message: 'Failed to delete post.' });
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      await fetch(`/api/posts/${post.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editContent })
+      });
+      setIsEditing(false);
+      post.content = editContent; // optimistic local update
+      toast({ type: 'success', message: 'Post updated.' });
+    } catch (err) {
+      toast({ type: 'error', message: 'Failed to update post.' });
+    }
+  };
+
+  if (isLocalDeleted) return null;
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -126,11 +164,14 @@ export default function PostCard({ post, onLike, onComment, onRepost, onSave, on
               >
                 {isAuthor ? (
                   <>
-                    <button className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/5 flex items-center gap-2">
+                    <button 
+                      onClick={() => { setIsEditing(true); setShowMenu(false); }}
+                      className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/5 flex items-center gap-2"
+                    >
                       <Edit3 className="w-4 h-4" /> Edit Post
                     </button>
                     <button 
-                      onClick={() => { onDelete(post.id); setShowMenu(false); }}
+                      onClick={() => { setShowDeleteConfirm(true); setShowMenu(false); }}
                       className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-white/5 flex items-center gap-2"
                     >
                       <Trash2 className="w-4 h-4" /> Delete Post
@@ -157,7 +198,20 @@ export default function PostCard({ post, onLike, onComment, onRepost, onSave, on
 
       {/* Content */}
       <div className="mb-4">
-        {post.isSpoiler && !showSpoiler ? (
+        {isEditing ? (
+          <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="w-full bg-transparent text-white resize-none outline-none min-h-[80px]"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2 mt-2">
+              <button onClick={() => setIsEditing(false)} className="px-3 py-1.5 text-sm rounded-lg hover:bg-white/10 text-gray-300">Cancel</button>
+              <button onClick={handleSaveEdit} className="px-3 py-1.5 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium">Save Changes</button>
+            </div>
+          </div>
+        ) : post.isSpoiler && !showSpoiler ? (
           <div className="relative w-full h-32 rounded-xl overflow-hidden cursor-pointer" onClick={() => setShowSpoiler(true)}>
             <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-xl flex flex-col items-center justify-center border border-white/5">
               <AlertTriangle className="w-8 h-8 text-yellow-500 mb-2" />
@@ -256,6 +310,38 @@ export default function PostCard({ post, onLike, onComment, onRepost, onSave, on
           </button>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+              className="bg-gray-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+            >
+              <h3 className="text-xl font-bold text-white mb-2">Delete Post?</h3>
+              <p className="text-gray-400 mb-6 text-sm">Are you sure you want to delete this post? This will submit a deletion request.</p>
+              <div className="flex gap-3 justify-end">
+                <button 
+                  onClick={() => setShowDeleteConfirm(false)} 
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleConfirmDelete} 
+                  className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

@@ -20,6 +20,7 @@ export default function MovieCardHover({
     const [details, setDetails] = useState(null);
     const [providers, setProviders] = useState([]);
     const [trailerKey, setTrailerKey] = useState(null);
+    const [isVideoReady, setIsVideoReady] = useState(false);
     const router = useRouter();
 
     const isMovie = item.media_type === "movie" || item.title;
@@ -68,6 +69,14 @@ export default function MovieCardHover({
         load();
         return () => (mounted = false);
     }, [item.id, isMovie]);
+
+    // Delay video start slightly to prevent spam loads
+    useEffect(() => {
+        if (trailerKey) {
+            const timer = setTimeout(() => setIsVideoReady(true), 1200);
+            return () => clearTimeout(timer);
+        }
+    }, [trailerKey]);
 
     const playTrailer = async () => {
         const mediaType = item.media_type || (isMovie ? "movie" : "tv");
@@ -138,24 +147,36 @@ export default function MovieCardHover({
         flex flex-col
       `}
         >
-            {/* BACKDROP */}
-            <div className={`relative w-full ${isPosterFallback ? "aspect-[2/3] max-h-[300px]" : "aspect-video"}`}>
+            {/* BACKDROP / VIDEO */}
+            <div className={`relative w-full overflow-hidden ${isPosterFallback ? "aspect-[2/3] max-h-[300px]" : "aspect-video"}`}>
                 <Image
                     src={bgUrl}
                     alt={item.title || item.name}
                     width={780}
                     height={isPosterFallback ? 1170 : 440}
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover transition-opacity duration-1000 ${isVideoReady ? 'opacity-0' : 'opacity-100'}`}
                     placeholder="blur"
                     blurDataURL={TMDB_BLUR_DATA_URL}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                
+                {/* YOUTUBE IFRAME OVERLAY */}
+                {isVideoReady && trailerKey && (
+                    <div className="absolute inset-0 z-0 pointer-events-none scale-125">
+                        <iframe
+                            src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&loop=1&playlist=${trailerKey}&modestbranding=1&showinfo=0`}
+                            className="w-full h-full"
+                            allow="autoplay; encrypted-media"
+                        />
+                    </div>
+                )}
+                
+                <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/40 to-transparent pointer-events-none" />
 
                 {/* PLAY */}
                 <button
                     onClick={playTrailer}
                     className="
-            absolute bottom-4 left-4
+            absolute bottom-4 left-4 z-20
             bg-white text-black
             px-5 py-2 rounded-xl
             font-extrabold text-sm
@@ -174,7 +195,7 @@ export default function MovieCardHover({
                 <button
                     onClick={handleWishlist}
                     className={`
-            absolute bottom-4 right-4
+            absolute bottom-4 right-4 z-20
             w-10 h-10 rounded-full
             flex items-center justify-center
             text-lg transition-all border

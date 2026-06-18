@@ -1,9 +1,11 @@
 import React from "react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import SEOMeta from "./SEOMeta";
 import WatchNowButtons from "./WatchNowButtons";
 import TrailerModal from "./TrailerModal";
+import WatchPartyModal from "./WatchPartyModal";
 import ShareButton from "./ShareButton";
 import ErrorBoundary from "./ErrorBoundary";
 import { TMDB_BLUR_DATA_URL } from "../lib/imageBlur";
@@ -22,6 +24,8 @@ export default function MediaDetailLayout({
   isInList,
   addToWishlist,
 }) {
+  const [isWatchPartyModalOpen, setIsWatchPartyModalOpen] = React.useState(false);
+  const [dominantColor, setDominantColor] = React.useState('147, 51, 234'); // Default purple
   const isMovie = mediaType === "movie";
   const title = media.title || media.name;
   const releaseDate = media.release_date || media.first_air_date;
@@ -40,6 +44,29 @@ export default function MediaDetailLayout({
     
   const releaseDateForProviders = regionalRelease?.release_dates?.[0]?.release_date || releaseDate;
 
+  const bgImage = media.backdrop_path || media.poster_path || "/fallback.jpg";
+  const bgUrl = (p) => p?.startsWith("http") ? p : `https://image.tmdb.org/t/p/w780${p}`;
+
+  React.useEffect(() => {
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.src = bgUrl(bgImage);
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = canvas.height = 80;
+        ctx.drawImage(img, 0, 0, 80, 80);
+        const data = ctx.getImageData(0, 0, 80, 80).data;
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let i = 0; i < data.length; i += 24) {
+          r += data[i]; g += data[i + 1]; b += data[i + 2]; count++;
+        }
+        if (count > 0) setDominantColor(`${Math.round(r / count)}, ${Math.round(g / count)}, ${Math.round(b / count)}`);
+      } catch (e) { }
+    };
+  }, [bgImage]);
+
   // THEATER TAG LOGIC (Movies only)
   const flatrate = media.providers?.flatrate || [];
   const hasOTTProviders = flatrate.length > 0;
@@ -55,8 +82,27 @@ export default function MediaDetailLayout({
   const isStreaming = hasOTTProviders;
   const availabilityStatus = isStreaming ? "STREAMING" : inTheaters ? "IN THEATERS" : "UNKNOWN";
 
+  const streamUrl = flatrate.length > 0
+    ? (() => {
+        const name = flatrate[0].provider_name || '';
+        const links = [
+          { match: /netflix/i, url: `https://www.netflix.com/search?q=${encodeURIComponent(title)}` },
+          { match: /prime|amazon/i, url: `https://www.primevideo.com/search?phrase=${encodeURIComponent(title)}` },
+          { match: /disney/i, url: `https://www.disneyplus.com/search?q=${encodeURIComponent(title)}` },
+          { match: /hotstar/i, url: `https://www.hotstar.com/in/search?q=${encodeURIComponent(title)}` },
+          { match: /jio/i, url: `https://www.jiocinema.com/search/${encodeURIComponent(title)}` },
+          { match: /zee5/i, url: `https://www.zee5.com/search?q=${encodeURIComponent(title)}` },
+          { match: /apple/i, url: `https://tv.apple.com/search?term=${encodeURIComponent(title)}` },
+        ];
+        return links.find(l => l.match.test(name))?.url || '';
+      })()
+    : '';
+
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div 
+      className="min-h-screen bg-black text-white transition-colors duration-1000"
+      style={{ '--theme-color': dominantColor }}
+    >
       <SEOMeta
         title={`${title} (${year}) — Watch Trailer & Where to Stream`}
         description={media.overview?.slice(0, 160)}
@@ -76,6 +122,8 @@ export default function MediaDetailLayout({
         <div className="relative h-[55vh] w-full md:h-[75vh]">
           <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/30 to-transparent" />
           <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/60 to-transparent" />
+          <div className="absolute inset-0 z-10 mix-blend-color transition-colors duration-1000" style={{ backgroundColor: 'rgba(var(--theme-color), 0.5)' }} />
+          <div className="absolute inset-0 z-10 transition-colors duration-1000 pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(var(--theme-color), 0.15) 0%, transparent 40%)' }} />
           <Image
             src={`https://image.tmdb.org/t/p/original${media.backdrop_path}`}
             alt={title}
@@ -91,17 +139,18 @@ export default function MediaDetailLayout({
           <div className="flex flex-col gap-8 md:flex-row">
             {/* Poster */}
             <div className="flex-shrink-0 w-36 md:w-64">
-              <div className="relative aspect-[2/3] w-full overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
+              <motion.div layoutId={`poster-${media.id}`} className="relative aspect-[2/3] w-full shrink-0 overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
                 <Image
                   src={`https://image.tmdb.org/t/p/w500${media.poster_path}`}
                   alt={title}
-                  width={200}
-                  height={300}
+                  width={256}
+                  height={384}
                   className="h-full w-full object-cover"
+                  priority
                   placeholder="blur"
                   blurDataURL={TMDB_BLUR_DATA_URL}
                 />
-              </div>
+              </motion.div>
             </div>
 
             <div className="md:pt-16">
@@ -148,15 +197,12 @@ export default function MediaDetailLayout({
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={handlePlayTrailer}
-                  disabled={trailerLoading || !trailerKey}
-                  className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-3 font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={trailerLoading}
+                  style={{ backgroundColor: 'rgb(var(--theme-color))' }}
+                  className="flex items-center gap-2 rounded-xl px-6 py-3 font-medium text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 shadow-[0_0_20px_rgba(var(--theme-color),0.4)]"
                 >
                   <AppIcon icon={PlayIcon} size={17} className="fill-current" />
-                  {trailerLoading
-                    ? "Loading…"
-                    : trailerKey
-                      ? "Play Trailer"
-                      : "No trailer available"}
+                  {trailerLoading ? "Loading…" : "Play Trailer"}
                 </button>
                 <button
                   onClick={() => addToWishlist({ ...media, media_type: mediaType, title })}
@@ -175,41 +221,13 @@ export default function MediaDetailLayout({
 
                 {/* Watch Together */}
                 <button
-                  onClick={async () => {
-                    try {
-                      const streamUrl = flatrate.length > 0
-                        ? (() => {
-                            const name = flatrate[0].provider_name || '';
-                            const links = [
-                              { match: /netflix/i, url: `https://www.netflix.com/search?q=${encodeURIComponent(title)}` },
-                              { match: /prime|amazon/i, url: `https://www.primevideo.com/search?phrase=${encodeURIComponent(title)}` },
-                              { match: /disney/i, url: `https://www.disneyplus.com/search?q=${encodeURIComponent(title)}` },
-                              { match: /hotstar/i, url: `https://www.hotstar.com/in/search?q=${encodeURIComponent(title)}` },
-                              { match: /jio/i, url: `https://www.jiocinema.com/search/${encodeURIComponent(title)}` },
-                              { match: /zee5/i, url: `https://www.zee5.com/search?q=${encodeURIComponent(title)}` },
-                              { match: /apple/i, url: `https://tv.apple.com/search?term=${encodeURIComponent(title)}` },
-                            ];
-                            return links.find(l => l.match.test(name))?.url || '';
-                          })()
-                        : '';
-                      const res = await fetch('/api/watch-together/create', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          title,
-                          mediaId: media.id,
-                          mediaType,
-                          streamingUrl: streamUrl,
-                        }),
-                      });
-                      const data = await res.json();
-                      if (data.roomUrl) {
-                        await navigator.clipboard.writeText(window.location.origin + data.roomUrl);
-                        window.open(data.roomUrl, '_blank');
-                      }
-                    } catch {}
+                  onClick={() => setIsWatchPartyModalOpen(true)}
+                  style={{ 
+                    borderColor: 'rgba(var(--theme-color), 0.3)', 
+                    backgroundColor: 'rgba(var(--theme-color), 0.1)',
+                    color: 'rgb(var(--theme-color))'
                   }}
-                  className="flex items-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-sm font-medium text-purple-300 transition hover:bg-purple-500/20 hover:border-purple-400/50"
+                  className="flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition hover:bg-black/20"
                 >
                   👥 Watch Together
                 </button>
@@ -321,6 +339,15 @@ export default function MediaDetailLayout({
         onClose={() => setIsTrailerOpen(false)}
         videoIdOrUrl={trailerKey}
         title={title}
+      />
+
+      <WatchPartyModal
+        isOpen={isWatchPartyModalOpen}
+        onClose={() => setIsWatchPartyModalOpen(false)}
+        mediaTitle={title}
+        mediaId={media.id}
+        mediaType={mediaType}
+        streamingUrl={streamUrl}
       />
     </div>
   );

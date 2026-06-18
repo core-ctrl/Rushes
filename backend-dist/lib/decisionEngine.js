@@ -109,9 +109,10 @@ function getContentStatus(item = {}, providers = item.availability || item.provi
     };
   }
 
+  const isTV = item.media_type === "tv" || !!item.first_air_date;
   if (releaseDate) {
     const diffDays = Math.floor((today.getTime() - releaseDate.getTime()) / DAY_MS);
-    if (diffDays >= 0 && diffDays <= 45) {
+    if (!isTV && diffDays >= 0 && diffDays <= 45) {
       return {
         key: "theaters",
         label: CONTENT_STATUS.THEATERS,

@@ -254,7 +254,7 @@ img {
   -webkit-overflow-scrolling: touch;
 }
 
-.row-scroll > * {
+.row-scroll>* {
   scroll-snap-align: start;
 }
 
@@ -303,6 +303,7 @@ img {
 }
 
 @keyframes pulse-glow {
+
   0%,
   100% {
     box-shadow: 0 0 20px var(--accent-glow);
@@ -329,27 +330,27 @@ img {
   animation: pulse-glow 3s ease-in-out infinite;
 }
 
-.stagger > *:nth-child(1) {
+.stagger>*:nth-child(1) {
   animation-delay: 0.05s;
 }
 
-.stagger > *:nth-child(2) {
+.stagger>*:nth-child(2) {
   animation-delay: 0.1s;
 }
 
-.stagger > *:nth-child(3) {
+.stagger>*:nth-child(3) {
   animation-delay: 0.15s;
 }
 
-.stagger > *:nth-child(4) {
+.stagger>*:nth-child(4) {
   animation-delay: 0.2s;
 }
 
-.stagger > *:nth-child(5) {
+.stagger>*:nth-child(5) {
   animation-delay: 0.25s;
 }
 
-.stagger > *:nth-child(6) {
+.stagger>*:nth-child(6) {
   animation-delay: 0.3s;
 }
 

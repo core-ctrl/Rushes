@@ -91,7 +91,12 @@ export default function MovieDetailPage({ addToWishlist, wishlist = [] }) {
 
   // THEATER TAG LOGIC: Use release date + watch providers
   const flatrate = movie.providers?.flatrate || [];
-  const hasOTTProviders = flatrate.length > 0;
+  const rent = movie.providers?.rent || [];
+  const buy = movie.providers?.buy || [];
+  const free = movie.providers?.free || [];
+  const ads = movie.providers?.ads || [];
+  
+  const hasOTTProviders = flatrate.length > 0 || rent.length > 0 || buy.length > 0 || free.length > 0 || ads.length > 0;
   const releaseDate = movie.release_date;
   const isRecentRelease = (() => {
     if (!releaseDate) return false;

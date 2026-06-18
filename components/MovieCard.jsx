@@ -70,6 +70,14 @@ export default function MovieCard({ item, friendActivity = [] }) {
 
   const handleLeave = () => { clearTimeout(hoverTimer.current); setHovered(false); };
 
+  const handleTouch = (e) => {
+    // If not hovered, prevent navigation and show hover state
+    if (!hovered) {
+      e.preventDefault();
+      handleEnter();
+    }
+  };
+
   const handleWishlist = (e) => {
     e.preventDefault(); e.stopPropagation();
     if (!user) { dispatch(openAuthModal("login")); return; }
@@ -112,8 +120,9 @@ export default function MovieCard({ item, friendActivity = [] }) {
     <div ref={cardRef} className="relative overflow-visible"
       onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
 
-      <Link href={href}>
+      <Link href={href} onClick={handleTouch}>
         <motion.div
+          layoutId={`poster-${item.id}`}
           className="poster-card w-full aspect-[2/3] rounded-card overflow-hidden"
           whileHover={{ scale: 1.03 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}

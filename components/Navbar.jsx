@@ -34,8 +34,7 @@ export default function Navbar() {
   const unreadCount = notifications.filter((item) => !item.read).length;
 
   const handleStartParty = () => {
-    const roomId = crypto.randomUUID().substring(0, 8);
-    router.push(`/watch-together/${roomId}?generic=true`);
+    router.push(`/watch-party/create`);
   };
 
   useEffect(() => {

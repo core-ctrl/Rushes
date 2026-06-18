@@ -44,7 +44,15 @@ export default function SocialFeed() {
 
   const handlePostCreated = (newPost) => {
     if (activeTab === 'foryou' || activeTab === 'following') {
-      mutate();
+      mutate((currentData) => {
+        if (!currentData || !currentData[0]) return currentData;
+        const newData = [...currentData];
+        newData[0] = { 
+          ...newData[0], 
+          posts: [newPost, ...newData[0].posts] 
+        };
+        return newData;
+      }, { revalidate: false }); // Update locally for instant feedback
     }
   };
 
@@ -56,9 +64,18 @@ export default function SocialFeed() {
     await fetch(`/api/posts/${id}/save`, { method: 'POST' });
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, isLocalHandled = false) => {
+    if (isLocalHandled) {
+      // The PostCard already showed the confirmation, called the API, and showed the toast.
+      // We just need to refresh the list or rely on local state hiding the post.
+      return;
+    }
     if (confirm('Delete this post?')) {
-      await fetch(`/api/posts/${id}`, { method: 'DELETE' });
+      await fetch(`/api/posts/${id}`, { 
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ softDelete: true })
+      });
       mutate();
     }
   };

@@ -58,7 +58,12 @@ export default function TrailerModal({
             />
 
             {/* Modal content */}
-            <div className="relative z-10 w-full max-w-5xl aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black">
+            <div 
+                className="relative z-10 w-full max-w-5xl aspect-video rounded-2xl overflow-hidden bg-black"
+                style={{
+                    boxShadow: '0 0 120px 20px rgba(var(--theme-color), 0.6), 0 0 40px 10px rgba(var(--theme-color), 0.4)'
+                }}
+            >
                 {/* Title bar */}
                 <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/80 to-transparent">
                     <span className="text-white font-semibold text-sm md:text-base truncate pr-4">

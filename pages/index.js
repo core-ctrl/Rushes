@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import {
   Award01Icon,
   Compass01Icon,
@@ -39,6 +39,7 @@ import {
   fetchTopRatedTV,
   fetchByGenre,
   fetchNowPlaying,
+  fetchWatchProviders,
 } from "../lib/tmdb";
 import axios from "axios";
 import { readStoredPreferences } from "../lib/userPreferences";
@@ -124,6 +125,12 @@ export default function Home({
     ? REGION_OPTIONS.find((region) => region.code === user.preferredRegions[0])?.label || user.preferredRegions[0]
     : null;
 
+  // Scroll animations for 3D card effect
+  const { scrollY } = useScroll();
+  const heroScale = useTransform(scrollY, [0, 800], [1, 0.85]);
+  const heroOpacity = useTransform(scrollY, [0, 800], [1, 0.3]);
+  const heroY = useTransform(scrollY, [0, 800], [0, 150]);
+
   useEffect(() => {
     if (!user) {
       setRecs(null);
@@ -145,7 +152,7 @@ export default function Home({
     axios
       .get("/api/movies/now-playing", { params: { region } })
       .then(({ data }) => {
-        setNowPlaying((data.results || []).slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })));
+        setNowPlaying((data.results || []).slice(0, 10).map((item) => compactMedia(item, { media_type: "movie", isNowPlaying: true })));
       })
       .catch(() => setNowPlaying([]))
       .finally(() => setNowPlayingLoad(false));
@@ -172,9 +179,16 @@ export default function Home({
 
       <main className="min-h-screen bg-black text-white pb-20 md:pb-0">
         <ErrorBoundary>
-          <HeroSlider slides={heroSlides} onPlayTrailer={openTrailer} openAuth={openAuth} />
+          
+          <motion.div 
+            style={{ scale: heroScale, opacity: heroOpacity, y: heroY }} 
+            className="sticky top-0 w-full z-0 origin-top"
+          >
+            <HeroSlider slides={heroSlides} onPlayTrailer={openTrailer} openAuth={openAuth} />
+          </motion.div>
 
-          <div className="mx-auto max-w-7xl px-4 pt-10 md:px-8">
+          <div className="relative z-10 w-full bg-[#050505] rounded-t-[40px] md:rounded-t-[60px] shadow-[0_-30px_60px_rgba(0,0,0,0.8)] -mt-10 md:-mt-16 pt-10 md:pt-16 pb-10 border-t border-white/5">
+            <div className="mx-auto max-w-7xl px-4 md:px-8">
 
           <TopCarousel
             items={trendingItems}
@@ -304,6 +318,7 @@ export default function Home({
               </p>
             </div>
           </footer>
+            </div>
           </div>
         </ErrorBoundary>
       </main>
@@ -396,6 +411,8 @@ export async function getServerSideProps() {
       })
     );
 
+    const nowPlayingIdsSet = new Set(nowPlayingRaw.map((m) => m.id));
+
     // Mix OTT (Trending) and Theater (Now Playing) together
     const mixedTrending = [];
     const maxLen = Math.max(trendingRaw.length, nowPlayingRaw.length);
@@ -403,33 +420,59 @@ export async function getServerSideProps() {
     
     for (let i = 0; i < maxLen; i++) {
       if (trendingRaw[i] && !seenIds.has(trendingRaw[i].id)) {
-        mixedTrending.push(trendingRaw[i]);
+        mixedTrending.push({
+          ...trendingRaw[i],
+          isNowPlaying: nowPlayingIdsSet.has(trendingRaw[i].id),
+        });
         seenIds.add(trendingRaw[i].id);
       }
       if (nowPlayingRaw[i] && !seenIds.has(nowPlayingRaw[i].id)) {
-        mixedTrending.push({ ...nowPlayingRaw[i], media_type: "movie" });
+        mixedTrending.push({
+          ...nowPlayingRaw[i],
+          media_type: "movie",
+          isNowPlaying: true,
+        });
         seenIds.add(nowPlayingRaw[i].id);
       }
     }
 
+    const mixedTrendingSlice = mixedTrending.slice(0, 16);
+    const trendingItems = await Promise.all(
+      mixedTrendingSlice.map(async (item) => {
+        const mediaType = item.media_type || (item.title ? "movie" : "tv");
+        try {
+          const providers = await fetchWatchProviders(item.id, mediaType, "US");
+          return compactMedia(item, {
+            providers,
+            availability: providers,
+            isNowPlaying: item.isNowPlaying || false,
+          });
+        } catch (e) {
+          return compactMedia(item, {
+            isNowPlaying: item.isNowPlaying || false,
+          });
+        }
+      })
+    );
+
     return {
       props: {
         heroSlides,
-        trendingItems: mixedTrending.slice(0, 16).map((item) => compactMedia(item)),
-        trendingMovies: sortByNewest(trendingMoviesRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
+        trendingItems,
+        trendingMovies: sortByNewest(trendingMoviesRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "movie", isNowPlaying: nowPlayingIdsSet.has(item.id) || false })),
         trendingTV: sortByNewest(trendingTVRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "tv" })),
-        goatedMovies: sortByRating(goatedMoviesRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
+        goatedMovies: sortByRating(goatedMoviesRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "movie", isNowPlaying: nowPlayingIdsSet.has(item.id) || false })),
         goatedSeries: sortByRating(goatedSeriesRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "tv" })),
         goatedAnime: sortByRating(goatedAnimeRaw).slice(0, 10).map((item) => compactMedia(item, { media_type: "tv" })),
-        action: actionRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
-        comedy: comedyRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
-        thriller: thrillerRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
-        horror: horrorRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
-        romance: romanceRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
+        action: actionRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie", isNowPlaying: nowPlayingIdsSet.has(item.id) || false })),
+        comedy: comedyRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie", isNowPlaying: nowPlayingIdsSet.has(item.id) || false })),
+        thriller: thrillerRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie", isNowPlaying: nowPlayingIdsSet.has(item.id) || false })),
+        horror: horrorRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie", isNowPlaying: nowPlayingIdsSet.has(item.id) || false })),
+        romance: romanceRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie", isNowPlaying: nowPlayingIdsSet.has(item.id) || false })),
         anime: animeRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
-        scifi: scifiRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
-        documentary: documentaryRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
-        fantasy: fantasyRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie" })),
+        scifi: scifiRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie", isNowPlaying: nowPlayingIdsSet.has(item.id) || false })),
+        documentary: documentaryRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie", isNowPlaying: nowPlayingIdsSet.has(item.id) || false })),
+        fantasy: fantasyRaw.slice(0, 10).map((item) => compactMedia(item, { media_type: "movie", isNowPlaying: nowPlayingIdsSet.has(item.id) || false })),
       },
     };
   } catch (error) {

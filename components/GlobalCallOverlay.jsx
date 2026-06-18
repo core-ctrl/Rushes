@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { selectActiveCall, selectActiveWatchParty, endCall, selectIsCallMinimized, minimizeCall, maximizeCall, endWatchParty, minimizeWatchParty, maximizeWatchParty } from '../store/slices/callSlice';
-import ZegoCallPanel from './chat/ZegoCallPanel';
+import RushesCallPanel from './chat/RushesCallPanel';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
@@ -29,7 +29,7 @@ export default function GlobalCallOverlay() {
 
   if (activeCall) {
     return (
-      <ZegoCallPanel
+      <RushesCallPanel
         roomID={activeCall.roomID}
         mode={activeCall.mode}
         otherUser={activeCall.otherUser}

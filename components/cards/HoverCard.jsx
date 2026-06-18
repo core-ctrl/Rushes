@@ -17,14 +17,21 @@ export default function HoverCard({ item, index, showTopBadge = false, landscape
   const year = (item.release_date || item.first_air_date || '').slice(0, 4);
 
   // Availability logic
-  const flatrate = item.providers?.flatrate || item.availability?.flatrate || [];
-  const hasOTT = flatrate.length > 0;
+  const providers = item.providers || item.availability || {};
+  const flatrate = providers.flatrate || [];
+  const rent = providers.rent || [];
+  const buy = providers.buy || [];
+  const free = providers.free || [];
+  const ads = providers.ads || [];
+  const hasOTT = flatrate.length > 0 || rent.length > 0 || buy.length > 0 || free.length > 0 || ads.length > 0;
   
   const releaseDate = item.release_date || item.first_air_date;
   const daysSinceRelease = releaseDate
     ? (Date.now() - new Date(releaseDate).getTime()) / (1000 * 60 * 60 * 24)
     : null;
-  const isInTheaters = !hasOTT && daysSinceRelease !== null && daysSinceRelease >= -7 && daysSinceRelease <= 45;
+  
+  const isNowPlaying = item.isNowPlaying === true;
+  const isInTheaters = !isTV && !hasOTT && isNowPlaying && daysSinceRelease !== null && daysSinceRelease >= -7 && daysSinceRelease <= 45;
 
   const statusLabel = hasOTT ? 'ON OTT' : isInTheaters ? 'IN THEATERS' : 'DISCOVER';
   const statusStyle = {

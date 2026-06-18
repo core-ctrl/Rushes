@@ -3,7 +3,7 @@ import axios from 'axios';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { title, mediaId, mediaType, streamingUrl } = req.body;
+  const { title, mediaId, mediaType, streamingUrl, privacy = 'public', customRoomId } = req.body;
 
   if (!title) return res.status(400).json({ error: 'Movie title is required' });
 
@@ -15,7 +15,8 @@ export default async function handler(req, res) {
     const backendRes = await axios.post(
       'http://localhost:3002/api/rooms',
       {
-        roomType: 'WATCH_TOGETHER'
+        roomType: 'WATCH_TOGETHER',
+        ...(customRoomId && { roomId: customRoomId })
       },
       {
         headers: {
@@ -27,8 +28,27 @@ export default async function handler(req, res) {
 
     const { roomId } = backendRes.data;
 
-    // Construct the watch-together room redirect URL
-    const roomUrl = `/watch-together/${roomId}?title=${encodeURIComponent(title)}&mediaId=${mediaId || ''}&mediaType=${mediaType || 'movie'}${streamingUrl ? `&url=${encodeURIComponent(streamingUrl)}` : ''}`;
+    // Save room to MongoDB for discovery
+    const { getSession } = require("next-auth/react");
+    const connectDB = require("../../../lib/mongodb").default;
+    const WatchRoom = require("../../../models/WatchRoom").default;
+    
+    await connectDB();
+    const session = await getSession({ req });
+    
+    await WatchRoom.create({
+      roomId,
+      title,
+      mediaId,
+      mediaType,
+      streamingUrl,
+      hostId: session?.user?.id || 'anonymous',
+      hostUsername: session?.user?.name || 'Anonymous',
+      privacy
+    });
+
+    // Construct the watch-party room redirect URL
+    const roomUrl = `/watch-party/${roomId}?title=${encodeURIComponent(title)}&mediaId=${mediaId || ''}&mediaType=${mediaType || 'movie'}${streamingUrl ? `&url=${encodeURIComponent(streamingUrl)}` : ''}`;
 
     return res.json({ success: true, roomId, roomUrl });
   } catch (error) {

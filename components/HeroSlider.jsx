@@ -48,7 +48,26 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
     const slide = slides[index];
     const isInList = Array.isArray(wishlist) && slide ? wishlist.some((m) => m.id === slide.id) : false;
     const bgImage = slide?.backdrop_path || slide?.poster_path || "/fallback.jpg";
-    const videoKey = slide?.trailerKey;
+    const [fetchedKey, setFetchedKey] = useState(null);
+
+    // Eagerly fetch YouTube fallback if TMDB doesn't provide a trailer key
+    useEffect(() => {
+        if (slide?.trailerKey) {
+            setFetchedKey(slide.trailerKey);
+        } else if (slide) {
+            setFetchedKey(null);
+            const mediaType = slide.media_type || (slide.title ? "movie" : "tv");
+            fetch(`/api/trailer?id=${slide.id}&media_type=${mediaType}`)
+                .then(r => r.json())
+                .then(d => {
+                    if (d.trailer?.key) {
+                        setFetchedKey(d.trailer.key);
+                    }
+                }).catch(() => {});
+        }
+    }, [slide]);
+
+    const videoKey = fetchedKey;
     const bgUrl = (p) => p?.startsWith("http") ? p : `https://image.tmdb.org/t/p/original${p}`;
 
     // ── Dominant colour ────────────────────────────────────────────
@@ -241,29 +260,17 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
 
     // ── Hero trailer button — correct signature: (key, title, id, type)
     const handleHeroTrailer = async () => {
-        if (slide?.trailerKey) {
+        if (videoKey) {
             onPlayTrailer(
-                slide.trailerKey,
+                videoKey,
                 slide.title || slide.name,
                 slide.id,
                 slide.media_type || (slide.title ? "movie" : "tv")
             );
             return;
         }
-        // Fetch trailer from API if not preloaded
-        try {
-            const mediaType = slide.media_type || (slide.title ? "movie" : "tv");
-            const res = await fetch(`/api/trailer?id=${slide.id}&media_type=${mediaType}`);
-            const data = await res.json();
-            const key = data.trailer?.key || null;
-            if (key) {
-                onPlayTrailer(key, slide.title || slide.name, slide.id, mediaType);
-            } else {
-                alert("Trailer not available");
-            }
-        } catch {
-            alert("Failed to load trailer");
-        }
+        // Fallback alert
+        alert("Trailer not available on TMDB or YouTube");
     };
 
     const handleWishlist = (e) => {
@@ -316,7 +323,7 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
     return (
         <section
             ref={sectionRef}
-            className="relative top-0 w-full h-[100vh] overflow-hidden bg-black select-none"
+            className="relative top-0 w-full h-[100dvh] overflow-hidden bg-black select-none touch-pan-y"
             onTouchStart={(e) => { interacting.current = true; onTouchStart(e); }}
             onTouchEnd={(e) => { onTouchEnd(e); interacting.current = false; }}
             onMouseEnter={() => { setIsHovering(true); interacting.current = true; }}
@@ -377,7 +384,7 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
             )}
 
             {/* Glass info card */}
-            <div className="absolute inset-0 z-40 flex items-end md:items-center px-6 md:px-12 pb-10 md:pb-16 pointer-events-none">
+            <div className="absolute inset-0 z-40 flex items-end md:items-center px-4 md:px-12 pb-16 md:pb-16 pointer-events-none">
                 <div
                     className={`max-w-4xl w-full transition-all duration-700 ${showInfo ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                     style={{
@@ -386,33 +393,33 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
                     }}
                 >
                     {/* Title */}
-                    <div className="relative mb-4">
-                        <h1 className="text-4xl md:text-6xl font-extrabold text-white leading-tight drop-shadow-lg" style={{ position: "relative", zIndex: 3 }}>
+                    <div className="relative mb-3 md:mb-4">
+                        <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold text-white leading-tight drop-shadow-lg" style={{ position: "relative", zIndex: 3 }}>
                             {slide?.title || slide?.name}
                         </h1>
                         <div aria-hidden style={{ position: "absolute", left: 0, top: "6px", width: "80%", height: "36px", filter: "blur(28px)", background: `linear-gradient(90deg,${accent},${accentLt})`, opacity: 0.22, zIndex: 2, borderRadius: 8, pointerEvents: "none" }} />
                     </div>
 
                     {/* Overview */}
-                    <p className="text-gray-200 md:text-lg mb-5" style={{ maxWidth: "65ch" }}>{trimOverview(slide?.overview)}</p>
+                    <p className="text-gray-200 text-sm md:text-lg mb-4 md:mb-5 line-clamp-3 md:line-clamp-none" style={{ maxWidth: "65ch" }}>{trimOverview(slide?.overview)}</p>
 
                     {/* Card */}
                     <motion.div 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: showInfo ? 1 : 0, y: showInfo ? 0 : 10 }}
                         transition={{ duration: 0.5, delay: 0.1 }}
-                        className="p-3 md:p-4 rounded-2xl mb-5 flex flex-wrap gap-2 items-center"
+                        className="p-3 rounded-xl md:rounded-2xl mb-4 md:mb-5 flex flex-wrap gap-2 items-center"
                         style={{ background: "rgba(20,20,20,0.4)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(24px)", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
                         <motion.button 
                             whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.15)" }}
                             whileTap={{ scale: 0.95 }}
                             onClick={handleWishlist}
-                            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-colors">
-                            {isInList ? <AppIcon icon={FavouriteIcon} size={16} className="fill-current" /> : <AppIcon icon={PlusSignIcon} size={16} />}
+                            className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl border border-white/10 bg-white/5 px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-semibold text-white transition-colors">
+                            {isInList ? <AppIcon icon={FavouriteIcon} size={14} className="fill-current" /> : <AppIcon icon={PlusSignIcon} size={14} />}
                             {isInList ? "In My List" : "Add to List"}
                         </motion.button>
-                        {(slide?.genres || []).slice(0, 5).map((g, i) => (
-                            <span key={i} className="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/5 text-white/90">
+                        {(slide?.genres || []).slice(0, 3).map((g, i) => (
+                            <span key={i} className="text-[10px] md:text-xs px-2.5 md:px-3 py-1 md:py-1.5 rounded-full bg-white/5 border border-white/5 text-white/90">
                                 {typeof g === "string" ? g : g.name}
                             </span>
                         ))}
@@ -423,16 +430,16 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: showInfo ? 1 : 0, y: showInfo ? 0 : 10 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
-                        className="flex flex-wrap items-center gap-3">
+                        className="flex flex-wrap items-center gap-2 md:gap-3">
                         {/* Play Trailer — correct signature */}
                         <motion.button
                             whileHover={{ scale: 1.05, filter: "brightness(1.2)" }}
                             whileTap={{ scale: 0.95 }}
                             onClick={handleHeroTrailer}
-                            className="flex items-center gap-2 rounded-xl px-6 py-3 text-lg font-bold shadow-[0_0_30px_rgba(0,0,0,0.5)]"
+                            className="flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-lg font-bold shadow-[0_0_30px_rgba(0,0,0,0.5)]"
                             style={{ background: `linear-gradient(135deg, ${accent}, rgba(255,255,255,0.1))`, color: accentTxt }}
                         >
-                            <AppIcon icon={PlayIcon} size={18} className="fill-current" />
+                            <AppIcon icon={PlayIcon} size={16} className="fill-current md:w-[18px] md:h-[18px]" />
                             Play Trailer
                         </motion.button>
 
@@ -440,29 +447,29 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
                             whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.15)" }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setShowInfo((s) => !s)}
-                            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 backdrop-blur-md px-5 py-3 font-semibold text-white transition-colors">
-                            <AppIcon icon={InformationCircleIcon} size={18} />
-                            Info
+                            className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl border border-white/10 bg-black/40 backdrop-blur-md px-4 py-2.5 md:py-3 text-sm md:font-semibold text-white transition-colors">
+                            <AppIcon icon={InformationCircleIcon} size={16} />
+                            <span className="hidden sm:inline">Info</span>
                         </motion.button>
 
                         <motion.button 
                             whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.1)" }}
                             whileTap={{ scale: 0.95 }}
                             onClick={handleSkipIntro}
-                            className="inline-flex items-center gap-2 rounded-xl border border-white/5 bg-black/60 backdrop-blur-md px-4 py-2.5 text-sm text-white transition-colors">
-                            <AppIcon icon={NextIcon} size={16} />
-                            Skip
+                            className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl border border-white/5 bg-black/60 backdrop-blur-md px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-white transition-colors">
+                            <AppIcon icon={NextIcon} size={14} />
+                            <span className="hidden sm:inline">Skip</span>
                         </motion.button>
 
-                        <div className="ml-auto flex items-center gap-3">
+                        <div className="md:ml-auto w-full md:w-auto mt-2 md:mt-0 flex items-center justify-between md:justify-start gap-3">
                             <motion.button 
                                 whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.1)" }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={() => setMuted((m) => !m)}
-                                className="flex items-center justify-center rounded-xl border border-white/10 bg-black/50 backdrop-blur-md h-10 w-10 text-white transition-colors">
+                                className="flex items-center justify-center rounded-lg md:rounded-xl border border-white/10 bg-black/50 backdrop-blur-md h-9 w-9 md:h-10 md:w-10 text-white transition-colors">
                                 {muted ? <AppIcon icon={VolumeMute02Icon} size={16} /> : <AppIcon icon={VolumeHighIcon} size={16} />}
                             </motion.button>
-                            <div className="relative flex items-center w-28 md:w-36 group h-6">
+                            <div className="relative flex items-center w-full sm:w-28 md:w-36 group h-6">
                                 <div className="absolute w-full h-1.5 bg-white/20 rounded-full overflow-hidden pointer-events-none">
                                     <div className="h-full" style={{ width: `${volume}%`, backgroundColor: accent }} />
                                 </div>
@@ -496,10 +503,29 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
                     <button onClick={() => setMuted((m) => !m)} className="rounded-xl border border-white/10 bg-black/60 px-4 py-2 text-white hover:bg-black/80 transition-colors">
                         {muted ? <AppIcon icon={VolumeMute02Icon} size={18} /> : <AppIcon icon={VolumeHighIcon} size={18} />}
                     </button>
-                    <button onClick={() => setIndex((i) => (i + 1) % slides.length)} className="rounded-xl border border-white/10 bg-black/60 px-4 py-2 text-white hover:bg-black/80 transition-colors">
-                        <AppIcon icon={NextIcon} size={18} />
-                    </button>
                 </div>
+            )}
+
+            {/* Persistent Slide Navigation Arrows */}
+            {slides.length > 1 && (
+                <>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); setIndex((i) => (i - 1 + slides.length) % slides.length); }}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 z-50 p-3 rounded-full bg-black/40 border border-white/10 text-white hover:bg-black/60 transition-all opacity-0 md:opacity-100 hover:scale-110"
+                        style={{ backdropFilter: "blur(8px)" }}
+                        aria-label="Previous slide"
+                    >
+                        <AppIcon icon={NextIcon} size={24} className="rotate-180" />
+                    </button>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); setIndex((i) => (i + 1) % slides.length); }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 z-50 p-3 rounded-full bg-black/40 border border-white/10 text-white hover:bg-black/60 transition-all opacity-0 md:opacity-100 hover:scale-110"
+                        style={{ backdropFilter: "blur(8px)" }}
+                        aria-label="Next slide"
+                    >
+                        <AppIcon icon={NextIcon} size={24} />
+                    </button>
+                </>
             )}
 
             {/* Slide dots */}

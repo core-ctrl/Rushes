@@ -8,6 +8,7 @@ import { selectUser } from '../../store/slices/authSlice';
 import { startWatchParty, endWatchParty } from '../../store/slices/callSlice';
 import { toast } from '../../components/ui/Toaster';
 import io from 'socket.io-client';
+import FloatingReactions from '../../components/FloatingReactions';
 
 export default function WatchTogetherRoom() {
   const router = useRouter();
@@ -40,6 +41,7 @@ export default function WatchTogetherRoom() {
   const videoPlayerRef = useRef(null);
   const ytPlayerRef = useRef(null);
   const isSyncing = useRef(false);
+  const reactionsRef = useRef(null);
 
   // WebRTC Audio/Video Chat State
   const [localStream, setLocalStream] = useState(null);
@@ -375,24 +377,24 @@ export default function WatchTogetherRoom() {
     socket.on('connect', () => {
       console.log('🔌 Connected to watch-together socket server');
       
-      // Join the room in backend
-      socket.emit('room:join', { roomId }, async (response) => {
-        if (response && response.success) {
-          console.log('Joined room:', response.state);
-          // Initial room state
-          if (response.state) {
-            setIsPlaying(!response.state.paused);
-            setCurrentTime(response.state.currentTime || 0);
-          }
-          fetchRoomDetails();
+      // Emit the new join-room event
+      socket.emit('webrtc:join-room', { roomId });
+    });
 
-          // Initialize custom WebRTC signaling and stream
-          await initWebRtc(response.state?.viewers || []);
-        } else {
-          toast({ type: 'error', message: response?.error || 'Failed to join watch room.' });
-          router.push('/');
-        }
-      });
+    // Listen for successful join
+    socket.on('webrtc:room-joined', async (data) => {
+      console.log('Joined room, peers:', data.peers);
+      fetchRoomDetails();
+      await initWebRtc(data.peers || []);
+    });
+
+    // Listen for error
+    socket.on('webrtc:error', (error) => {
+      console.error('WebRTC Error:', error);
+      toast({ type: 'error', message: error.message || 'WebRTC Error' });
+      if (error.code === 'ROOM_NOT_FOUND' || error.code === 'ROOM_FULL') {
+        router.push('/');
+      }
     });
 
     socket.on('connect_error', (err) => {
@@ -460,7 +462,7 @@ export default function WatchTogetherRoom() {
     });
 
     // Listen to user presence events
-    socket.on('room:user_joined', ({ userId }) => {
+    socket.on('webrtc:user-joined', ({ userId }) => {
       fetchRoomDetails();
       setMessages(prev => [...prev, {
         type: 'system',
@@ -469,7 +471,7 @@ export default function WatchTogetherRoom() {
       }]);
     });
 
-    socket.on('room:user_left', ({ userId }) => {
+    socket.on('webrtc:user-left', ({ userId }) => {
       fetchRoomDetails();
       setMessages(prev => [...prev, {
         type: 'system',
@@ -490,6 +492,13 @@ export default function WatchTogetherRoom() {
         content: payload.content,
         timestamp: payload.createdAt
       }]);
+    });
+
+    // Listen to floating reactions
+    socket.on('room:reaction', ({ emoji, userId }) => {
+      if (reactionsRef.current) {
+        reactionsRef.current.addReaction(emoji);
+      }
     });
 
     // Listen to player sync events
@@ -792,17 +801,6 @@ export default function WatchTogetherRoom() {
                   <PlayCircle className="h-5 w-5" />
                   Enter watch lobby
                 </button>
-                {streamingUrl && (
-                  <a
-                    href={streamingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-bold text-white transition hover:bg-white/[0.08]"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Open official OTT
-                  </a>
-                )}
                 <button
                   onClick={copyInvite}
                   className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-bold text-white transition hover:bg-white/[0.08]"
@@ -860,6 +858,25 @@ export default function WatchTogetherRoom() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {isHost && (
+                <div className="relative group">
+                  <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-purple-400 text-xs hover:bg-purple-500/10 transition-colors">
+                    <ShieldCheck className="w-3 h-3" /> <span className="hidden sm:inline">Host Controls</span>
+                  </button>
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-neutral-900 border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 py-2">
+                    <button onClick={() => toast({ type: 'info', message: 'Transfer Host coming soon' })} className="w-full text-left px-4 py-2 text-xs text-white hover:bg-white/5 flex items-center gap-2">
+                      <Users className="w-3 h-3" /> Transfer Host
+                    </button>
+                    <button onClick={() => toast({ type: 'info', message: 'Muted everyone else' })} className="w-full text-left px-4 py-2 text-xs text-white hover:bg-white/5 flex items-center gap-2">
+                      <MicOff className="w-3 h-3" /> Mute All Members
+                    </button>
+                    <div className="h-px w-full bg-white/5 my-1" />
+                    <button onClick={() => { toast({ type: 'error', message: 'Room Ended' }); router.push('/'); }} className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-400/10 flex items-center gap-2">
+                      <Power className="w-3 h-3" /> End Room for All
+                    </button>
+                  </div>
+                </div>
+              )}
               <button
                 onClick={copyInvite}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-neutral-400 text-xs hover:bg-white/5 transition-colors"
@@ -987,7 +1004,10 @@ export default function WatchTogetherRoom() {
 
               {/* Video elements container */}
               <div className="flex items-center gap-2">
-                {/* Local Video Feed */}
+                {/* Floating Reactions Overlay */}
+                <FloatingReactions ref={reactionsRef} />
+
+                {/* Local Camera (PiP) */}
                 <div className="relative w-28 h-20 bg-neutral-950 rounded-xl overflow-hidden border border-white/5 flex-shrink-0">
                   {localStream ? (
                     <video
@@ -1083,13 +1103,30 @@ export default function WatchTogetherRoom() {
             <div ref={bottomRef} />
           </div>
 
-          {/* Chat input */}
-          <form onSubmit={sendMessage} className="p-3 border-t border-white/5">
-            <div className="flex items-center gap-2">
-              <input
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder="Type a message..."
+          {/* Chat input and Reactions */}
+          <div className="flex flex-col border-t border-white/5">
+            {/* Reaction Bar */}
+            <div className="flex justify-center gap-4 py-2 bg-white/[0.02]">
+              {['😂', '😱', '❤️', '🍅', '🔥'].map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => {
+                    reactionsRef.current?.addReaction(emoji);
+                    socketRef.current?.emit('room:reaction', { roomId, emoji, userId: user?.id || user?._id });
+                  }}
+                  className="text-xl hover:scale-125 transition-transform origin-bottom"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            
+            <form onSubmit={sendMessage} className="p-3 border-t border-white/5">
+              <div className="flex items-center gap-2">
+                <input
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  placeholder="Type a message..."
                 className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500/50 placeholder:text-neutral-600"
               />
               <button
@@ -1103,6 +1140,7 @@ export default function WatchTogetherRoom() {
           </form>
         </div>
       </div>
+    </div>
     </>
   );
 }

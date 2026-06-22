@@ -14,9 +14,9 @@ export default async function handler(req, res) {
 
     if (!isDbConnected) {
       if (req.method === 'HEAD') {
-        return res.status(503).end();
+        return res.status(500).end();
       }
-      return res.status(503).json({ status: 'Database unavailable' });
+      return res.status(500).json({ status: 'Database unavailable' });
     }
 
     // Check system settings for maintenance mode
@@ -36,9 +36,9 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Health check error:', error);
     if (req.method === 'HEAD') {
-      return res.status(503).end();
+      return res.status(500).end();
     }
-    return res.status(503).json({ status: 'Service unavailable' });
+    return res.status(500).json({ status: 'Service unavailable' });
   }
 }
 

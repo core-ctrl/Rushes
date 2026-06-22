@@ -24,12 +24,9 @@ import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "../../lib/supabase";
 import { useDispatch, useSelector } from "react-redux";
-import { startCall as startGlobalCall, cancelCall, setCallerStatus, selectActiveCall } from "../../store/slices/callSlice";
+import { startCall as startGlobalCall, cancelCall, setCallerStatus, selectActiveCall, selectCallerStatus } from "../../store/slices/callSlice";
 import { TMDB_BLUR_DATA_URL } from "../../lib/imageBlur";
 import { toast } from "../ui/Toaster";
-import dynamic from "next/dynamic";
-
-const IncomingCallModal = dynamic(() => import('./IncomingCallModal'), { ssr: false });
 
 const REACTIONS = ["❤️", "🔥", "😂", "👏", "🎬"];
 
@@ -82,8 +79,6 @@ export default function ChatPanel({ conversation, currentUser }) {
   const [movieTouched, setMovieTouched] = useState(false);
   const dispatch = useDispatch();
 
-  // === CALL STATE (incoming invites, handled by WebRTCCallPanel) ===
-  const [incomingCall, setIncomingCall] = useState(null);
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState(null);
   const bottomRef = useRef(null);
@@ -100,7 +95,8 @@ export default function ChatPanel({ conversation, currentUser }) {
   const isBlocked = (currentUser?.blockedUsers || []).includes(receiverId);
   const activeCall = useSelector(selectActiveCall);
   const isInCall = activeCall?.roomID != null;
-  const [isCalling, setIsCalling] = useState(false);
+  const callerStatus = useSelector(selectCallerStatus);
+  const isCalling = callerStatus === 'calling';
   const callTimeoutRef = useRef(null);
 
   const statusLabel = useMemo(() => {
@@ -144,7 +140,6 @@ export default function ChatPanel({ conversation, currentUser }) {
     if (isCalling || isInCall) return; // prevent double-call
 
     const roomID = `mf_${conversationId}_${Date.now()}`;
-    setIsCalling(true);
     
     dispatch(startGlobalCall({
       roomID,
@@ -154,69 +149,44 @@ export default function ChatPanel({ conversation, currentUser }) {
       conversationId,
     }));
 
-    // Send invite on the shared conversation channel
-    channelRef.current.send({
-      type: 'broadcast',
-      event: 'call_invite',
-      payload: {
-        roomID,
-        callMode: mode,
-        callerId: currentUserId,
-        callerName: currentUser?.displayName || currentUser?.username || 'Someone',
-        callerAvatar: currentUser?.avatar,
-        conversationId,
-      },
+    // Send invite on the receiver's personal user channel
+    const receiverChannel = supabase.channel(`user:${receiverId}`);
+    receiverChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        receiverChannel.send({
+          type: 'broadcast',
+          event: 'call_invite',
+          payload: {
+            roomID,
+            callMode: mode,
+            callerId: currentUserId,
+            callerName: currentUser?.displayName || currentUser?.username || 'Someone',
+            callerAvatar: currentUser?.avatar,
+            conversationId,
+          },
+        });
+        setTimeout(() => supabase.removeChannel(receiverChannel), 1000);
+      }
     });
 
     toast({ type: 'info', message: `Calling ${otherUser?.displayName || otherUser?.username}...` });
 
     // Auto-cancel if no answer in 30s
     callTimeoutRef.current = setTimeout(() => {
-      setIsCalling(false);
       dispatch(cancelCall());
       toast({ type: 'info', message: 'No answer.' });
-      channelRef.current?.send({
-        type: 'broadcast',
-        event: 'call_cancelled',
-        payload: { roomID },
+      const cancelChannel = supabase.channel(`user:${receiverId}`);
+      cancelChannel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          cancelChannel.send({
+            type: 'broadcast',
+            event: 'call_cancelled',
+            payload: { roomID },
+          });
+          setTimeout(() => supabase.removeChannel(cancelChannel), 500);
+        }
       });
     }, 30000);
-  };
-
-  // === ACCEPT INCOMING CALL ===
-  const acceptCall = () => {
-    if (!incomingCall) return;
-    
-    dispatch(startGlobalCall({
-      roomID: incomingCall.roomID,
-      mode: incomingCall.callMode,
-      otherUser,
-      currentUser,
-      conversationId,
-    }));
-
-    // Tell the caller we accepted so they can transition away from "Calling..."
-    channelRef.current?.send({
-      type: 'broadcast',
-      event: 'call_accepted',
-      payload: { roomID: incomingCall.roomID, acceptedBy: currentUserId },
-    });
-    
-    setIncomingCall(null);
-  };
-
-  // === DECLINE INCOMING CALL ===
-  const declineCall = () => {
-    if (!incomingCall || !channelRef.current) return;
-
-    // Notify the caller that we declined
-    channelRef.current.send({
-      type: 'broadcast',
-      event: 'call_declined',
-      payload: { declinedBy: currentUserId },
-    });
-
-    setIncomingCall(null);
   };
 
   // === CLEANUP CALL TIMEOUT on unmount ===
@@ -258,27 +228,6 @@ export default function ChatPanel({ conversation, currentUser }) {
           if (String(payload.userId) !== String(currentUserId)) {
             setMessages((prev) => prev.map((msg) => (String(msg.senderId) === String(currentUserId) ? { ...msg, status: "read" } : msg)));
           }
-        })
-        .on("broadcast", { event: "call_invite" }, ({ payload }) => {
-          if (String(payload.callerId) !== String(currentUserId)) {
-            setIncomingCall(payload);
-          }
-        })
-        .on("broadcast", { event: "call_declined" }, () => {
-          // Clear caller's call state immediately
-          clearTimeout(callTimeoutRef.current);
-          setIsCalling(false);
-          dispatch(cancelCall());
-          toast({ type: "info", message: `${otherUser?.displayName || otherUser?.username || "User"} declined the call.` });
-        })
-        .on("broadcast", { event: "call_accepted" }, ({ payload }) => {
-          // Callee accepted — clear the auto-cancel timeout, caller is now in call
-          clearTimeout(callTimeoutRef.current);
-          setIsCalling(false);
-          dispatch(setCallerStatus('accepted'));
-        })
-        .on("broadcast", { event: "call_cancelled" }, () => {
-          setIncomingCall(null);
         })
         .on("broadcast", { event: "message_deleted" }, ({ payload }) => {
           setMessages((prev) => prev.filter(msg => msg._id !== payload.messageId));
@@ -870,11 +819,6 @@ export default function ChatPanel({ conversation, currentUser }) {
         )}
       </div>
 
-      <IncomingCallModal
-        callData={incomingCall}
-        onAccept={acceptCall}
-        onDecline={declineCall}
-      />
     </div>
   );
 }

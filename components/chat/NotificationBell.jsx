@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
 import { formatDistanceToNow } from 'date-fns';
-import axios from 'axios';
+import api from '../../lib/axios';
 
 export default function NotificationBell() {
     const user = useSelector(selectUser);
@@ -18,7 +18,7 @@ export default function NotificationBell() {
 
         const loadNotifications = async () => {
             try {
-                const { data } = await axios.get('/api/notifications');
+                const { data } = await api.get('/api/notifications');
                 setNotifications(data.notifications || []);
             } catch (err) {
                 console.error("Failed to load notifications:", err);
@@ -34,7 +34,7 @@ export default function NotificationBell() {
 
     const markAllRead = async () => {
         try {
-            await axios.put('/api/notifications');
+            await api.put('/api/notifications');
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
         } catch (error) {
             console.error("Failed to mark notifications read:", error);

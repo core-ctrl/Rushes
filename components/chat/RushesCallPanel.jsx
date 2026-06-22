@@ -5,6 +5,7 @@ import {
   PhoneOff, Phone, Volume2, VolumeX, Wifi, WifiOff, AlertCircle,
 } from 'lucide-react';
 import { io } from 'socket.io-client';
+import api from '../../lib/axios';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_RUSHES_CALL_URL || 'https://rushes-call.onrender.com';
 
@@ -108,9 +109,9 @@ export default function RushesCallPanel({
     const connect = async () => {
       try {
         // 1. Fetch JWT
-        const tokenRes = await fetch('/api/calls/rushes-token', { method: 'POST' });
-        if (!tokenRes.ok) throw new Error('Failed to authenticate with call service');
-        const { token } = await tokenRes.json();
+        const tokenRes = await api.post('/api/calls/rushes-token');
+        if (!tokenRes.data?.token) throw new Error('Failed to authenticate with call service');
+        const token = tokenRes.data.token;
         if (cancelled) return;
 
         // 2. Connect socket

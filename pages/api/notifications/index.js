@@ -1,15 +1,28 @@
 import { connectDB } from '../../../lib/mongodb';
 import Notification from '../../../models/Notification';
 import { getUserFromRequest } from '../../../lib/auth';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]";
 
 export default async function handler(req, res) {
   try {
     await connectDB();
-    const user = getUserFromRequest(req);
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    
+    let userId = null;
+    const decoded = getUserFromRequest(req);
+    if (decoded && decoded.id) {
+      userId = decoded.id;
+    } else {
+      const session = await getServerSession(req, res, authOptions);
+      if (session && session.user && session.user.id) {
+        userId = session.user.id;
+      }
+    }
+
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
     if (req.method === 'GET') {
-      const notifications = await Notification.find({ userId: user.id })
+      const notifications = await Notification.find({ userId: userId })
         .sort({ createdAt: -1 })
         .limit(15)
         .lean();
@@ -18,7 +31,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PUT') {
-      await Notification.updateMany({ userId: user.id }, { $set: { read: true } });
+      await Notification.updateMany({ userId: userId }, { $set: { read: true } });
       return res.json({ success: true });
     }
 

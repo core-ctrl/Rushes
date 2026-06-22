@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, UserPlus, UserCheck, User } from 'lucide-react';
-import axios from 'axios';
+import api from '../../lib/axios';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
 import debounce from 'lodash.debounce';
@@ -23,7 +23,7 @@ export default function UserSearch() {
         }
         setLoading(true);
         try {
-            const { data } = await axios.get(`/api/users/search?q=${encodeURIComponent(q)}`);
+            const { data } = await api.get(`/api/users/search?q=${encodeURIComponent(q)}`);
 
             setResults(data.users || []);
         } catch (error) {
@@ -36,7 +36,7 @@ export default function UserSearch() {
     const handleFollow = async (userId) => {
         try {
             const action = following[userId] ? 'unfollow' : 'follow';
-            await axios.post('/api/users/follow', { targetUserId: userId, action });
+            await api.post('/api/users/follow', { targetUserId: userId, action });
             setFollowing(prev => ({ ...prev, [userId]: action === 'follow' }));
         } catch (error) {
             console.error('Follow error:', error);

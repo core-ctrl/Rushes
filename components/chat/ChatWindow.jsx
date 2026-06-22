@@ -7,7 +7,7 @@ import { selectUser } from '../../store/slices/authSlice';
 import { formatDistanceToNow } from 'date-fns';
 import { TMDB_BLUR_DATA_URL } from '../../lib/imageBlur';
 import { supabase } from '../../lib/supabase';
-import axios from 'axios';
+import api from '../../lib/axios';
 
 function normalizeMessage(message) {
   return {
@@ -56,15 +56,14 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
 
     useEffect(() => {
         // Fetch messages
-        fetch(`/api/messages/${conversationId}`)
-            .then(res => res.json())
-            .then(({ messages }) => {
-                setMessages((messages || []).map(normalizeMessage));
+        api.get(`/api/messages/${conversationId}`)
+            .then(({ data }) => {
+                setMessages((data.messages || []).map(normalizeMessage));
                 setLoading(false);
             });
             
         // Explicitly patch mark read to ensure badges clear on backend
-        axios.patch(`/api/messages/${conversationId}`, { action: 'markRead' }).catch(() => {});
+        api.patch(`/api/messages/${conversationId}`, { action: 'markRead' }).catch(() => {});
 
         if (supabase) {
             const channel = supabase.channel(`chat:${conversationId}`);
@@ -149,7 +148,7 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
         setMessages((prev) => [...prev, optimistic]);
 
         try {
-            const { data } = await axios.post(`/api/messages/${conversationId}`, {
+            const { data } = await api.post(`/api/messages/${conversationId}`, {
                 receiverId: otherUser.id || otherUser._id,
                 content: content,
                 movieCard: null,

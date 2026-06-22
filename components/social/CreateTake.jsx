@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Eye, EyeOff, Image as ImageIcon, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import axios from 'axios';
+import api from '../../lib/axios';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
 import { TMDB_BLUR_DATA_URL } from '../../lib/imageBlur';
@@ -56,7 +56,7 @@ export default function CreateTake({ onCreated }) {
       if (mentionSearchTimer.current) clearTimeout(mentionSearchTimer.current);
       mentionSearchTimer.current = setTimeout(async () => {
         try {
-          const { data } = await axios.get(`/api/users/search?q=${encodeURIComponent(query)}`);
+          const { data } = await api.get(`/api/users/search?q=${encodeURIComponent(query)}`);
           setMentionResults(data.users?.slice(0, 5) || []);
         } catch {
           setMentionResults([]);
@@ -117,7 +117,7 @@ export default function CreateTake({ onCreated }) {
         const base64data = reader.result;
         const fileType = file.type.startsWith('video/') ? 'video' : 'image';
         
-        const { data } = await axios.post('/api/takes/upload', {
+        const { data } = await api.post('/api/takes/upload', {
           file: base64data,
           fileType
         });
@@ -137,7 +137,7 @@ export default function CreateTake({ onCreated }) {
     if (!content.trim() && !selectedMovie) return;
     setSubmitting(true);
     try {
-      await axios.post('/api/takes/create', {
+      await api.post('/api/takes/create', {
         content,
         tmdbId: selectedMovie?.id,
         tmdbMediaType: selectedMovie?.media_type,

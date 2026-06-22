@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, AlertTriangle, MessageCircle, MoreHorizontal, Flag, Trash2, Edit2, Send } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import axios from 'axios';
+import api from '../../lib/axios';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
 
@@ -99,7 +99,7 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
             setLikes([...likes, currentUserId]);
         }
         try {
-            const response = await axios.post('/api/takes/like', {
+            const response = await api.post('/api/takes/like', {
                 takeId: takeId,
                 action: isLiked ? 'unlike' : 'like'
             });
@@ -113,7 +113,7 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
     const handleDelete = async () => {
         if (!confirm('Are you sure you want to delete this Take? This action cannot be undone.')) return;
         try {
-            await axios.delete(`/api/takes/${takeId}`);
+            await api.delete(`/api/takes/${takeId}`);
             toast({ type: 'success', message: 'Take deleted successfully' });
             if (onTakeDeleted) onTakeDeleted(takeId);
         } catch (err) {
@@ -125,7 +125,7 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
         if (!editContent.trim()) return;
         setIsSaving(true);
         try {
-            const res = await axios.put(`/api/takes/${takeId}`, { content: editContent });
+            const res = await api.put(`/api/takes/${takeId}`, { content: editContent });
             setCurrentTake(res.data.take);
             setIsEditing(false);
             toast({ type: 'success', message: 'Take updated' });
@@ -142,7 +142,7 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
         if (newState && comments.length === 0) {
             setLoadingComments(true);
             try {
-                const { data } = await axios.get(`/api/takes/${takeId}/comments`);
+                const { data } = await api.get(`/api/takes/${takeId}/comments`);
                 setComments(data.comments || []);
             } catch (err) {
                 console.error(err);
@@ -167,7 +167,7 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
         else setPostingComment(true);
 
         try {
-            const { data } = await axios.post(`/api/takes/${takeId}/comments`, {
+            const { data } = await api.post(`/api/takes/${takeId}/comments`, {
                 content: draft,
                 parentId,
             });
@@ -189,7 +189,7 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
 
     const handleDeleteComment = async (commentId) => {
         try {
-            const { data } = await axios.delete(`/api/takes/${takeId}/comments`, { data: { commentId } });
+            const { data } = await api.delete(`/api/takes/${takeId}/comments`, { data: { commentId } });
             const deletedCount = data.deletedCount || 1;
             setComments(prev => prev.filter((comment) => {
                 const id = getCommentId(comment);

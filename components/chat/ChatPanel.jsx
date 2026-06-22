@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useVoiceRecorder } from "../../hooks/useVoiceRecorder";
-import axios from "axios";
+import api from "../../lib/axios";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "../../lib/supabase";
@@ -199,7 +199,7 @@ export default function ChatPanel({ conversation, currentUser }) {
   const loadMessages = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`/api/messages/${conversationId}`);
+      const { data } = await api.get(`/api/messages/${conversationId}`);
       setMessages((data.messages || []).map(normalizeMessage));
     } catch {
       toast({ type: "error", message: "Could not load this conversation." });
@@ -275,7 +275,7 @@ export default function ChatPanel({ conversation, currentUser }) {
     setMovieLoading(true);
     const timer = window.setTimeout(async () => {
       try {
-        const { data } = await axios.get(`/api/search/autocomplete?q=${encodeURIComponent(movieQuery.trim())}`);
+        const { data } = await api.get(`/api/search/autocomplete?q=${encodeURIComponent(movieQuery.trim())}`);
         setMovieResults((data.suggestions || []).slice(0, 8));
       } catch {
         setMovieResults([]);
@@ -326,7 +326,7 @@ export default function ChatPanel({ conversation, currentUser }) {
     setShowMovieSearch(false);
 
     try {
-      const { data } = await axios.post(`/api/messages/${conversationId}`, {
+      const { data } = await api.post(`/api/messages/${conversationId}`, {
         receiverId,
         content: optimistic.content,
         movieCard,
@@ -374,7 +374,7 @@ export default function ChatPanel({ conversation, currentUser }) {
   const deleteChat = async () => {
     if (!window.confirm("Are you sure you want to delete all messages in this chat? This cannot be undone.")) return;
     try {
-      await axios.delete(`/api/messages/${conversationId}`);
+      await api.delete(`/api/messages/${conversationId}`);
       setMessages([]);
       channelRef.current?.send({
         type: "broadcast",
@@ -390,7 +390,7 @@ export default function ChatPanel({ conversation, currentUser }) {
   const deleteMessage = async (messageId) => {
     if (!window.confirm("Delete this message?")) return;
     try {
-      await axios.patch(`/api/messages/${conversationId}`, { action: "delete", messageId });
+      await api.patch(`/api/messages/${conversationId}`, { action: "delete", messageId });
       setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
       channelRef.current?.send({
         type: "broadcast",
@@ -423,7 +423,7 @@ export default function ChatPanel({ conversation, currentUser }) {
                 try {
                   const isFollowing = currentUser?.following?.includes(receiverId);
                   const action = isFollowing ? 'unfollow' : 'follow';
-                  await axios.post('/api/users/follow', { targetUserId: receiverId, action });
+                  await api.post('/api/users/follow', { targetUserId: receiverId, action });
                   toast({ type: 'success', message: `${action === 'follow' ? 'Followed' : 'Unfollowed'} ${otherUser.username}` });
                 } catch {
                   toast({ type: 'error', message: 'Follow action failed' });

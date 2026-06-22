@@ -22,8 +22,6 @@ export default function GlobalCallOverlay() {
     if (activeCall) {
       if (!isOnMessagesPage) {
         dispatch(minimizeCall());
-      } else {
-        dispatch(maximizeCall());
       }
     }
     if (activeWatchParty && !isActiveWTPage) {

@@ -34,6 +34,7 @@ import PreferencesGate from "../components/PreferencesGate";
 
 import OnlinePresence from '../components/social/OnlinePresence';
 import ConnectionStatusBanner from '../components/ConnectionStatusBanner';
+import GlobalCallOverlay from '../components/GlobalCallOverlay';
 import { Analytics } from '@vercel/analytics/react';
 
 const pageVariants = {
@@ -246,10 +247,7 @@ function AppInner({ Component, pageProps, router }) {
   return (
     <>
       <Navbar user={user} logout={handleLogout} openAuth={(mode) => dispatch(openAuthModal(mode))} />
-      <ConnectionStatusBanner />
-      
-
-      
+      <GlobalCallOverlay />
       <AnimatePresence mode="wait">
         <motion.div key={router.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit">
           <Component {...pageProps} {...sharedProps} />
@@ -327,6 +325,7 @@ export default function App(props) {
     <SessionProvider session={pageProps?.session}>
       <Provider store={store}>
         <ErrorBoundary>
+          <ConnectionStatusBanner />
           <AppInner {...props} />
         </ErrorBoundary>
       </Provider>

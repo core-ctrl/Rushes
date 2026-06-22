@@ -81,9 +81,13 @@ export default function RushesCallPanel({
     socketRef.current.emit('webrtc:resume-consumer', { consumerId: consumer.id }, () => {});
 
     setRemoteStreams((prev) => {
-      const stream = prev[peerId] ? prev[peerId] : new MediaStream();
-      stream.addTrack(consumer.track);
-      return { ...prev, [peerId]: stream };
+      const existingStream = prev[peerId];
+      const newStream = new MediaStream();
+      if (existingStream) {
+        existingStream.getTracks().forEach((t) => newStream.addTrack(t));
+      }
+      newStream.addTrack(consumer.track);
+      return { ...prev, [peerId]: newStream };
     });
     setHasRemote(true);
   }, []);

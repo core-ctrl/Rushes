@@ -1,30 +1,40 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Maximize2, Minimize2, Mic, MicOff, Video, VideoOff, PhoneOff, Phone, Monitor, AlertCircle } from 'lucide-react';
+import {
+  Maximize2, Minimize2, Mic, MicOff, Video, VideoOff,
+  PhoneOff, Phone, Volume2, VolumeX, Wifi, WifiOff, AlertCircle,
+} from 'lucide-react';
 import { io } from 'socket.io-client';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_RUSHES_CALL_URL || 'https://rushes-call.onrender.com';
 
+function useCallTimer(active) {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    if (!active) { setSeconds(0); return; }
+    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+  const s = String(seconds % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
 /**
- * RushesCallPanel - Native Mediasoup SFU-powered call panel.
- * Replaces ZegoCallPanel completely. Connects to rushes-call.onrender.com
+ * RushesCallPanel — Premium SFU-powered call UI.
+ * Connects to rushes-call.onrender.com via mediasoup-client.
  */
 export default function RushesCallPanel({
-  roomID,
-  mode = 'audio',
-  otherUser,
-  currentUser,
-  onClose,
-  isMinimized,
-  onMinimize,
-  onMaximize,
+  roomID, mode = 'audio', otherUser, currentUser,
+  onClose, isMinimized, onMinimize, onMaximize,
 }) {
-  const [status, setStatus] = useState('connecting'); // connecting | connected | error
+  const [status, setStatus] = useState('connecting'); // connecting | ringing | connected | error
   const [error, setError] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isCamOff, setIsCamOff] = useState(mode !== 'video');
+  const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
   const [remoteStreams, setRemoteStreams] = useState({}); // { peerId: MediaStream }
-  const [rtpCapabilities, setRtpCapabilities] = useState(null);
+  const [hasRemote, setHasRemote] = useState(false);
 
   const socketRef = useRef(null);
   const deviceRef = useRef(null);
@@ -32,7 +42,9 @@ export default function RushesCallPanel({
   const recvTransportRef = useRef(null);
   const localStreamRef = useRef(null);
   const localVideoRef = useRef(null);
-  const tokenRef = useRef(null);
+  const audioRefs = useRef({}); // { peerId: HTMLAudioElement }
+
+  const callTimer = useCallTimer(status === 'connected');
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -65,15 +77,23 @@ export default function RushesCallPanel({
       rtpParameters: params.rtpParameters,
     });
 
-    // Tell server to resume (we start paused per server logic)
-    socketRef.current.emit('webrtc:resume-consumer', { consumerId: consumer.id });
+    // Tell server to resume (consumers start paused)
+    socketRef.current.emit('webrtc:resume-consumer', { consumerId: consumer.id }, () => {});
 
-    setRemoteStreams(prev => {
+    setRemoteStreams((prev) => {
       const stream = prev[peerId] ? prev[peerId] : new MediaStream();
       stream.addTrack(consumer.track);
       return { ...prev, [peerId]: stream };
     });
+    setHasRemote(true);
   }, []);
+
+  // Apply speaker mute to all audio elements
+  useEffect(() => {
+    Object.values(audioRefs.current).forEach((el) => {
+      if (el) el.muted = isSpeakerMuted;
+    });
+  }, [isSpeakerMuted]);
 
   // ─── Main Connection Logic ────────────────────────────────────────────────
 
@@ -83,24 +103,29 @@ export default function RushesCallPanel({
 
     const connect = async () => {
       try {
-        // 1. Fetch JWT from our own Next.js backend (secret never exposed to client)
+        // 1. Fetch JWT
         const tokenRes = await fetch('/api/calls/rushes-token', { method: 'POST' });
         if (!tokenRes.ok) throw new Error('Failed to authenticate with call service');
         const { token } = await tokenRes.json();
-        tokenRef.current = token;
-
         if (cancelled) return;
 
-        // 2. Connect socket with JWT in handshake
+        // 2. Connect socket
         const socket = io(BACKEND_URL, {
           auth: { token },
           transports: ['websocket'],
+          reconnectionAttempts: 3,
         });
         socketRef.current = socket;
 
         socket.on('connect_error', (err) => {
-          if (!cancelled) setError(`Connection failed: ${err.message}`);
-          setStatus('error');
+          if (!cancelled) { setError(`Connection failed: ${err.message}`); setStatus('error'); }
+        });
+
+        socket.on('disconnect', (reason) => {
+          if (!cancelled && reason !== 'io client disconnect') {
+            setStatus('connecting');
+            // socket.io auto-reconnects per reconnectionAttempts
+          }
         });
 
         await new Promise((resolve, reject) => {
@@ -109,8 +134,9 @@ export default function RushesCallPanel({
         });
 
         if (cancelled) { socket.disconnect(); return; }
+        setStatus('ringing');
 
-        // 3. Join the room — server returns rtpCapabilities + existingProducers
+        // 3. Join the room
         const joinData = await new Promise((resolve, reject) => {
           socket.emit('webrtc:join-room', { roomId: roomID }, (data) => {
             if (!data || data.error) return reject(new Error(data?.message || 'Failed to join room'));
@@ -120,49 +146,38 @@ export default function RushesCallPanel({
 
         if (cancelled) { socket.disconnect(); return; }
 
-        // 4. Load mediasoup-client Device with router capabilities
+        // 4. Load mediasoup Device
         const { Device } = await import('mediasoup-client');
         const device = new Device();
         await device.load({ routerRtpCapabilities: joinData.rtpCapabilities });
         deviceRef.current = device;
-        setRtpCapabilities(device.rtpCapabilities);
 
-        // 5. Create Send Transport
+        // 5. Send Transport
         const sendParams = await createTransport('send');
         const sendTransport = device.createSendTransport(sendParams);
         sendTransportRef.current = sendTransport;
 
         sendTransport.on('connect', ({ dtlsParameters }, callback, errback) => {
-          socket.emit('webrtc:connect-transport', {
-            transportId: sendTransport.id,
-            dtlsParameters,
-          }, (res) => {
+          socket.emit('webrtc:connect-transport', { transportId: sendTransport.id, dtlsParameters }, (res) => {
             if (res?.error) return errback(new Error(res.error));
             callback();
           });
         });
 
         sendTransport.on('produce', ({ kind, rtpParameters }, callback, errback) => {
-          socket.emit('webrtc:produce', {
-            transportId: sendTransport.id,
-            kind,
-            rtpParameters,
-          }, (res) => {
+          socket.emit('webrtc:produce', { transportId: sendTransport.id, kind, rtpParameters }, (res) => {
             if (!res || res.error) return errback(new Error(res?.error || 'Produce failed'));
             callback({ id: res.id });
           });
         });
 
-        // 6. Create Recv Transport
+        // 6. Recv Transport
         const recvParams = await createTransport('recv');
         const recvTransport = device.createRecvTransport(recvParams);
         recvTransportRef.current = recvTransport;
 
         recvTransport.on('connect', ({ dtlsParameters }, callback, errback) => {
-          socket.emit('webrtc:connect-transport', {
-            transportId: recvTransport.id,
-            dtlsParameters,
-          }, (res) => {
+          socket.emit('webrtc:connect-transport', { transportId: recvTransport.id, dtlsParameters }, (res) => {
             if (res?.error) return errback(new Error(res.error));
             callback();
           });
@@ -171,11 +186,10 @@ export default function RushesCallPanel({
         // 7. Get local media and produce
         const constraints = {
           audio: true,
-          video: mode === 'video' ? { width: 640, height: 480, facingMode: 'user' } : false,
+          video: mode === 'video' ? { width: 1280, height: 720, facingMode: 'user' } : false,
         };
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         localStreamRef.current = stream;
-
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
         const audioTrack = stream.getAudioTracks()[0];
@@ -187,7 +201,7 @@ export default function RushesCallPanel({
         }
 
         // 8. Consume existing producers
-        if (joinData.existingProducers) {
+        if (joinData.existingProducers?.length) {
           for (const { producerId, peerId } of joinData.existingProducers) {
             await consumeProducer(producerId, peerId);
           }
@@ -198,30 +212,28 @@ export default function RushesCallPanel({
           await consumeProducer(producerId, peerId);
         });
 
-        // 10. Listen for peers leaving
-        socket.on('webrtc:user-left', ({ peerId }) => {
-          setRemoteStreams(prev => {
+        // 10. Peer left
+        const handlePeerLeft = ({ peerId, userId }) => {
+          const id = peerId || userId;
+          setRemoteStreams((prev) => {
             const updated = { ...prev };
-            delete updated[peerId];
+            delete updated[id];
+            if (Object.keys(updated).length === 0) setHasRemote(false);
             return updated;
           });
-        });
-        socket.on('webrtc:peer-left', ({ peerId }) => {
-          setRemoteStreams(prev => {
-            const updated = { ...prev };
-            delete updated[peerId];
-            return updated;
-          });
-        });
+          if (audioRefs.current[id]) {
+            audioRefs.current[id].srcObject = null;
+            delete audioRefs.current[id];
+          }
+        };
+        socket.on('webrtc:user-left', handlePeerLeft);
+        socket.on('webrtc:peer-left', handlePeerLeft);
 
         if (!cancelled) setStatus('connected');
 
       } catch (err) {
         console.error('RushesCallPanel error:', err);
-        if (!cancelled) {
-          setError(err.message || 'Failed to connect to call');
-          setStatus('error');
-        }
+        if (!cancelled) { setError(err.message || 'Failed to connect to call'); setStatus('error'); }
       }
     };
 
@@ -229,12 +241,9 @@ export default function RushesCallPanel({
 
     return () => {
       cancelled = true;
-      // Cleanup local media
-      localStreamRef.current?.getTracks().forEach(t => t.stop());
-      // Close transports
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
       try { sendTransportRef.current?.close(); } catch {}
       try { recvTransportRef.current?.close(); } catch {}
-      // Leave room
       if (socketRef.current?.connected && roomID) {
         socketRef.current.emit('webrtc:leave-room', { roomId: roomID });
         socketRef.current.disconnect();
@@ -246,204 +255,421 @@ export default function RushesCallPanel({
 
   const toggleMic = () => {
     const track = localStreamRef.current?.getAudioTracks()[0];
-    if (track) {
-      track.enabled = !track.enabled;
-      setIsMuted(!track.enabled);
-    }
+    if (track) { track.enabled = !track.enabled; setIsMuted(!track.enabled); }
   };
 
   const toggleCam = () => {
     const track = localStreamRef.current?.getVideoTracks()[0];
-    if (track) {
-      track.enabled = !track.enabled;
-      setIsCamOff(!track.enabled);
-    }
+    if (track) { track.enabled = !track.enabled; setIsCamOff(!track.enabled); }
   };
 
-  const handleLeave = () => {
-    onClose?.();
-  };
+  const toggleSpeaker = () => setIsSpeakerMuted((s) => !s);
+
+  const handleLeave = () => onClose?.();
 
   if (!roomID) return null;
 
+  // ─── Minimized floating pill ──────────────────────────────────────────────
+  if (isMinimized) {
+    return (
+      <motion.div
+        drag
+        dragMomentum={false}
+        dragConstraints={{ left: -1200, right: 0, top: -800, bottom: 0 }}
+        className="fixed bottom-28 right-4 z-[100] w-64 cursor-grab active:cursor-grabbing"
+        initial={{ opacity: 0, scale: 0.8, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.8, y: 20 }}
+        style={{ borderRadius: 20 }}
+      >
+        <div
+          className="overflow-hidden rounded-2xl border border-white/10 shadow-2xl"
+          style={{
+            background: 'linear-gradient(145deg, rgba(15,15,15,0.97), rgba(8,8,8,0.97))',
+            boxShadow: status === 'connected'
+              ? '0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06), 0 0 40px rgba(34,197,94,0.08)'
+              : '0 20px 60px rgba(0,0,0,0.7)',
+          }}
+        >
+          {/* Top row: avatar + name + status */}
+          <button
+            onClick={onMaximize}
+            className="flex w-full items-center gap-3 p-3 text-left hover:bg-white/5 transition-colors"
+          >
+            <div className="relative flex-shrink-0">
+              <img
+                src={otherUser?.avatar || '/avatar.svg'}
+                alt=""
+                className="h-10 w-10 rounded-full object-cover border border-white/10"
+              />
+              <span
+                className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#0f0f0f] ${
+                  status === 'connected' ? 'bg-green-400' : 'bg-yellow-400'
+                }`}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold text-white">
+                {otherUser?.username || 'User'}
+              </p>
+              <p className={`text-xs font-semibold ${
+                status === 'connected' ? 'text-green-400' : 'text-yellow-400'
+              }`}>
+                {status === 'connected' ? `● ${callTimer}` : status === 'ringing' ? '● Ringing...' : '● Connecting...'}
+              </p>
+            </div>
+            <Maximize2 className="h-4 w-4 flex-shrink-0 text-neutral-500" />
+          </button>
+
+          {/* Controls row */}
+          <div className="flex items-center justify-center gap-2 border-t border-white/5 px-3 py-2.5">
+            <button
+              onClick={toggleMic}
+              className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
+                isMuted ? 'bg-red-600 text-white' : 'bg-white/10 text-neutral-300 hover:bg-white/20'
+              }`}
+            >
+              {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </button>
+            {mode === 'video' && (
+              <button
+                onClick={toggleCam}
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
+                  isCamOff ? 'bg-red-600 text-white' : 'bg-white/10 text-neutral-300 hover:bg-white/20'
+                }`}
+              >
+                {isCamOff ? <VideoOff className="h-4 w-4" /> : <Video className="h-4 w-4" />}
+              </button>
+            )}
+            <button
+              onClick={handleLeave}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-lg shadow-red-600/30 hover:bg-red-500 transition-all"
+            >
+              <PhoneOff className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Always-rendered audio elements (work even when minimized) */}
+        {Object.entries(remoteStreams).map(([peerId, stream]) => (
+          <audio
+            key={peerId}
+            ref={(el) => {
+              if (el) { el.srcObject = stream; el.muted = isSpeakerMuted; audioRefs.current[peerId] = el; }
+            }}
+            autoPlay
+          />
+        ))}
+      </motion.div>
+    );
+  }
+
+  // ─── Full-screen panel ─────────────────────────────────────────────────────
   return (
     <AnimatePresence>
       <motion.div
-        className={isMinimized
-          ? "fixed bottom-24 right-4 z-[100] w-72 h-48 bg-neutral-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden"
-          : "fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-xl"
-        }
-        drag={isMinimized}
-        dragConstraints={{ left: -1000, right: 0, top: -1000, bottom: 0 }}
-        initial={{ opacity: 0, scale: 0.9 }}
+        className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
+        style={{ background: 'linear-gradient(160deg, #050505 0%, #0a0a0a 100%)' }}
+        initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
+        exit={{ opacity: 0, scale: 0.97 }}
       >
+        {/* Ambient glow */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: mode === 'video'
+              ? 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(59,130,246,0.08) 0%, transparent 70%)'
+              : 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(34,197,94,0.07) 0%, transparent 70%)',
+          }}
+        />
+
         {/* ── Header ── */}
-        <div className={`absolute top-0 left-0 right-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent ${isMinimized ? 'p-2' : 'p-4'}`}>
+        <div className="relative z-10 flex flex-shrink-0 items-center justify-between px-5 pt-5 pb-3">
           <div className="flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${mode === 'video' ? 'bg-blue-600/30' : 'bg-green-600/30'}`}>
-              {mode === 'video' ? <Video className="w-4 h-4 text-blue-400" /> : <Phone className="w-4 h-4 text-green-400" />}
+            <div
+              className={`flex h-9 w-9 items-center justify-center rounded-full ${
+                mode === 'video' ? 'bg-blue-600/20' : 'bg-green-600/20'
+              }`}
+            >
+              {mode === 'video'
+                ? <Video className="h-4 w-4 text-blue-400" />
+                : <Phone className="h-4 w-4 text-green-400" />}
             </div>
             <div>
-              <p className={`text-white font-semibold leading-tight ${isMinimized ? 'text-xs' : 'text-sm'}`}>
+              <p className="text-sm font-bold text-white">
                 {mode === 'video' ? 'Video Call' : 'Voice Call'}
-                {!isMinimized && ` with @${otherUser?.username || 'User'}`}
+                {otherUser?.username && (
+                  <span className="ml-1 font-normal text-neutral-400">
+                    with @{otherUser.username}
+                  </span>
+                )}
               </p>
-              {!isMinimized && (
-                <p className={`text-xs mt-0.5 ${status === 'connected' ? 'text-green-400' : status === 'error' ? 'text-red-400' : 'text-yellow-400'}`}>
-                  {status === 'connected' ? '● Connected' : status === 'error' ? '● Error' : '● Connecting...'}
-                </p>
-              )}
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <motion.span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    status === 'connected' ? 'bg-green-400' :
+                    status === 'error' ? 'bg-red-400' : 'bg-yellow-400'
+                  }`}
+                  animate={{ opacity: status === 'connected' ? 1 : [1, 0.3, 1] }}
+                  transition={{ duration: 1.2, repeat: status !== 'connected' ? Infinity : 0 }}
+                />
+                <span className={`text-xs font-semibold ${
+                  status === 'connected' ? 'text-green-400' :
+                  status === 'error' ? 'text-red-400' : 'text-yellow-400'
+                }`}>
+                  {status === 'connected'
+                    ? callTimer
+                    : status === 'ringing' ? 'Ringing...'
+                    : status === 'error' ? 'Error'
+                    : 'Connecting...'}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            {isMinimized ? (
-              <button onClick={onMaximize} className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-all">
-                <Maximize2 className="w-4 h-4" />
-              </button>
-            ) : (
-              <button onClick={onMinimize} className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/10 transition-all">
-                <Minimize2 className="w-5 h-5" />
-              </button>
-            )}
-          </div>
+          <button
+            onClick={onMinimize}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-white/10 hover:text-white"
+          >
+            <Minimize2 className="h-5 w-5" />
+          </button>
         </div>
 
         {/* ── Error State ── */}
         {status === 'error' && (
-          <div className="flex flex-col items-center justify-center h-full gap-4 px-6 text-center">
-            <AlertCircle className="w-12 h-12 text-red-400" />
-            <p className="text-white font-semibold">Call Failed</p>
-            <p className="text-neutral-400 text-sm">{error}</p>
-            <button onClick={handleLeave} className="px-6 py-2 rounded-xl bg-white/10 text-white text-sm hover:bg-white/20 transition-colors">
+          <div className="flex flex-1 flex-col items-center justify-center gap-5 px-8 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-600/10 border border-red-500/20">
+              <AlertCircle className="h-10 w-10 text-red-400" />
+            </div>
+            <div>
+              <p className="text-xl font-black text-white mb-2">Call Failed</p>
+              <p className="text-neutral-400 text-sm max-w-xs">{error}</p>
+            </div>
+            <button
+              onClick={handleLeave}
+              className="rounded-2xl border border-white/10 bg-white/8 px-8 py-3 text-sm font-bold text-white transition-colors hover:bg-white/15"
+            >
               Close
             </button>
           </div>
         )}
 
-        {/* ── Connecting State ── */}
-        {status === 'connecting' && !error && (
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-            <div className="text-center">
+        {/* ── Connecting / Ringing State ── */}
+        {(status === 'connecting' || status === 'ringing') && !error && (
+          <div className="flex flex-1 flex-col items-center justify-center gap-6">
+            {/* Avatar with pulse rings */}
+            <div className="relative flex items-center justify-center">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="absolute rounded-full border border-white/10"
+                  initial={{ width: 120, height: 120, opacity: 0.6 }}
+                  animate={{ width: [120, 180 + i * 50], height: [120, 180 + i * 50], opacity: [0.6, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.55, ease: 'easeOut' }}
+                />
+              ))}
               <img
                 src={otherUser?.avatar || '/avatar.svg'}
                 alt=""
-                className="w-24 h-24 rounded-full object-cover border-4 border-white/10 mx-auto mb-4 animate-pulse"
+                className="relative h-28 w-28 rounded-full border-2 border-white/15 object-cover shadow-2xl"
               />
-              <p className="text-white font-bold text-lg mb-1">Calling @{otherUser?.username || 'User'}...</p>
-              <div className="flex justify-center gap-1 mt-3">
-                {[0, 1, 2].map(i => (
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-black text-white mb-1">@{otherUser?.username || 'User'}</p>
+              <div className="flex items-center justify-center gap-1.5">
+                {[0, 1, 2].map((i) => (
                   <motion.span
                     key={i}
-                    className="w-2 h-2 rounded-full bg-white"
-                    animate={{ opacity: [0.3, 1, 0.3] }}
+                    className="h-2 w-2 rounded-full bg-neutral-400"
+                    animate={{ opacity: [0.3, 1, 0.3], y: [0, -4, 0] }}
                     transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
                   />
                 ))}
               </div>
+              <p className="mt-2 text-sm text-neutral-500">
+                {status === 'ringing' ? 'Ringing...' : 'Connecting...'}
+              </p>
             </div>
           </div>
         )}
 
-        {/* ── Connected: Video Grid ── */}
-        {status === 'connected' && !isMinimized && (
-          <div className="w-full h-full flex flex-col bg-neutral-950">
-            {/* Video area */}
-            <div className="flex-1 relative flex items-center justify-center gap-4 p-6 flex-wrap">
-              {/* Local */}
+        {/* ── Connected State ── */}
+        {status === 'connected' && (
+          <div className="flex flex-1 flex-col overflow-hidden">
+            {/* Media area */}
+            <div className="flex flex-1 items-center justify-center gap-4 p-5 flex-wrap">
+
+              {/* Video mode: local tile */}
               {mode === 'video' && (
-                <div className="relative rounded-2xl overflow-hidden bg-neutral-900 border border-white/10 shadow-xl"
-                  style={{ width: Object.keys(remoteStreams).length === 0 ? '80%' : '45%', aspectRatio: '16/9' }}>
-                  <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover scale-x-[-1]" />
+                <motion.div
+                  layout
+                  className="relative overflow-hidden rounded-3xl border border-white/8 bg-neutral-900 shadow-2xl"
+                  style={{
+                    width: Object.keys(remoteStreams).length === 0 ? '72%' : '46%',
+                    aspectRatio: '16/9',
+                    boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+                  }}
+                >
+                  <video ref={localVideoRef} autoPlay muted playsInline className="h-full w-full object-cover scale-x-[-1]" />
                   {isCamOff && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-neutral-900">
-                      <img src={currentUser?.avatar || '/avatar.svg'} className="w-16 h-16 rounded-full object-cover" alt="You" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-neutral-950">
+                      <img src={currentUser?.avatar || '/avatar.svg'} className="h-16 w-16 rounded-full object-cover opacity-60" alt="You" />
                     </div>
                   )}
-                  <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-lg">You</div>
-                  {isMuted && <div className="absolute top-2 right-2 bg-red-600 rounded-full p-1"><MicOff className="w-3 h-3 text-white" /></div>}
-                </div>
+                  <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-xl bg-black/60 px-2.5 py-1 backdrop-blur-sm">
+                    {isMuted && <MicOff className="h-3 w-3 text-red-400" />}
+                    <span className="text-xs font-semibold text-white">You</span>
+                  </div>
+                </motion.div>
               )}
 
-              {/* Remote streams */}
-              {Object.entries(remoteStreams).map(([peerId, stream]) => (
-                <div key={peerId}
-                  className="relative rounded-2xl overflow-hidden bg-neutral-900 border border-white/10 shadow-xl"
-                  style={{ width: mode === 'video' ? '45%' : '60%', aspectRatio: '16/9' }}>
+              {/* Remote video streams */}
+              {mode === 'video' && Object.entries(remoteStreams).map(([peerId, stream]) => (
+                <motion.div
+                  key={peerId}
+                  layout
+                  className="relative overflow-hidden rounded-3xl border border-white/8 bg-neutral-900 shadow-2xl"
+                  style={{
+                    width: '46%',
+                    aspectRatio: '16/9',
+                    boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+                  }}
+                >
                   <video
-                    ref={el => { if (el && stream) el.srcObject = stream; }}
+                    ref={(el) => { if (el && stream) el.srcObject = stream; }}
                     autoPlay playsInline
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
-                  <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-lg">
-                    @{otherUser?.username || 'User'}
+                  <div className="absolute bottom-3 left-3 rounded-xl bg-black/60 px-2.5 py-1 backdrop-blur-sm">
+                    <span className="text-xs font-semibold text-white">@{otherUser?.username || 'User'}</span>
                   </div>
-                </div>
+                </motion.div>
               ))}
 
-              {/* Audio-only view */}
-              {mode === 'audio' && Object.keys(remoteStreams).length === 0 && (
-                <div className="flex flex-col items-center gap-4">
-                  <div className="relative">
-                    <img src={otherUser?.avatar || '/avatar.svg'} className="w-32 h-32 rounded-full object-cover border-4 border-white/10" alt={otherUser?.username} />
-                    <motion.div
-                      className="absolute inset-0 rounded-full border-4 border-green-500/40"
-                      animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0, 0.6] }}
-                      transition={{ duration: 2, repeat: Infinity }}
+              {/* Audio-only: avatar + animated rings */}
+              {mode === 'audio' && (
+                <div className="flex flex-col items-center gap-6">
+                  <div className="relative flex items-center justify-center">
+                    {/* Animated rings when remote is connected */}
+                    {hasRemote && [0, 1].map((i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute rounded-full border-2 border-green-500/20"
+                        animate={{ scale: [1, 1.5 + i * 0.3], opacity: [0.5, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: i * 0.7, ease: 'easeOut' }}
+                        style={{ width: 150, height: 150 }}
+                      />
+                    ))}
+                    <img
+                      src={otherUser?.avatar || '/avatar.svg'}
+                      className="relative h-36 w-36 rounded-full border-4 border-white/10 object-cover shadow-2xl"
+                      alt={otherUser?.username}
                     />
                   </div>
-                  <p className="text-white font-bold text-xl">@{otherUser?.username}</p>
-                  <p className="text-green-400 text-sm">● Connected</p>
+                  <div className="text-center">
+                    <p className="text-3xl font-black text-white mb-1">@{otherUser?.username || 'User'}</p>
+                    <p className={`text-sm font-semibold ${hasRemote ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {hasRemote ? `● Connected · ${callTimer}` : '● Waiting for other party...'}
+                    </p>
+                  </div>
                 </div>
               )}
-
-              {/* Hidden audio elements for remote streams in audio mode */}
-              {mode === 'audio' && Object.entries(remoteStreams).map(([peerId, stream]) => (
-                <audio key={peerId} ref={el => { if (el) el.srcObject = stream; }} autoPlay />
-              ))}
             </div>
 
             {/* ── Control Bar ── */}
-            <div className="p-4 border-t border-white/5 flex items-center justify-center gap-4">
-              <button
-                onClick={toggleMic}
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isMuted ? 'bg-red-600 hover:bg-red-500' : 'bg-white/10 hover:bg-white/20'}`}
+            <div className="flex-shrink-0 flex items-center justify-center pb-8 pt-4">
+              <motion.div
+                className="flex items-center gap-3 rounded-full border border-white/8 px-6 py-3"
+                style={{
+                  background: 'rgba(15,15,15,0.85)',
+                  backdropFilter: 'blur(20px)',
+                  boxShadow: '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
+                }}
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2, type: 'spring', damping: 20 }}
               >
-                {isMuted ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5 text-white" />}
-              </button>
+                {/* Mic */}
+                <ControlButton
+                  onClick={toggleMic}
+                  active={isMuted}
+                  activeColor="red"
+                  label={isMuted ? 'Unmute' : 'Mute'}
+                  icon={isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                />
 
-              {mode === 'video' && (
-                <button
-                  onClick={toggleCam}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isCamOff ? 'bg-red-600 hover:bg-red-500' : 'bg-white/10 hover:bg-white/20'}`}
+                {/* Camera (video mode only) */}
+                {mode === 'video' && (
+                  <ControlButton
+                    onClick={toggleCam}
+                    active={isCamOff}
+                    activeColor="red"
+                    label={isCamOff ? 'Start Cam' : 'Stop Cam'}
+                    icon={isCamOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
+                  />
+                )}
+
+                {/* Speaker */}
+                <ControlButton
+                  onClick={toggleSpeaker}
+                  active={isSpeakerMuted}
+                  activeColor="red"
+                  label={isSpeakerMuted ? 'Unmute Speaker' : 'Mute Speaker'}
+                  icon={isSpeakerMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                />
+
+                {/* Minimize */}
+                <ControlButton
+                  onClick={onMinimize}
+                  active={false}
+                  label="Minimize"
+                  icon={<Minimize2 className="h-5 w-5" />}
+                />
+
+                {/* End call */}
+                <motion.button
+                  whileTap={{ scale: 0.92 }}
+                  onClick={handleLeave}
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-red-600 text-white shadow-lg shadow-red-600/30 transition-colors hover:bg-red-500"
+                  title="End call"
                 >
-                  {isCamOff ? <VideoOff className="w-5 h-5 text-white" /> : <Video className="w-5 h-5 text-white" />}
-                </button>
-              )}
-
-              <button
-                onClick={handleLeave}
-                className="w-14 h-14 rounded-full bg-red-600 hover:bg-red-500 flex items-center justify-center transition-all shadow-lg shadow-red-600/30"
-              >
-                <PhoneOff className="w-6 h-6 text-white" />
-              </button>
+                  <PhoneOff className="h-6 w-6" />
+                </motion.button>
+              </motion.div>
             </div>
           </div>
         )}
 
-        {/* Minimized view control bar */}
-        {isMinimized && status === 'connected' && (
-          <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-20">
-            <button onClick={toggleMic} className={`w-8 h-8 rounded-full flex items-center justify-center ${isMuted ? 'bg-red-600' : 'bg-white/20'}`}>
-              {isMuted ? <MicOff className="w-3.5 h-3.5 text-white" /> : <Mic className="w-3.5 h-3.5 text-white" />}
-            </button>
-            <button onClick={handleLeave} className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center">
-              <PhoneOff className="w-3.5 h-3.5 text-white" />
-            </button>
-          </div>
-        )}
+        {/* ── Always-rendered audio elements (outside isMinimized gate) ── */}
+        {Object.entries(remoteStreams).map(([peerId, stream]) => (
+          <audio
+            key={peerId}
+            ref={(el) => {
+              if (el) { el.srcObject = stream; el.muted = isSpeakerMuted; audioRefs.current[peerId] = el; }
+            }}
+            autoPlay
+            className="hidden"
+          />
+        ))}
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+// ─── Control Button helper ─────────────────────────────────────────────────
+
+function ControlButton({ onClick, active, activeColor = 'red', label, icon }) {
+  const bg = active
+    ? activeColor === 'red' ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'
+    : 'bg-white/10 hover:bg-white/20';
+  return (
+    <motion.button
+      whileTap={{ scale: 0.9 }}
+      onClick={onClick}
+      title={label}
+      className={`flex h-12 w-12 items-center justify-center rounded-full text-white transition-all ${bg}`}
+    >
+      {icon}
+    </motion.button>
   );
 }

@@ -14,7 +14,16 @@ import axios from "axios";
 import AppIcon from "./AppIcon";
 import { TMDB_BLUR_DATA_URL } from "../lib/imageBlur";
 
-const TRENDING = ["Interstellar", "Breaking Bad", "The Dark Knight", "Oppenheimer", "Stranger Things"];
+const GENRES = [
+  { id: 28, name: "Action" },
+  { id: 35, name: "Comedy" },
+  { id: 27, name: "Horror" },
+  { id: 878, name: "Sci-Fi" },
+  { id: 10749, name: "Romance" },
+  { id: 53, name: "Thriller" },
+  { id: 16, name: "Animation" },
+  { id: 9648, name: "Mystery" }
+];
 
 function debounce(fn, delay) {
     let t;
@@ -130,15 +139,16 @@ export default function SmartSearch({ fullscreen = false, onClose }) {
                         ) : (
                             <div className="py-2">
                                 <p className="text-xs text-neutral-600 px-4 py-2 uppercase tracking-wider font-semibold flex items-center gap-2">
-                                    <AppIcon icon={FireIcon} className="text-red-500" size={10} /> Trending
+                                    <AppIcon icon={FireIcon} className="text-red-500" size={10} /> Browse Genres
                                 </p>
-                                {TRENDING.map((q) => (
-                                    <button key={q} onClick={() => handleSearch(q)}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left">
-                                        <AppIcon icon={Search01Icon} size={10} className="text-neutral-600 flex-shrink-0" />
-                                        <span className="text-neutral-300 text-sm">{q}</span>
+                                <div className="grid grid-cols-2 gap-2 px-4 pb-3">
+                                {GENRES.map((g) => (
+                                    <button key={g.id} onClick={() => { setFocused(false); router.push(`/genre/${g.id}?name=${encodeURIComponent(g.name)}`); onClose?.(); }}
+                                        className="w-full flex items-center justify-center px-4 py-2 hover:bg-white/10 bg-white/5 border border-white/5 rounded-xl transition-all text-center">
+                                        <span className="text-neutral-200 text-sm font-medium">{g.name}</span>
                                     </button>
                                 ))}
+                                </div>
                             </div>
                         )}
                         {query.length >= 2 && (

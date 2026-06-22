@@ -23,8 +23,8 @@ import axios from "axios";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "../../lib/supabase";
-import { useDispatch } from "react-redux";
-import { startCall as startGlobalCall } from "../../store/slices/callSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { startCall as startGlobalCall, cancelCall, setCallerStatus, selectActiveCall } from "../../store/slices/callSlice";
 import { TMDB_BLUR_DATA_URL } from "../../lib/imageBlur";
 import { toast } from "../ui/Toaster";
 import dynamic from "next/dynamic";
@@ -98,6 +98,10 @@ export default function ChatPanel({ conversation, currentUser }) {
   const currentUserId = currentUser?._id || currentUser?.id;
   const receiverId = otherUser?._id || otherUser?.id;
   const isBlocked = (currentUser?.blockedUsers || []).includes(receiverId);
+  const activeCall = useSelector(selectActiveCall);
+  const isInCall = activeCall?.roomID != null;
+  const [isCalling, setIsCalling] = useState(false);
+  const callTimeoutRef = useRef(null);
 
   const statusLabel = useMemo(() => {
     if (isOnline) return "Online";
@@ -137,7 +141,10 @@ export default function ChatPanel({ conversation, currentUser }) {
       return;
     }
 
+    if (isCalling || isInCall) return; // prevent double-call
+
     const roomID = `mf_${conversationId}_${Date.now()}`;
+    setIsCalling(true);
     
     dispatch(startGlobalCall({
       roomID,
@@ -162,6 +169,18 @@ export default function ChatPanel({ conversation, currentUser }) {
     });
 
     toast({ type: 'info', message: `Calling ${otherUser?.displayName || otherUser?.username}...` });
+
+    // Auto-cancel if no answer in 30s
+    callTimeoutRef.current = setTimeout(() => {
+      setIsCalling(false);
+      dispatch(cancelCall());
+      toast({ type: 'info', message: 'No answer.' });
+      channelRef.current?.send({
+        type: 'broadcast',
+        event: 'call_cancelled',
+        payload: { roomID },
+      });
+    }, 30000);
   };
 
   // === ACCEPT INCOMING CALL ===
@@ -175,6 +194,13 @@ export default function ChatPanel({ conversation, currentUser }) {
       currentUser,
       conversationId,
     }));
+
+    // Tell the caller we accepted so they can transition away from "Calling..."
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'call_accepted',
+      payload: { roomID: incomingCall.roomID, acceptedBy: currentUserId },
+    });
     
     setIncomingCall(null);
   };
@@ -192,6 +218,13 @@ export default function ChatPanel({ conversation, currentUser }) {
 
     setIncomingCall(null);
   };
+
+  // === CLEANUP CALL TIMEOUT on unmount ===
+  useEffect(() => {
+    return () => {
+      if (callTimeoutRef.current) clearTimeout(callTimeoutRef.current);
+    };
+  }, []);
 
   const loadMessages = useCallback(async () => {
     setLoading(true);
@@ -232,7 +265,17 @@ export default function ChatPanel({ conversation, currentUser }) {
           }
         })
         .on("broadcast", { event: "call_declined" }, () => {
+          // Clear caller's call state immediately
+          clearTimeout(callTimeoutRef.current);
+          setIsCalling(false);
+          dispatch(cancelCall());
           toast({ type: "info", message: `${otherUser?.displayName || otherUser?.username || "User"} declined the call.` });
+        })
+        .on("broadcast", { event: "call_accepted" }, ({ payload }) => {
+          // Callee accepted — clear the auto-cancel timeout, caller is now in call
+          clearTimeout(callTimeoutRef.current);
+          setIsCalling(false);
+          dispatch(setCallerStatus('accepted'));
         })
         .on("broadcast", { event: "call_cancelled" }, () => {
           setIncomingCall(null);
@@ -445,12 +488,55 @@ export default function ChatPanel({ conversation, currentUser }) {
         </div>
 
         <div className="flex items-center gap-2">
-            <button onClick={() => startCallAction('voice')} className="p-2 text-neutral-400 hover:text-green-400 hover:bg-white/10 rounded-xl transition-all" aria-label="Start voice call">
-              <Phone className="w-5 h-5" />
-            </button>
-            <button onClick={() => startCallAction('video')} className="p-2 text-neutral-400 hover:text-blue-400 hover:bg-white/10 rounded-xl transition-all" aria-label="Start video call">
-              <Video className="w-5 h-5" />
-            </button>
+          {isCalling ? (
+            <div className="flex items-center gap-2 rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-3 py-1.5">
+              <motion.div
+                className="h-2 w-2 rounded-full bg-yellow-400"
+                animate={{ opacity: [1, 0.2, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              />
+              <span className="text-xs font-semibold text-yellow-400">Calling...</span>
+              <button
+                onClick={() => {
+                  clearTimeout(callTimeoutRef.current);
+                  setIsCalling(false);
+                  dispatch(cancelCall());
+                  channelRef.current?.send({ type: 'broadcast', event: 'call_cancelled', payload: {} });
+                }}
+                className="ml-1 rounded-full p-0.5 text-yellow-400/60 hover:text-yellow-400"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ) : isInCall ? (
+            <div className="flex items-center gap-2 rounded-xl border border-green-500/20 bg-green-500/10 px-3 py-1.5">
+              <motion.div
+                className="h-2 w-2 rounded-full bg-green-400"
+                animate={{ opacity: [1, 0.3, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+              <span className="text-xs font-semibold text-green-400">On a call</span>
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={() => startCallAction('voice')}
+                disabled={!isOnline}
+                className="rounded-xl p-2 text-neutral-400 transition-all hover:bg-green-500/10 hover:text-green-400 disabled:opacity-40"
+                aria-label="Start voice call"
+              >
+                <Phone className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => startCallAction('video')}
+                disabled={!isOnline}
+                className="rounded-xl p-2 text-neutral-400 transition-all hover:bg-blue-500/10 hover:text-blue-400 disabled:opacity-40"
+                aria-label="Start video call"
+              >
+                <Video className="h-5 w-5" />
+              </button>
+            </>
+          )}
           <button onClick={deleteChat} className="chat-icon-button transition hover:text-red-400" aria-label="Delete chat">
             <Trash2 className="h-4 w-4" />
           </button>

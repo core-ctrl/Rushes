@@ -16,6 +16,7 @@ import FeedbackButton from "../components/FeedbackButton";
 import Toaster, { toast } from "../components/ui/Toaster";
 import useLenis from "../hooks/useLenis";
 import { useLocation } from "../hooks/useLocation";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { initAnalytics } from "../lib/firebase";
 import {
   fetchCurrentUser, logoutUser, selectUser, selectInitialized, setUser,
@@ -325,7 +326,9 @@ export default function App(props) {
   return (
     <SessionProvider session={pageProps?.session}>
       <Provider store={store}>
-        <AppInner {...props} />
+        <ErrorBoundary>
+          <AppInner {...props} />
+        </ErrorBoundary>
       </Provider>
     </SessionProvider>
   );

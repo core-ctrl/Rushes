@@ -11,19 +11,25 @@ export default function GlobalCallOverlay() {
   const dispatch = useDispatch();
   const router = useRouter();
 
+  const isOnMessagesPage = router.pathname.startsWith('/messages');
   const isWTPage = router.pathname.startsWith('/watch-together');
   const currentWatchRoomID = router.query?.roomId ? `wt_${router.query.roomId}` : null;
   const isActiveWTPage = Boolean(activeWatchParty && isWTPage && activeWatchParty.roomID === currentWatchRoomID);
 
-  // Auto-minimize when navigating away
+  // When user navigates AWAY from /messages during a call → minimize the panel so it floats
+  // When user returns to /messages → maximize the panel
   useEffect(() => {
-    if (activeCall && !router.pathname.startsWith('/messages')) {
-      dispatch(minimizeCall());
+    if (activeCall) {
+      if (!isOnMessagesPage) {
+        dispatch(minimizeCall());
+      } else {
+        dispatch(maximizeCall());
+      }
     }
     if (activeWatchParty && !isActiveWTPage) {
       dispatch(minimizeWatchParty());
     }
-  }, [router.pathname, activeCall, activeWatchParty, dispatch, isActiveWTPage]);
+  }, [router.pathname, activeCall, activeWatchParty, dispatch, isActiveWTPage, isOnMessagesPage]);
 
   if (!activeCall && !activeWatchParty) return null;
 
@@ -38,9 +44,7 @@ export default function GlobalCallOverlay() {
         isMinimized={isMinimized}
         onMinimize={() => dispatch(minimizeCall())}
         onMaximize={() => {
-          if (!router.pathname.startsWith('/messages')) {
-            router.push('/messages');
-          }
+          router.push('/messages');
           dispatch(maximizeCall());
         }}
       />

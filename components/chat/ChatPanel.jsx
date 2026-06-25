@@ -448,9 +448,15 @@ export default function ChatPanel({ conversation, currentUser }) {
               <button
                 onClick={() => {
                   clearTimeout(callTimeoutRef.current);
-                  setIsCalling(false);
                   dispatch(cancelCall());
-                  channelRef.current?.send({ type: 'broadcast', event: 'call_cancelled', payload: {} });
+                  // Broadcast cancellation on receiver's personal channel (not chat channel)
+                  const cancelChannel = supabase.channel(`user:${receiverId}`);
+                  cancelChannel.subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                      cancelChannel.send({ type: 'broadcast', event: 'call_cancelled', payload: {} });
+                      setTimeout(() => supabase.removeChannel(cancelChannel), 500);
+                    }
+                  });
                 }}
                 className="ml-1 rounded-full p-0.5 text-yellow-400/60 hover:text-yellow-400"
               >
@@ -492,7 +498,7 @@ export default function ChatPanel({ conversation, currentUser }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-5 md:px-5" data-lenis-prevent>
+      <div className="flex-1 overflow-y-auto px-3 py-5 md:px-5 chat-doodle-bg" data-lenis-prevent>
         {loading ? (
           <div className="space-y-4">
             {Array.from({ length: 7 }).map((_, index) => (

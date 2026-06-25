@@ -1,5 +1,5 @@
 const isProduction = process.env.NODE_ENV === "production";
-const adminPanelUrl = process.env.ADMIN_PANEL_URL || "http://localhost:3001";
+const adminPanelUrl = process.env.ADMIN_PANEL_URL || "http://localhost:3002";
 
 const contentSecurityPolicy = [
   "default-src 'self'",

@@ -203,7 +203,7 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 p-4 overflow-y-auto bg-gradient-to-b from-neutral-900/30 to-neutral-950/50">
+            <div className="flex-1 p-4 overflow-y-auto bg-gradient-to-b from-neutral-900/30 to-neutral-950/50 chat-doodle-bg">
                 {loading ? (
                     <div className="flex items-center justify-center h-full">
                         <motion.div

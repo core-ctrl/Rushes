@@ -2,14 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, Video, PhoneOff } from 'lucide-react';
 
-export default function IncomingCallModal({ callData, onAccept, onDecline }) {
+export default function IncomingCallModal({ callerName, callerAvatar, mode, onAccept, onDecline }) {
   const [timeLeft, setTimeLeft] = useState(30);
   const timerRef = useRef(null);
   const audioRef = useRef(null);
 
   useEffect(() => {
-    if (!callData) return;
-
     setTimeLeft(30);
 
     // Auto-decline countdown
@@ -38,11 +36,9 @@ export default function IncomingCallModal({ callData, onAccept, onDecline }) {
         audioRef.current = null;
       }
     };
-  }, [callData]);
+  }, []);
 
-  if (!callData) return null;
-
-  const { callerName, callerAvatar, callMode } = callData;
+  const callMode = mode;
   const isVideo = callMode === 'video';
   const accentColor = isVideo ? '#3b82f6' : '#22c55e';
   const accentBg = isVideo ? 'rgba(59,130,246,0.15)' : 'rgba(34,197,94,0.15)';

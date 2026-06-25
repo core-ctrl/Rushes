@@ -70,21 +70,35 @@ function AppInner({ Component, pageProps, router }) {
     };
   }, [router]);
 
-  // Maintenance mode check
+  // Maintenance mode check (Polling & Route Change)
   useEffect(() => {
-    fetch('/api/health').then(r => r.json()).then(d => {
-      if (d.status === 'maintenance') {
-        setIsMaintenance(true);
-        if (router.pathname !== '/maintenance') {
-          router.replace('/maintenance');
+    let intervalId;
+    
+    const checkMaintenance = () => {
+      fetch('/api/health').then(r => r.json()).then(d => {
+        if (d.status === 'maintenance') {
+          setIsMaintenance(true);
+          if (router.pathname !== '/maintenance') {
+            router.replace('/maintenance');
+          }
+        } else {
+          setIsMaintenance(false);
+          if (router.pathname === '/maintenance') {
+            router.replace('/');
+          }
         }
-      } else {
-        setIsMaintenance(false);
-        if (router.pathname === '/maintenance') {
-          router.replace('/');
-        }
-      }
-    }).catch(() => {});
+      }).catch(() => {});
+    };
+
+    // Check immediately on route change
+    checkMaintenance();
+
+    // Check every 30 seconds silently in the background
+    intervalId = setInterval(checkMaintenance, 30000);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [router.pathname]);
 
   // Location hook - runs silently after consent

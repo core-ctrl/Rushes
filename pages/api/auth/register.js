@@ -5,9 +5,16 @@ import { rateLimit } from "@/lib/rateLimit";
 import * as AuthService from "@/services/authService";
 import cookie from "cookie";
 import { getClientIp } from "@/lib/security";
+import { checkAuthEnabled } from "@/middleware/systemCheck";
 
 export default async function handler(req, res) {
   try {
+    // Check emergency operations first
+    const authStatus = await checkAuthEnabled("register");
+    if (!authStatus.allowed) {
+      return res.status(403).json({ error: authStatus.message });
+    }
+
     // ✅ Allow only POST
     if (req.method !== "POST") {
       return res.status(405).json({ error: "Method not allowed" });

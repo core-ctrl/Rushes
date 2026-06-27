@@ -20,7 +20,7 @@ async function connectDB() {
 
   if (!cached.promise) {
     console.log("Connecting to MongoDB...");
-    cached.promise = mongoose.connect(MONGODB_URI || "mongodb://localhost:27017/moviefinder", {
+    cached.promise = mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
     });
   }

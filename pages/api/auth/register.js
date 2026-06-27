@@ -59,7 +59,7 @@ export default async function handler(req, res) {
     // Fire analytics event fire-and-forget (non-blocking)
     setImmediate(() => {
       try {
-        const origin = req.headers.origin || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const origin = req.headers.origin || process.env.NEXT_PUBLIC_APP_URL || 'https://rushes.theorbit.in';
         fetch(`${origin}/api/analytics/event`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

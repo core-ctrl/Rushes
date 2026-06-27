@@ -10,9 +10,10 @@ export default async function handler(req, res) {
     // Extract the token cookie on the server-side
     const token = req.cookies?.token;
 
+    const BACKEND_URL = process.env.NEXT_PUBLIC_WATCH_TOGETHER_URL || 'http://localhost:3002';
     // Call the custom backend to get room details
     const backendRes = await axios.get(
-      `http://localhost:3002/api/rooms/${roomId}`,
+      `${BACKEND_URL}/api/rooms/${roomId}`,
       {
         headers: {
           Authorization: token ? `Bearer ${token}` : ''

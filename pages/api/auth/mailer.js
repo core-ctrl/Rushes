@@ -60,7 +60,7 @@ export async function sendVerificationEmail(to, name) {
 export async function sendPasswordResetEmail(to, resetToken) {
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
 
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://rushes.theorbit.in")}/reset-password?token=${resetToken}`;
     const transporter = getTransporter();
 
     await transporter.sendMail({

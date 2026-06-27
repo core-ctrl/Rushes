@@ -11,9 +11,10 @@ export default async function handler(req, res) {
     // Extract the authentication token cookie from the request
     const token = req.cookies?.token;
 
+    const BACKEND_URL = process.env.NEXT_PUBLIC_WATCH_TOGETHER_URL || 'http://localhost:3002';
     // Call the custom Watch Together backend to create the room
     const backendRes = await axios.post(
-      'http://localhost:3002/api/rooms',
+      `${BACKEND_URL}/api/rooms`,
       {
         roomType: 'WATCH_TOGETHER',
         ...(customRoomId && { roomId: customRoomId })

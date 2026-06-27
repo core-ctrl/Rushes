@@ -117,8 +117,7 @@ export default function RushesCallPanel({
         // 2. Connect socket
         const socket = io(BACKEND_URL, {
           auth: { token },
-          transports: ['websocket'],
-          reconnectionAttempts: 3,
+          reconnectionAttempts: 10,
         });
         socketRef.current = socket;
 

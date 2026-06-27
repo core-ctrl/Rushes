@@ -20,3 +20,8 @@ out/
 .env*.local
 vercel.json
 .vercel
+
+*.md
+!README.md
+!ARCHITECTURE.md
+!architecture.md

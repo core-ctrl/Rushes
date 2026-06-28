@@ -181,6 +181,7 @@ export default function WatchPartyLanding() {
             ))}
           </div>
         )}
+        </div>
       </main>
 
       <CreatePartyDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />

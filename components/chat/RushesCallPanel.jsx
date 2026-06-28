@@ -288,30 +288,10 @@ export default function RushesCallPanel({
         socket.on('webrtc:user-left', handlePeerLeft);
         socket.on('webrtc:peer-left', handlePeerLeft);
 
-        // 6. If existing peers, send offer to the first one (1-on-1 call)
+        // 6. If existing peers, we are the second to join. We just wait for their offer.
         const existingPeers = joinData.peers || [];
         if (existingPeers.length > 0) {
-          const peerId = existingPeers[0];
-          const pc = setupPeerConnection(peerId);
-
-          try {
-            makingOfferRef.current = true;
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-
-            socket.emit('webrtc:offer', {
-              targetId: peerId,
-              sdp: pc.localDescription.toJSON(),
-            });
-            makingOfferRef.current = false;
-          } catch (err) {
-            makingOfferRef.current = false;
-            console.error('Error creating initial offer:', err);
-            if (!cancelled) {
-              setError('Failed to initiate call');
-              setStatus('error');
-            }
-          }
+          console.log('Joined room with existing peer. Waiting for their offer...');
         }
 
       } catch (err) {

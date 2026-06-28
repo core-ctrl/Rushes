@@ -96,12 +96,12 @@ export default function AboutPage() {
                   Contact Us
                 </Link>
                 <a
-                  href="https://twitter.com/rushesapp"
+                  href="https://discord.gg/vP9FkcKnz8"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+                  className="bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3 rounded-xl transition-colors flex items-center gap-2"
                 >
-                  Twitter / X
+                  Join Discord
                 </a>
               </div>
             </section>

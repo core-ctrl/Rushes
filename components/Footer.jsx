@@ -18,8 +18,7 @@ const links = {
     { label: 'Contact', href: '/contact' },
   ],
   Connect: [
-    { label: 'Discord Community', href: 'https://discord.gg/rushes', external: true },
-    { label: 'Twitter / X', href: 'https://twitter.com/rushesapp', external: true },
+    { label: 'Discord Community', href: 'https://discord.gg/vP9FkcKnz8', external: true },
     { label: 'Instagram', href: 'https://instagram.com/rushesapp', external: true },
   ],
 };

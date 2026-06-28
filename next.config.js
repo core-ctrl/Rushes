@@ -13,7 +13,7 @@ const contentSecurityPolicy = [
   "font-src 'self' data:",
   "connect-src 'self' https://api.themoviedb.org https://nominatim.openstreetmap.org https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://region1.google-analytics.com https://pagead2.googlesyndication.com https://*.googleapis.com https://*.firebaseio.com https://rushes-watchtogether.onrender.com wss://rushes-watchtogether.onrender.com https://rushes-call.onrender.com wss://rushes-call.onrender.com https://*.onrender.com wss://*.onrender.com wss: ws:",
   "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://googleads.g.doubleclick.net",
-  "media-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
+  "media-src 'self' data: blob: https://www.youtube.com https://www.youtube-nocookie.com",
   isProduction ? "upgrade-insecure-requests" : "",
 ]
   .filter(Boolean)

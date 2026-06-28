@@ -5,6 +5,7 @@ import {
   PhoneOff, Phone, Volume2, VolumeX, Wifi, WifiOff, AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import api from '../../lib/axios';
 
 // Free STUN/TURN servers for NAT traversal
 const ICE_SERVERS = [
@@ -49,8 +50,10 @@ function useCallTimer(active) {
  */
 export default function RushesCallPanel({
   roomID, mode = 'audio', otherUser, currentUser,
+  conversationId,
   onClose, isMinimized, onMinimize, onMaximize,
 }) {
+  const [actualMode, setActualMode] = useState(mode);
   const [status, setStatus] = useState('connecting'); // connecting | ringing | connected | error
   const [error, setError] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -69,6 +72,21 @@ export default function RushesCallPanel({
   const isSettingRemoteRef = useRef(false);
 
   const callTimer = useCallTimer(status === 'connected');
+
+  const handleLeave = async () => {
+    if (status === 'connected' && conversationId) {
+      try {
+        await api.post(`/api/messages/${conversationId}`, {
+          receiverId: otherUser?.id || otherUser?._id,
+          content: `📞 ${actualMode === 'video' ? 'Video' : 'Voice'} call ended. Duration: ${callTimer}`,
+          messageType: 'system'
+        });
+      } catch (err) {
+        console.error('Failed to log call duration:', err);
+      }
+    }
+    onClose?.();
+  };
 
   // Apply speaker mute to remote audio
   useEffect(() => {
@@ -137,11 +155,25 @@ export default function RushesCallPanel({
     const connect = async () => {
       try {
         // 1. Get local media (audio, and video if video call) FIRST to avoid missing offers during permission prompt
-        const constraints = {
+        let constraints = {
           audio: true,
-          video: mode === 'video' ? { width: 1280, height: 720, facingMode: 'user' } : false,
+          video: actualMode === 'video' ? { width: 1280, height: 720, facingMode: 'user' } : false,
         };
-        const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        let localStream;
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (err) {
+          if (actualMode === 'video') {
+            console.warn('Camera failed, falling back to audio only', err);
+            constraints.video = false;
+            setActualMode('voice');
+            setIsCamOff(true);
+            localStream = await navigator.mediaDevices.getUserMedia(constraints);
+          } else {
+            throw err;
+          }
+        }
+        
         localStreamRef.current = localStream;
         if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
 
@@ -305,6 +337,8 @@ export default function RushesCallPanel({
             peerConnectionRef.current.close();
             peerConnectionRef.current = null;
           }
+          
+          if (onClose) onClose();
         };
         channel.on('broadcast', { event: 'webrtc_user_left' }, handlePeerLeft);
 
@@ -371,8 +405,6 @@ export default function RushesCallPanel({
   };
 
   const toggleSpeaker = () => setIsSpeakerMuted((s) => !s);
-
-  const handleLeave = () => onClose?.();
 
   if (!roomID) return null;
 
@@ -496,16 +528,16 @@ export default function RushesCallPanel({
           <div className="flex items-center gap-3">
             <div
               className={`flex h-9 w-9 items-center justify-center rounded-full ${
-                mode === 'video' ? 'bg-blue-600/20' : 'bg-green-600/20'
+                actualMode === 'video' ? 'bg-blue-600/20' : 'bg-green-600/20'
               }`}
             >
-              {mode === 'video'
+              {actualMode === 'video'
                 ? <Video className="h-4 w-4 text-blue-400" />
                 : <Phone className="h-4 w-4 text-green-400" />}
             </div>
             <div>
               <p className="text-sm font-bold text-white">
-                {mode === 'video' ? 'Video Call' : 'Voice Call'}
+                {actualMode === 'video' ? 'Video Call' : 'Voice Call'}
                 {otherUser?.username && (
                   <span className="ml-1 font-normal text-neutral-400">
                     with @{otherUser.username}
@@ -616,7 +648,7 @@ export default function RushesCallPanel({
             <div className="flex flex-1 items-center justify-center gap-4 p-5 flex-wrap">
 
               {/* Video mode: local tile */}
-              {mode === 'video' && (
+              {actualMode === 'video' && (
                 <motion.div
                   layout
                   className="relative overflow-hidden rounded-3xl border border-white/8 bg-neutral-900 shadow-2xl"
@@ -640,7 +672,7 @@ export default function RushesCallPanel({
               )}
 
               {/* Remote video streams */}
-              {mode === 'video' && Object.entries(remoteStreams).map(([peerId, stream]) => (
+              {actualMode === 'video' && Object.entries(remoteStreams).map(([peerId, stream]) => (
                 <motion.div
                   key={peerId}
                   layout
@@ -663,7 +695,7 @@ export default function RushesCallPanel({
               ))}
 
               {/* Audio-only: avatar + animated rings */}
-              {mode === 'audio' && (
+              {actualMode !== 'video' && (
                 <div className="flex flex-col items-center gap-6">
                   <div className="relative flex items-center justify-center">
                     {/* Animated rings when remote is connected */}
@@ -688,6 +720,17 @@ export default function RushesCallPanel({
                       {hasRemote ? `● Connected · ${callTimer}` : '● Waiting for other party...'}
                     </p>
                   </div>
+                  
+                  {/* Invisible audio tags for playing remote voice */}
+                  {Object.entries(remoteStreams).map(([peerId, stream]) => (
+                    <audio
+                      key={`audio-${peerId}`}
+                      ref={(el) => { if (el && stream) el.srcObject = stream; }}
+                      autoPlay
+                      playsInline
+                      className="hidden"
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -715,7 +758,7 @@ export default function RushesCallPanel({
                 />
 
                 {/* Camera (video mode only) */}
-                {mode === 'video' && (
+                {actualMode === 'video' && (
                   <ControlButton
                     onClick={toggleCam}
                     active={isCamOff}

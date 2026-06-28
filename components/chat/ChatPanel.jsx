@@ -196,6 +196,14 @@ export default function ChatPanel({ conversation, currentUser }) {
     };
   }, []);
 
+  // Clear timeout if call is accepted
+  useEffect(() => {
+    if (callerStatus === 'accepted' && callTimeoutRef.current) {
+      clearTimeout(callTimeoutRef.current);
+      callTimeoutRef.current = null;
+    }
+  }, [callerStatus]);
+
   const loadMessages = useCallback(async () => {
     setLoading(true);
     try {

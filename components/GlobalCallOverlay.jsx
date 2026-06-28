@@ -148,6 +148,7 @@ export default function GlobalCallOverlay() {
           mode={activeCall.mode}
           otherUser={activeCall.otherUser}
           currentUser={activeCall.currentUser}
+          conversationId={activeCall.conversationId}
           onClose={() => dispatch(endCall())}
           isMinimized={isMinimized}
           onMinimize={() => dispatch(minimizeCall())}

@@ -5,12 +5,12 @@ import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
 
-export default function CreatePartyDrawer({ isOpen, onClose }) {
+export default function CreatePartyDrawer({ isOpen, onClose, prefilledData }) {
   const router = useRouter();
   const { data: session } = useSession();
   
-  const [title, setTitle] = useState('');
-  const [contentName, setContentName] = useState('');
+  const [title, setTitle] = useState(prefilledData?.title || '');
+  const [contentName, setContentName] = useState(prefilledData?.contentName || '');
   const [description, setDescription] = useState('');
   const [privacy, setPrivacy] = useState('public');
   const [password, setPassword] = useState('');
@@ -65,7 +65,10 @@ export default function CreatePartyDrawer({ isOpen, onClose }) {
       maxMembers,
       privacy,
       password: (privacy === 'followers' || privacy === 'custom') ? password : null,
-      allowedUsers: privacy === 'custom' ? selectedUsers.map(u => u._id || u.id) : []
+      allowedUsers: privacy === 'custom' ? selectedUsers.map(u => u._id || u.id) : [],
+      mediaId: prefilledData?.mediaId,
+      mediaType: prefilledData?.mediaType,
+      streamingUrl: prefilledData?.streamingUrl
     };
     
     sessionStorage.setItem(`room_${roomId}_settings`, JSON.stringify(settings));

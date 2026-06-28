@@ -11,6 +11,8 @@ import ErrorBoundary from "./ErrorBoundary";
 import { TMDB_BLUR_DATA_URL } from "../lib/imageBlur";
 import { PlayIcon, PlusSignIcon, UserIcon } from "@hugeicons/core-free-icons";
 import AppIcon from "./AppIcon";
+import CreatePartyDrawer from "./watch-party/CreatePartyDrawer";
+import PasswordModal from "./watch-party/PasswordModal";
 
 export default function MediaDetailLayout({
   media,
@@ -25,6 +27,9 @@ export default function MediaDetailLayout({
   addToWishlist,
 }) {
   const [isWatchPartyModalOpen, setIsWatchPartyModalOpen] = React.useState(false);
+  const [isCreateDrawerOpen, setIsCreateDrawerOpen] = React.useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = React.useState(false);
+  const [selectedRoomToJoin, setSelectedRoomToJoin] = React.useState(null);
   const [dominantColor, setDominantColor] = React.useState('147, 51, 234'); // Default purple
   const isMovie = mediaType === "movie";
   const title = media.title || media.name;
@@ -346,8 +351,26 @@ export default function MediaDetailLayout({
         onClose={() => setIsWatchPartyModalOpen(false)}
         mediaTitle={title}
         mediaId={media.id}
-        mediaType={mediaType}
-        streamingUrl={streamUrl}
+        onHostOwn={() => {
+          setIsWatchPartyModalOpen(false);
+          setIsCreateDrawerOpen(true);
+        }}
+        onJoinPrivate={(room) => {
+          setSelectedRoomToJoin(room);
+          setIsPasswordModalOpen(true);
+        }}
+      />
+      
+      <CreatePartyDrawer 
+        isOpen={isCreateDrawerOpen} 
+        onClose={() => setIsCreateDrawerOpen(false)} 
+        prefilledData={{ title: `Watch ${title}`, contentName: title, mediaId: media.id, mediaType, streamingUrl: streamUrl }}
+      />
+      
+      <PasswordModal 
+        isOpen={isPasswordModalOpen} 
+        onClose={() => setIsPasswordModalOpen(false)} 
+        room={selectedRoomToJoin} 
       />
     </div>
   );

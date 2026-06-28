@@ -1,53 +1,35 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, Lock, PlayCircle, ShieldAlert, X } from 'lucide-react';
-import { toast } from '@/components/ui/Toaster';
+import { X, PlayCircle, Users, Radio, Lock } from 'lucide-react';
+import useSWR from 'swr';
+import { useRouter } from 'next/router';
+
+const fetcher = (url) => fetch(url).then((res) => res.json());
 
 export default function WatchPartyModal({ 
   isOpen, 
   onClose, 
   mediaTitle, 
   mediaId, 
-  mediaType, 
-  streamingUrl 
+  onHostOwn,
+  onJoinPrivate
 }) {
-  const [privacy, setPrivacy] = useState('public');
-  const [customRoomId, setCustomRoomId] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const router = useRouter();
+  const { data, error } = useSWR(isOpen ? '/api/watch-together/active' : null, fetcher);
+  
   if (!isOpen) return null;
 
-  const handleCreate = async () => {
-    setIsSubmitting(true);
-    try {
-      const res = await fetch('/api/watch-together/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: mediaTitle,
-          mediaId,
-          mediaType,
-          streamingUrl,
-          privacy,
-          customRoomId: customRoomId.trim() || undefined
-        }),
-      });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create room');
-      
-      if (data.roomUrl) {
-        toast({ type: 'success', message: 'Room created! Redirecting...' });
-        // Automatically copy to clipboard if possible
-        try {
-           await navigator.clipboard.writeText(window.location.origin + data.roomUrl);
-        } catch(e) {}
-        
-        window.location.href = data.roomUrl;
-      }
-    } catch (err) {
-      toast({ type: 'error', message: err.message });
-      setIsSubmitting(false);
+  const allRooms = data?.rooms || [];
+  const isLoading = !data && !error;
+  
+  // Filter rooms for this exact movie
+  const movieRooms = allRooms.filter(room => room.mediaId == mediaId);
+
+  const handleJoinClick = (room) => {
+    if (room.privacy === 'followers' || room.privacy === 'custom' || room.privacy === 'private') {
+      onJoinPrivate(room);
+    } else {
+      router.push(`/watch-party/${room.roomId || room._id}?title=${encodeURIComponent(room.title)}&mediaId=${room.mediaId || ''}&mediaType=${room.mediaType || 'movie'}`);
     }
   };
 
@@ -58,83 +40,73 @@ export default function WatchPartyModal({
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="bg-black/40 backdrop-blur-2xl border border-white/20 rounded-2xl w-full max-w-lg shadow-[0_8px_32px_rgba(0,0,0,0.8)] overflow-hidden relative"
+          className="bg-[#111] backdrop-blur-2xl border border-white/10 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden relative flex flex-col max-h-[85vh]"
         >
           {/* Header */}
-          <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <PlayCircle className="text-purple-500 w-6 h-6" />
-              Create Watch Party
-            </h2>
+          <div className="p-5 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
+            <div>
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Users className="text-[#e50914] w-5 h-5" />
+                Active Watch Parties
+              </h2>
+              <p className="text-sm text-gray-400 mt-1">For "{mediaTitle}"</p>
+            </div>
             <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="p-6 space-y-6">
-            {/* Warning / Instruction */}
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 flex gap-3 text-yellow-200 text-sm">
-              <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-yellow-500" />
-              <div>
-                <p className="font-bold text-yellow-500 mb-1">Important Note</p>
-                <p>Watch Together syncs video playback between participants. <strong>Every participant must have their own active subscription</strong> to the streaming service (e.g. Netflix, Prime) to watch.</p>
+          <div className="flex-1 overflow-y-auto p-2">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-48">
+                <div className="w-8 h-8 border-4 border-[#e50914] border-t-transparent rounded-full animate-spin" />
               </div>
-            </div>
-
-            {/* Privacy Options */}
-            <div>
-              <label className="block text-sm font-bold text-gray-300 mb-3">Room Privacy</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={() => setPrivacy('public')} 
-                  className={`p-4 rounded-xl border text-left flex flex-col gap-2 transition-all ${privacy === 'public' ? 'bg-purple-500/10 border-purple-500' : 'bg-black/40 border-white/10 hover:bg-white/5'}`}
-                >
-                  <Globe className={`w-5 h-5 ${privacy === 'public' ? 'text-purple-500' : 'text-gray-400'}`} />
-                  <div>
-                    <div className={`font-bold text-sm ${privacy === 'public' ? 'text-white' : 'text-gray-300'}`}>Public</div>
-                    <div className="text-xs text-gray-500 mt-1">Listed on the live dashboard</div>
+            ) : movieRooms.length === 0 ? (
+              <div className="text-center py-16 px-4">
+                <Radio className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                <h3 className="text-lg font-bold text-white mb-2">No rooms available currently</h3>
+                <p className="text-sm text-gray-400 max-w-sm mx-auto">Be the first to start a watch party for this movie and invite others to join!</p>
+              </div>
+            ) : (
+              <div className="p-2 space-y-2">
+                {movieRooms.map(room => (
+                  <div key={room._id || room.roomId} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+                    <div>
+                      <h4 className="font-bold text-white mb-1 flex items-center gap-2">
+                        {room.hostUsername}'s Party
+                        {(room.privacy === 'followers' || room.privacy === 'custom' || room.privacy === 'private') && (
+                          <Lock className="w-3.5 h-3.5 text-[#e50914]" />
+                        )}
+                      </h4>
+                      <div className="flex items-center gap-3 text-xs text-gray-400">
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3 h-3" /> {room.members || 1} / {room.maxMembers || 50}
+                        </span>
+                        <span className="uppercase text-[10px] tracking-wider px-2 py-0.5 rounded-full bg-white/10 font-bold">
+                          {room.privacy || 'Public'}
+                        </span>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => handleJoinClick(room)}
+                      className="bg-white text-black hover:bg-gray-200 px-5 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg"
+                    >
+                      Join
+                    </button>
                   </div>
-                </button>
-                <button 
-                  onClick={() => setPrivacy('private')} 
-                  className={`p-4 rounded-xl border text-left flex flex-col gap-2 transition-all ${privacy === 'private' ? 'bg-purple-500/10 border-purple-500' : 'bg-black/40 border-white/10 hover:bg-white/5'}`}
-                >
-                  <Lock className={`w-5 h-5 ${privacy === 'private' ? 'text-purple-500' : 'text-gray-400'}`} />
-                  <div>
-                    <div className={`font-bold text-sm ${privacy === 'private' ? 'text-white' : 'text-gray-300'}`}>Private</div>
-                    <div className="text-xs text-gray-500 mt-1">Invite link only</div>
-                  </div>
-                </button>
+                ))}
               </div>
-            </div>
-
-            {/* Custom Room ID */}
-            <div>
-              <label className="block text-sm font-bold text-gray-300 mb-1">Custom Room ID (Optional)</label>
-              <p className="text-xs text-gray-500 mb-2">Create a custom link to easily share with friends.</p>
-              <div className="flex bg-white/5 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500 transition-colors shadow-inner">
-                <span className="px-3 py-3 text-sm text-gray-400 bg-black/40 border-r border-white/10">rushes.com/wp/</span>
-                <input 
-                  type="text"
-                  value={customRoomId}
-                  onChange={(e) => setCustomRoomId(e.target.value.replace(/[^a-zA-Z0-9-]/g, '').toLowerCase())}
-                  placeholder="e.g. marvel-night"
-                  className="w-full bg-transparent px-3 py-3 text-white text-sm outline-none placeholder:text-gray-600"
-                />
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Footer */}
-          <div className="p-6 pt-0">
+          <div className="p-5 border-t border-white/10 bg-black/40">
             <button 
-              onClick={handleCreate}
-              disabled={isSubmitting}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3.5 rounded-xl shadow-[0_0_20px_rgba(147,51,234,0.3)] transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={onHostOwn}
+              className="w-full bg-[#e50914] hover:bg-[#b81d24] text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_0_20px_rgba(229,9,20,0.3)] flex justify-center items-center gap-2"
             >
-              {isSubmitting ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : 'Start Watch Party'}
+              <PlayCircle className="w-5 h-5" />
+              Host your own Party
             </button>
           </div>
         </motion.div>

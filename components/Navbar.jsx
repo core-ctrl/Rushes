@@ -34,7 +34,7 @@ export default function Navbar() {
   const unreadCount = notifications.filter((item) => !item.read).length;
 
   const handleStartParty = () => {
-    router.push(`/watch-party/create`);
+    router.push(`/watch-party`);
   };
 
   useEffect(() => {

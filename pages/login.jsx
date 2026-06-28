@@ -8,15 +8,18 @@ import axios from "axios";
 import { useDispatch } from "react-redux";
 import { LockIcon, Mail01Icon, ViewIcon, ViewOffSlashIcon, GithubIcon, GoogleIcon } from "@hugeicons/core-free-icons";
 import AppIcon from "../components/AppIcon";
+import ExpandableTerms from "../components/ExpandableTerms";
 import { fetchCurrentUser, loginUser } from "../store/slices/authSlice";
 import { toast } from "../components/ui/Toaster";
 import { signIn } from "next-auth/react";
+
 export default function LoginPage() {
     const router = useRouter();
     const dispatch = useDispatch();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [showPass, setShowPass] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     const { register, handleSubmit, formState: { errors } } = useForm();
 
@@ -142,9 +145,11 @@ export default function LoginPage() {
                             </motion.p>
                         )}
 
+                        <ExpandableTerms isChecked={termsAccepted} setIsChecked={setTermsAccepted} />
+
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || !termsAccepted}
                             className="mt-1 bg-accent hover:bg-accent-dark disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-all hover:shadow-glow-red text-sm"
                         >
                             {loading ? (
@@ -166,16 +171,18 @@ export default function LoginPage() {
                         <div className="flex flex-col gap-3">
                             <button
                                 type="button"
+                                disabled={!termsAccepted}
                                 onClick={() => signIn("google")}
-                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <AppIcon icon={GoogleIcon} size={14} />
                                 <span>Continue with Google</span>
                             </button>
                             <button
                                 type="button"
+                                disabled={!termsAccepted}
                                 onClick={() => signIn("github")}
-                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <AppIcon icon={GithubIcon} size={14} />
                                 <span>Continue with GitHub</span>

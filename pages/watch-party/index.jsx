@@ -6,12 +6,15 @@ import { Film, Users, PlayCircle, Radio, Plus, ShieldCheck, AlertTriangle, Lock 
 import useSWR from 'swr';
 import CreatePartyDrawer from '@/components/watch-party/CreatePartyDrawer';
 import PasswordModal from '@/components/watch-party/PasswordModal';
+import AuthModal from '@/components/AuthModal';
 import { useRouter } from 'next/router';
+import { useSession } from 'next-auth/react';
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
 export default function WatchPartyLanding() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { data, error } = useSWR('/api/watch-together/active', fetcher);
   const rooms = data?.rooms || [];
   const isLoading = !data && !error;
@@ -20,10 +23,15 @@ export default function WatchPartyLanding() {
   const [activeTab, setActiveTab] = useState('public'); // 'public' or 'private'
   
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [selectedRoomToJoin, setSelectedRoomToJoin] = useState(null);
 
   const handleJoinClick = (e, room) => {
     e.preventDefault();
+    if (!session?.user) {
+      setAuthModalOpen(true);
+      return;
+    }
     if (room.privacy === 'followers' || room.privacy === 'custom') {
       setSelectedRoomToJoin(room);
       setIsPasswordModalOpen(true);
@@ -61,7 +69,13 @@ export default function WatchPartyLanding() {
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <button
-                onClick={() => setIsDrawerOpen(true)}
+                onClick={() => {
+                  if (!session?.user) {
+                    setAuthModalOpen(true);
+                  } else {
+                    setIsDrawerOpen(true);
+                  }
+                }}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#e50914] px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-red-900/40 transition hover:bg-[#b81d24]"
               >
                 <Plus className="h-5 w-5" />
@@ -190,6 +204,8 @@ export default function WatchPartyLanding() {
         onClose={() => setIsPasswordModalOpen(false)} 
         room={selectedRoomToJoin} 
       />
+
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </div>
   );
 }

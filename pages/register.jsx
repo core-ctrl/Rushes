@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import axios from "axios";
 import { LockIcon, Mail01Icon, UserIcon, ViewIcon, ViewOffSlashIcon, CheckmarkCircle01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import AppIcon from "../components/AppIcon";
+import ExpandableTerms from "../components/ExpandableTerms";
 
 function PasswordStrength({ password = "" }) {
     const checks = [
@@ -117,11 +118,10 @@ export default function RegisterPage() {
     const [showPass, setShowPass] = useState(false);
     const [showConfirmPass, setShowConfirmPass] = useState(false);
     const [username, setUsername] = useState("");
-    const [resendLoading, setResendLoading] = useState(false);
 
-    const { register, handleSubmit, watch, formState: { errors } } = useForm();
+    const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm();
     const password = watch("password", "");
-    const confirmPassword = watch("confirmPassword", "");
+    const termsAccepted = watch("terms", false);
 
     const onSubmit = async (data) => {
         setLoading(true);
@@ -240,20 +240,12 @@ export default function RegisterPage() {
                             </button>
                         </div>
 
-                        <div className="flex items-start gap-2">
-                            <input
-                                {...register("terms", { required: "You must accept the terms" })}
-                                type="checkbox"
-                                id="terms"
-                                className="mt-1 w-4 h-4 rounded bg-white/5 border-white/20 text-accent focus:ring-accent"
-                            />
-                            <label htmlFor="terms" className="text-xs text-neutral-500">
-                                I agree to the{" "}
-                                <Link href="/terms-and-conditions" className="text-accent hover:underline">Terms</Link>
-                                {" "}and{" "}
-                                <Link href="/privacy-policy" className="text-accent hover:underline">Privacy Policy</Link>
-                            </label>
-                        </div>
+                        <ExpandableTerms 
+                            isChecked={termsAccepted} 
+                            setIsChecked={(val) => setValue("terms", val, { shouldValidate: true })} 
+                        />
+                        {/* Hidden input for react-hook-form validation */}
+                        <input type="checkbox" className="hidden" {...register("terms", { required: "You must accept the terms" })} />
 
                         <AnimatePresence>
                             {error && (

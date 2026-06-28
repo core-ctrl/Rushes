@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, PlayCircle, Users, Radio, Lock } from 'lucide-react';
 import useSWR from 'swr';
 import { useRouter } from 'next/router';
+import { useSession } from 'next-auth/react';
+import AuthModal from './AuthModal';
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
@@ -15,7 +17,9 @@ export default function WatchPartyModal({
   onJoinPrivate
 }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const { data, error } = useSWR(isOpen ? '/api/watch-together/active' : null, fetcher);
+  const [authModalOpen, setAuthModalOpen] = React.useState(false);
   
   if (!isOpen) return null;
 
@@ -26,6 +30,10 @@ export default function WatchPartyModal({
   const movieRooms = allRooms.filter(room => room.mediaId == mediaId);
 
   const handleJoinClick = (room) => {
+    if (!session?.user) {
+      setAuthModalOpen(true);
+      return;
+    }
     if (room.privacy === 'followers' || room.privacy === 'custom' || room.privacy === 'private') {
       onJoinPrivate(room);
     } else {
@@ -102,7 +110,13 @@ export default function WatchPartyModal({
           {/* Footer */}
           <div className="p-5 border-t border-white/10 bg-black/40">
             <button 
-              onClick={onHostOwn}
+              onClick={() => {
+                if (!session?.user) {
+                  setAuthModalOpen(true);
+                } else {
+                  onHostOwn();
+                }
+              }}
               className="w-full bg-[#e50914] hover:bg-[#b81d24] text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_0_20px_rgba(229,9,20,0.3)] flex justify-center items-center gap-2"
             >
               <PlayCircle className="w-5 h-5" />
@@ -111,6 +125,8 @@ export default function WatchPartyModal({
           </div>
         </motion.div>
       </div>
+
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </AnimatePresence>
   );
 }

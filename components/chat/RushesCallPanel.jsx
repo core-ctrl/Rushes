@@ -293,6 +293,15 @@ export default function RushesCallPanel({
           }
         });
 
+        // Handle mode change
+        channel.on('broadcast', { event: 'webrtc_mode_change' }, ({ payload }) => {
+          if (cancelled) return;
+          const { targetId, mode } = payload;
+          if (targetId === currentUserId) {
+            setActualMode(mode);
+          }
+        });
+
         // Handle new peer joining (we become the initiator)
         channel.on('broadcast', { event: 'webrtc_user_joined' }, async ({ payload }) => {
           if (cancelled) return;
@@ -399,7 +408,62 @@ export default function RushesCallPanel({
     if (track) { track.enabled = !track.enabled; setIsMuted(!track.enabled); }
   };
 
-  const toggleCam = () => {
+  const toggleCam = async () => {
+    if (actualMode === 'voice') {
+      // Trying to switch from voice to video dynamically
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: 1280, height: 720, facingMode: 'user' } 
+        });
+        const videoTrack = stream.getVideoTracks()[0];
+        
+        if (!localStreamRef.current) {
+          localStreamRef.current = new MediaStream();
+        }
+        localStreamRef.current.addTrack(videoTrack);
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = localStreamRef.current;
+        }
+
+        const pc = peerConnectionRef.current;
+        const channel = socketRef.current;
+        const currentUserId = currentUser?.id || currentUser?._id;
+        
+        if (pc && channel) {
+          pc.addTrack(videoTrack, localStreamRef.current);
+          
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+
+          channel.send({
+            type: 'broadcast',
+            event: 'webrtc_offer',
+            payload: {
+              targetId: remotePeerIdRef.current,
+              senderId: currentUserId,
+              sdp: pc.localDescription.toJSON(),
+            }
+          });
+
+          // Tell the other side we are now in video mode so they render the stream
+          channel.send({
+            type: 'broadcast',
+            event: 'webrtc_mode_change',
+            payload: {
+              targetId: remotePeerIdRef.current,
+              mode: 'video'
+            }
+          });
+        }
+
+        setActualMode('video');
+        setIsCamOff(false);
+      } catch (err) {
+        console.error("Failed to start camera dynamically:", err);
+      }
+      return;
+    }
+
     const track = localStreamRef.current?.getVideoTracks()[0];
     if (track) { track.enabled = !track.enabled; setIsCamOff(!track.enabled); }
   };
@@ -651,9 +715,8 @@ export default function RushesCallPanel({
               {actualMode === 'video' && (
                 <motion.div
                   layout
-                  className="relative overflow-hidden rounded-3xl border border-white/8 bg-neutral-900 shadow-2xl"
+                  className="relative overflow-hidden rounded-3xl border border-white/8 bg-neutral-900 shadow-2xl flex-1 max-w-full max-h-[85vh] h-full"
                   style={{
-                    width: Object.keys(remoteStreams).length === 0 ? '72%' : '46%',
                     aspectRatio: '16/9',
                     boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
                   }}
@@ -676,9 +739,8 @@ export default function RushesCallPanel({
                 <motion.div
                   key={peerId}
                   layout
-                  className="relative overflow-hidden rounded-3xl border border-white/8 bg-neutral-900 shadow-2xl"
+                  className="relative overflow-hidden rounded-3xl border border-white/8 bg-neutral-900 shadow-2xl flex-1 max-w-full max-h-[85vh] h-full"
                   style={{
-                    width: '46%',
                     aspectRatio: '16/9',
                     boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
                   }}

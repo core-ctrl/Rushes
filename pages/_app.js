@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import "../styles/globals.css";
 import store from "../store";
 import Navbar from "../components/Navbar";
-import ClapperLoader from "../components/ClapperLoader";
 
 import AuthWidget from "../components/AuthWidget";
 import TrailerModal from "../components/TrailerModal";
@@ -53,22 +52,7 @@ function AppInner({ Component, pageProps, router }) {
   const trailerState = useSelector(selectTrailer);
   const [authFeedback, setAuthFeedback] = useState({ type: "", message: "" });
   const currentUser = useSelector(selectUser);
-  const [routeLoading, setRouteLoading] = useState(false);
   const [isMaintenance, setIsMaintenance] = useState(false);
-
-  // Route change loading with ClapperLoader
-  useEffect(() => {
-    const handleStart = () => setRouteLoading(true);
-    const handleDone = () => setRouteLoading(false);
-    router.events.on('routeChangeStart', handleStart);
-    router.events.on('routeChangeComplete', handleDone);
-    router.events.on('routeChangeError', handleDone);
-    return () => {
-      router.events.off('routeChangeStart', handleStart);
-      router.events.off('routeChangeComplete', handleDone);
-      router.events.off('routeChangeError', handleDone);
-    };
-  }, [router]);
 
   // Maintenance mode check (Polling & Route Change)
   useEffect(() => {
@@ -263,24 +247,16 @@ function AppInner({ Component, pageProps, router }) {
       <Navbar user={user} logout={handleLogout} openAuth={(mode) => dispatch(openAuthModal(mode))} />
       <GlobalCallOverlay />
       <AnimatePresence mode="wait">
-        <motion.div key={router.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit">
+        <motion.div
+          key={router.pathname}
+          variants={pageVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="flex flex-col min-h-screen"
+        >
           <Component {...pageProps} {...sharedProps} />
         </motion.div>
-      </AnimatePresence>
-
-      {/* Route change loading overlay */}
-      <AnimatePresence>
-        {routeLoading && (
-          <motion.div
-            key="route-loader"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center"
-          >
-            <ClapperLoader message="Loading..." />
-          </motion.div>
-        )}
       </AnimatePresence>
 
       {!router.pathname.startsWith('/messages') && <Footer />}

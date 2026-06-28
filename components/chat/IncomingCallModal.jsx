@@ -49,118 +49,50 @@ export default function IncomingCallModal({ callerName, callerAvatar, mode, onAc
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[200] flex items-center justify-center"
+        className="fixed inset-0 z-[200] flex flex-col items-center justify-start pt-20 pb-10 px-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
       >
-        {/* Blurred cinematic backdrop */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `radial-gradient(circle at 50% 40%, ${accentBg}, transparent 65%), rgba(0,0,0,0.92)`,
-            backdropFilter: 'blur(24px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-          }}
-        />
+        {/* Subtle dark backdrop blur */}
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
 
-        {/* Noise texture overlay */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          }}
-        />
-
-        {/* Pulsing rings behind avatar */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className={`absolute rounded-full border-2 ${ringColor}`}
-              initial={{ width: 140, height: 140, opacity: 0.7 }}
-              animate={{
-                width: [140, 260 + i * 70],
-                height: [140, 260 + i * 70],
-                opacity: [0.7, 0],
-              }}
-              transition={{
-                duration: 2.2,
-                repeat: Infinity,
-                delay: i * 0.65,
-                ease: 'easeOut',
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Card */}
+        {/* Clean, professional card */}
         <motion.div
-          initial={{ scale: 0.85, y: 40, opacity: 0 }}
-          animate={{ scale: 1, y: 0, opacity: 1 }}
-          exit={{ scale: 0.85, y: 40, opacity: 0 }}
-          transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-          className="relative z-10 flex flex-col items-center text-center px-10 py-10 rounded-3xl"
-          style={{
-            background: 'linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: `0 40px 120px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 80px ${accentBg}`,
-          }}
+          initial={{ y: -40, opacity: 0, scale: 0.95 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          exit={{ y: -20, opacity: 0, scale: 0.95 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="relative z-10 w-full max-w-sm flex flex-col items-center bg-[#1c1c1e]/90 backdrop-blur-xl border border-white/10 shadow-2xl rounded-[2.5rem] px-8 py-10"
         >
-          {/* Call type badge */}
-          <motion.div
-            className={`mb-6 flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-widest ${accentBorder}`}
-            style={{ color: accentColor, background: accentBg }}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-          >
-            {isVideo ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />}
-            Incoming {isVideo ? 'Video' : 'Voice'} Call
-          </motion.div>
+          {/* Subtle Call type indicator */}
+          <div className="mb-6 flex items-center gap-2 text-neutral-400 text-sm font-medium">
+            {isVideo ? <Video className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
+            Rushes {isVideo ? 'Video' : 'Audio'} Call
+          </div>
 
           {/* Avatar */}
-          <motion.div
-            className="relative mb-5"
-            animate={{ scale: [1, 1.04, 1] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            {/* Glow ring */}
-            <div
-              className="absolute -inset-1 rounded-full"
-              style={{
-                background: `radial-gradient(circle, ${accentColor}50 0%, transparent 70%)`,
-                filter: 'blur(8px)',
-              }}
-            />
+          <div className="relative mb-6">
             <img
               src={callerAvatar || '/avatar.svg'}
               alt={callerName}
-              className="relative w-28 h-28 rounded-full object-cover border-2 border-white/20 shadow-2xl"
+              className="w-28 h-28 rounded-full object-cover shadow-lg border border-white/5 bg-neutral-800"
             />
-            {/* Live dot */}
-            <motion.div
-              className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-black ${isVideo ? 'bg-blue-500' : 'bg-green-500'}`}
-              animate={{ scale: [1, 1.3, 1] }}
-              transition={{ duration: 1.2, repeat: Infinity }}
-            />
-          </motion.div>
+          </div>
 
           {/* Caller name */}
-          <motion.p
-            className="text-white font-black text-2xl mb-1 tracking-tight"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
+          <p className="text-white font-semibold text-3xl tracking-tight mb-2 text-center">
             {callerName || 'Someone'}
-          </motion.p>
-          <p className="text-neutral-400 text-sm mb-1 font-medium">is calling you...</p>
+          </p>
+          <p className="text-neutral-400 text-base mb-10 text-center">
+            Incoming...
+          </p>
 
-          {/* Timer bar */}
-          <div className="w-32 h-1 rounded-full bg-white/10 mt-3 mb-8 overflow-hidden">
+          {/* Timer bar at top of buttons */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1 rounded-full bg-white/10 mt-3 overflow-hidden">
             <motion.div
-              className={`h-full rounded-full ${isVideo ? 'bg-blue-500' : 'bg-green-500'}`}
+              className="h-full rounded-full bg-white/30"
               initial={{ width: '100%' }}
               animate={{ width: `${(timeLeft / 30) * 100}%` }}
               transition={{ duration: 0.9, ease: 'linear' }}
@@ -168,36 +100,28 @@ export default function IncomingCallModal({ callerName, callerAvatar, mode, onAc
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-end gap-10">
+          <div className="w-full flex items-center justify-between px-4 mt-2">
             {/* Decline */}
-            <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
+            <button
               onClick={onDecline}
-              className="flex flex-col items-center gap-2.5"
+              className="flex flex-col items-center gap-3 group"
             >
-              <div className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 flex items-center justify-center shadow-lg shadow-red-600/40 transition-colors">
-                <PhoneOff className="w-7 h-7 text-white" />
+              <div className="w-[72px] h-[72px] rounded-full bg-[#ff3b30] flex items-center justify-center transition-transform active:scale-95 shadow-lg shadow-red-500/20">
+                <PhoneOff className="w-8 h-8 text-white fill-white" />
               </div>
-              <span className="text-neutral-500 text-xs font-semibold">Decline</span>
-            </motion.button>
+              <span className="text-white text-sm font-medium opacity-80">Decline</span>
+            </button>
 
             {/* Accept */}
-            <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
+            <button
               onClick={onAccept}
-              className="flex flex-col items-center gap-2.5"
+              className="flex flex-col items-center gap-3 group"
             >
-              <motion.div
-                className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-colors ${acceptBg}`}
-                animate={{ scale: [1, 1.08, 1] }}
-                transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <Phone className="w-7 h-7 text-white" />
-              </motion.div>
-              <span className="text-neutral-400 text-xs font-semibold">Accept</span>
-            </motion.button>
+              <div className="w-[72px] h-[72px] rounded-full bg-[#34c759] flex items-center justify-center transition-transform active:scale-95 shadow-lg shadow-green-500/20">
+                <Phone className="w-8 h-8 text-white fill-white" />
+              </div>
+              <span className="text-white text-sm font-medium opacity-80">Accept</span>
+            </button>
           </div>
         </motion.div>
       </motion.div>

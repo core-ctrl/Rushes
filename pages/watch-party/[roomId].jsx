@@ -1086,9 +1086,9 @@ export default function WatchTogetherRoom() {
                   <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-6">
                     <button
                       onClick={startScreenShare}
-                      className="inline-flex items-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 text-xs font-bold transition-all shadow-lg shadow-purple-950/30 border border-purple-500/30"
+                      className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 text-xs font-bold transition-all shadow-lg shadow-purple-950/30 border border-purple-500/30"
                     >
-                      <MonitorPlay className="w-3.5 h-3.5" /> Share Screen / Browser Tab
+                      <MonitorPlay className="w-3.5 h-3.5" /> Share Screen (Desktop)
                     </button>
                   </div>
                 </div>

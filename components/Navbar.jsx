@@ -82,7 +82,7 @@ export default function Navbar() {
     { name: "Movies", href: "/movies" },
     { name: "Series", href: "/series" },
     { name: "Feed", href: "/social" },
-    { name: "Watch Party", href: "/watch-party/live" },
+    { name: "Watch Party", href: "/watch-party" },
     { name: "Blog", href: "/blog" },
     { name: "My List", href: "/my-list" },
   ];

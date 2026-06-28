@@ -807,36 +807,12 @@ export default function WatchTogetherRoom() {
                 Custom Watch Together
               </div>
 
-              <h1 className="max-w-3xl text-4xl font-black leading-tight text-white md:text-6xl">
-                Ready to watch together in sync?
+              <h1 className="max-w-3xl text-3xl font-black leading-tight text-white md:text-5xl">
+                {movieTitle ? `Lobby: ${movieTitle}` : 'Watch Party Lobby'}
               </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-400 md:text-base">
-                Join the synchronized lobby. The room host controls the playback. Send messages and talk in real-time.
+              <p className="mt-4 max-w-xl text-sm leading-6 text-neutral-400 md:text-base">
+                You are in the waiting area. {isHost ? "Click below when you are ready to start the synchronized playback and enter the room." : "Waiting for the host to start the room..."}
               </p>
-
-              <div className="mt-8 grid gap-3 md:grid-cols-3">
-                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
-                  <ShieldCheck className="mb-3 h-5 w-5 text-purple-300" />
-                  <h2 className="text-sm font-black text-white">Playback Sync</h2>
-                  <p className="mt-2 text-xs leading-5 text-neutral-400">
-                    Play, pause, and seek are synced automatically across everyone in the room.
-                  </p>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
-                  <AlertTriangle className="mb-3 h-5 w-5 text-amber-300" />
-                  <h2 className="text-sm font-black text-white">Shared Player</h2>
-                  <p className="mt-2 text-xs leading-5 text-neutral-400">
-                    Watch official trailer previews or direct custom video feeds together in real-time.
-                  </p>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
-                  <Users className="mb-3 h-5 w-5 text-sky-300" />
-                  <h2 className="text-sm font-black text-white">Live Sockets</h2>
-                  <p className="mt-2 text-xs leading-5 text-neutral-400">
-                    Low latency chat keeps you connected while you enjoy the show.
-                  </p>
-                </div>
-              </div>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <button

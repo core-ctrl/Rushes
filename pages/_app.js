@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from 'next/router';
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { AnimatePresence, motion } from "framer-motion";

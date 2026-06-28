@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Check, Copy, ExternalLink, Film, MonitorPlay, PlayCircle, Power, RefreshCw, Send, ShieldCheck, Users, X, Play, Pause, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { AlertTriangle, Check, Copy, ExternalLink, Film, MonitorPlay, PlayCircle, Power, RefreshCw, Send, ShieldCheck, Users, X, Play, Pause, Mic, MicOff, Video, VideoOff, Lock } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice';
 import { startWatchParty, endWatchParty } from '../../store/slices/callSlice';
@@ -428,6 +428,12 @@ export default function WatchTogetherRoom() {
             return;
           }
         }
+
+        if (roomData?.isLocked && roomData.hostId !== (user.id || user._id)) {
+          toast({ type: 'error', message: 'This room is currently locked by the host.' });
+          router.push('/watch-party');
+          return;
+        }
       } catch (err) {
         console.error("Access verification failed:", err);
       }
@@ -630,6 +636,25 @@ export default function WatchTogetherRoom() {
       receivedStreams.current = {};
     };
   }, [roomId, user]);
+
+  const toggleLockRoom = async () => {
+    try {
+      const res = await fetch('/api/watch-together/lock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId, isLocked: !roomState?.isLocked })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRoomState(prev => ({ ...prev, isLocked: data.isLocked }));
+        toast({ type: 'success', message: data.isLocked ? 'Room is now locked. No new joins allowed.' : 'Room unlocked.' });
+      } else {
+        toast({ type: 'error', message: data.error || 'Failed to lock room' });
+      }
+    } catch (err) {
+      toast({ type: 'error', message: 'An error occurred' });
+    }
+  };
 
   // Sync player wrapper
   const syncLocalPlayer = (play, time) => {
@@ -855,7 +880,7 @@ export default function WatchTogetherRoom() {
               </div>
 
               <h1 className="max-w-3xl text-3xl font-black leading-tight text-white md:text-5xl">
-                {movieTitle ? `Lobby: ${movieTitle}` : 'Watch Party Lobby'}
+                {roomState?.title || movieTitle || 'Watch Party Lobby'}
               </h1>
               <p className="mt-4 max-w-xl text-sm leading-6 text-neutral-400 md:text-base">
                 You are in the waiting area. {isHost ? "Click below when you are ready to start the synchronized playback and enter the room." : "Waiting for the host to start the room..."}
@@ -906,7 +931,8 @@ export default function WatchTogetherRoom() {
             <aside className="self-center rounded-lg border border-white/10 bg-black/40 p-5">
               <div className="mb-5 rounded-lg border border-white/10 bg-neutral-900/80 p-4">
                 <p className="text-xs uppercase tracking-wide text-neutral-500">Room title</p>
-                <h2 className="mt-1 line-clamp-2 text-xl font-black text-white">{movieTitle || 'Watch Together'}</h2>
+                <h2 className="mt-1 line-clamp-2 text-xl font-black text-white">{roomState?.title || movieTitle || 'Watch Together'}</h2>
+                <p className="mt-1 text-xs text-neutral-400 font-medium">Watching: {movieTitle || 'Custom Media'}</p>
               </div>
 
               <div className="space-y-4">
@@ -943,7 +969,8 @@ export default function WatchTogetherRoom() {
                 <Film className="w-4 h-4 text-purple-400" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-sm font-bold text-white truncate">{movieTitle}</h1>
+                <h1 className="text-sm font-bold text-white truncate">{roomState?.title || movieTitle || 'Watch Together'}</h1>
+                {movieTitle && <p className="text-[10px] text-neutral-400 truncate">Watching: {movieTitle}</p>}
                 <p className="text-[10px] text-neutral-500 flex items-center gap-1">
                   <Users className="w-3 h-3" /> {participants.length + 1} in room
                 </p>
@@ -961,6 +988,10 @@ export default function WatchTogetherRoom() {
                     </button>
                     <button onClick={() => toast({ type: 'info', message: 'Muted everyone else' })} className="w-full text-left px-4 py-2 text-xs text-white hover:bg-white/5 flex items-center gap-2">
                       <MicOff className="w-3 h-3" /> Mute All Members
+                    </button>
+                    <div className="h-px w-full bg-white/5 my-1" />
+                    <button onClick={toggleLockRoom} className={`w-full text-left px-4 py-2 text-xs ${roomState?.isLocked ? 'text-amber-400 hover:bg-amber-400/10' : 'text-white hover:bg-white/5'} flex items-center gap-2`}>
+                      <Lock className="w-3 h-3" /> {roomState?.isLocked ? 'Unlock Room' : 'Lock Room (Stop Joins)'}
                     </button>
                     <div className="h-px w-full bg-white/5 my-1" />
                     <button onClick={() => { toast({ type: 'error', message: 'Room Ended' }); router.push('/'); }} className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-400/10 flex items-center gap-2">
@@ -1048,8 +1079,8 @@ export default function WatchTogetherRoom() {
                   <div className="w-20 h-20 rounded-full bg-purple-950/40 border border-purple-500/20 flex items-center justify-center mx-auto mb-4 animate-pulse">
                     <Film className="w-10 h-10 text-purple-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-2">{movieTitle} Watch Lobby</h3>
-                  <p className="text-xs text-neutral-400 leading-relaxed mb-6">
+                  <h3 className="text-lg font-bold text-white mb-2">{roomState?.title || movieTitle || 'Watch Together'} Watch Lobby</h3>
+                  <p className="text-sm text-neutral-400 max-w-sm mb-6 text-center">
                     This room is active. Click the "Open on OTT" button to load this title on your provider, and chat in sync with room members.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-6">

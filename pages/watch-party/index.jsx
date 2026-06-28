@@ -183,12 +183,18 @@ export default function WatchPartyLanding() {
                       {room.members || 1} / {room.maxMembers || 50}
                     </div>
                     
-                    <button 
-                      onClick={(e) => handleJoinClick(e, room)}
-                      className="bg-white text-black hover:bg-gray-200 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors"
-                    >
-                      Join
-                    </button>
+                    {room.isLocked ? (
+                      <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-lg text-sm font-bold">
+                        <Lock className="w-3.5 h-3.5" /> Locked
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={(e) => handleJoinClick(e, room)}
+                        className="bg-white text-black hover:bg-gray-200 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors"
+                      >
+                        Join
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

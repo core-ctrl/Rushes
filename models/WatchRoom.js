@@ -13,6 +13,7 @@ const WatchRoomSchema = new mongoose.Schema({
   privacy: { type: String, enum: ['public', 'followers', 'private', 'custom'], default: 'public' },
   password: { type: String },
   allowedUsers: [{ type: String }],
+  isLocked: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
 }, { timestamps: true });
 

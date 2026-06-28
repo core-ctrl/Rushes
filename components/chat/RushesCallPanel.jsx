@@ -95,7 +95,7 @@ export default function RushesCallPanel({
             setError('Connection lost.');
             setStatus('error');
           }
-        }, 5000);
+        }, 60000);
       }
     };
 
@@ -130,6 +130,7 @@ export default function RushesCallPanel({
           auth: { token },
           reconnectionAttempts: 5,
           transports: ['websocket', 'polling'],
+          timeout: 60000,
         });
         socketRef.current = socket;
 

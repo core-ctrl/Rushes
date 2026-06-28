@@ -172,42 +172,89 @@ export default function WatchTogetherRoom() {
   };
 
   const initWebRtc = async (existingViewers) => {
+    let stream = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    } catch (err) {
+      console.warn('Failed video+audio, trying audio only...', err);
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err2) {
+        console.warn('Failed audio, trying video only...', err2);
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        } catch (err3) {
+          console.error('No media devices available');
+          toast({ type: 'warning', message: 'No camera or microphone found. You are in view-only mode.' });
+        }
+      }
+    }
+
+    if (stream) {
       localStreamRef.current = stream;
       setLocalStream(stream);
-      setMicEnabled(true);
-      setCameraEnabled(true);
-
-      const currentUserId = user?.id || user?._id;
-      existingViewers.forEach(viewerId => {
-        if (viewerId !== currentUserId) {
-          initiateCall(viewerId);
-        }
-      });
-    } catch (err) {
-      console.error('Failed to initialize WebRTC', err);
-      toast({ type: 'error', message: 'Could not access camera/microphone for video chat.' });
+      setMicEnabled(stream.getAudioTracks().length > 0);
+      setCameraEnabled(stream.getVideoTracks().length > 0);
+    } else {
+      setMicEnabled(false);
+      setCameraEnabled(false);
     }
+
+    const currentUserId = user?.id || user?._id;
+    existingViewers.forEach(viewerId => {
+      if (viewerId !== currentUserId) {
+        initiateCall(viewerId);
+      }
+    });
   };
 
-  const toggleLocalMic = () => {
+  const toggleLocalMic = async () => {
     if (localStreamRef.current) {
       const audioTrack = localStreamRef.current.getAudioTracks()[0];
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
         setMicEnabled(audioTrack.enabled);
+        return;
       }
+    }
+    // Track missing, try to acquire it
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const newTrack = stream.getAudioTracks()[0];
+      if (!localStreamRef.current) {
+        localStreamRef.current = new MediaStream();
+        setLocalStream(localStreamRef.current);
+      }
+      localStreamRef.current.addTrack(newTrack);
+      Object.values(peerConnections.current).forEach(pc => pc.addTrack(newTrack, localStreamRef.current));
+      setMicEnabled(true);
+    } catch (err) {
+      toast({ type: 'error', message: 'Could not access microphone.' });
     }
   };
 
-  const toggleLocalCamera = () => {
+  const toggleLocalCamera = async () => {
     if (localStreamRef.current) {
       const videoTrack = localStreamRef.current.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
         setCameraEnabled(videoTrack.enabled);
+        return;
       }
+    }
+    // Track missing, try to acquire it
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const newTrack = stream.getVideoTracks()[0];
+      if (!localStreamRef.current) {
+        localStreamRef.current = new MediaStream();
+        setLocalStream(localStreamRef.current);
+      }
+      localStreamRef.current.addTrack(newTrack);
+      Object.values(peerConnections.current).forEach(pc => pc.addTrack(newTrack, localStreamRef.current));
+      setCameraEnabled(true);
+    } catch (err) {
+      toast({ type: 'error', message: 'Could not access camera.' });
     }
   };
 

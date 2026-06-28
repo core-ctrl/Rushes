@@ -721,7 +721,13 @@ export default function RushesCallPanel({
                     boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
                   }}
                 >
-                  <video ref={localVideoRef} autoPlay muted playsInline className="h-full w-full object-cover scale-x-[-1]" />
+                  <video
+                    ref={(el) => {
+                      localVideoRef.current = el;
+                      if (el && localStreamRef.current) el.srcObject = localStreamRef.current;
+                    }}
+                    autoPlay muted playsInline className="h-full w-full object-cover scale-x-[-1]"
+                  />
                   {isCamOff && (
                     <div className="absolute inset-0 flex items-center justify-center bg-neutral-950">
                       <img src={currentUser?.avatar || '/avatar.svg'} className="h-16 w-16 rounded-full object-cover opacity-60" alt="You" />

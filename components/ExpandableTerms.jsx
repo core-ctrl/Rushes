@@ -63,6 +63,14 @@ export default function ExpandableTerms({ isChecked, setIsChecked }) {
                 You agree not to use our social features (reviews, lists, chat, Watch Parties) to harass, abuse, 
                 or distribute inappropriate content. Violations may result in account termination.
               </p>
+              <h5 className="font-bold text-white mt-2">4. Content Rights & Revenue</h5>
+              <p>
+                All movie, television show, and actor metadata, including posters and backdrop images, are provided by 
+                and are the exclusive property of TMDB (The Movie Database). We do not claim ownership of TMDB's content. 
+                However, the Rushes platform, its source code, and its design are our exclusive property. Any revenue 
+                generated through the platform, including but not limited to future AdSense or advertising revenue, 
+                belongs exclusively to Rushes.
+              </p>
             </div>
           </motion.div>
         )}

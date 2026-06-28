@@ -9,6 +9,15 @@ import api from '../../lib/axios';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_RUSHES_CALL_URL || 'https://rushes-call.onrender.com';
 
+// Free STUN/TURN servers for NAT traversal
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun3.l.google.com:19302' },
+  { urls: 'stun:stun4.l.google.com:19302' },
+];
+
 function useCallTimer(active) {
   const [seconds, setSeconds] = useState(0);
   useEffect(() => {
@@ -22,8 +31,9 @@ function useCallTimer(active) {
 }
 
 /**
- * RushesCallPanel — Premium SFU-powered call UI.
- * Connects to rushes-call.onrender.com via mediasoup-client.
+ * RushesCallPanel — Premium P2P WebRTC call UI.
+ * Connects to the signaling server on Render, then establishes
+ * a direct peer-to-peer connection for audio/video.
  */
 export default function RushesCallPanel({
   roomID, mode = 'audio', otherUser, currentUser,
@@ -38,67 +48,68 @@ export default function RushesCallPanel({
   const [hasRemote, setHasRemote] = useState(false);
 
   const socketRef = useRef(null);
-  const deviceRef = useRef(null);
-  const sendTransportRef = useRef(null);
-  const recvTransportRef = useRef(null);
+  const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
   const localVideoRef = useRef(null);
-  const audioRefs = useRef({}); // { peerId: HTMLAudioElement }
+  const remoteAudioRef = useRef(null);
+  const remotePeerIdRef = useRef(null);
+  const makingOfferRef = useRef(false);
+  const isSettingRemoteRef = useRef(false);
 
   const callTimer = useCallTimer(status === 'connected');
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
-
-  const createTransport = useCallback((direction) => {
-    return new Promise((resolve, reject) => {
-      socketRef.current.emit('webrtc:create-transport', { direction }, (data) => {
-        if (data?.error || !data?.id) return reject(new Error('Failed to create transport'));
-        resolve(data);
-      });
-    });
-  }, []);
-
-  const consumeProducer = useCallback(async (producerId, peerId) => {
-    if (!deviceRef.current || !recvTransportRef.current) return;
-
-    const params = await new Promise((resolve, reject) => {
-      socketRef.current.emit('webrtc:consume', {
-        producerId,
-        rtpCapabilities: deviceRef.current.rtpCapabilities,
-      }, (data) => {
-        if (!data || data.error) return reject(new Error('Cannot consume'));
-        resolve(data);
-      });
-    });
-
-    const consumer = await recvTransportRef.current.consume({
-      id: params.id,
-      producerId: params.producerId,
-      kind: params.kind,
-      rtpParameters: params.rtpParameters,
-    });
-
-    // Tell server to resume (consumers start paused)
-    socketRef.current.emit('webrtc:resume-consumer', { consumerId: consumer.id }, () => {});
-
-    setRemoteStreams((prev) => {
-      const existingStream = prev[peerId];
-      const newStream = new MediaStream();
-      if (existingStream) {
-        existingStream.getTracks().forEach((t) => newStream.addTrack(t));
-      }
-      newStream.addTrack(consumer.track);
-      return { ...prev, [peerId]: newStream };
-    });
-    setHasRemote(true);
-  }, []);
-
-  // Apply speaker mute to all audio elements
+  // Apply speaker mute to remote audio
   useEffect(() => {
-    Object.values(audioRefs.current).forEach((el) => {
-      if (el) el.muted = isSpeakerMuted;
-    });
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.muted = isSpeakerMuted;
+    }
   }, [isSpeakerMuted]);
+
+  // ─── Create RTCPeerConnection ──────────────────────────────────────────────
+
+  const createPeerConnection = useCallback((socket, peerId) => {
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    remotePeerIdRef.current = peerId;
+
+    // Send ICE candidates to remote peer via signaling server
+    pc.onicecandidate = ({ candidate }) => {
+      if (candidate && socket.connected) {
+        socket.emit('webrtc:ice-candidate', {
+          targetId: peerId,
+          candidate: candidate.toJSON(),
+        });
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      const state = pc.iceConnectionState;
+      if (state === 'connected' || state === 'completed') {
+        setStatus('connected');
+      } else if (state === 'failed') {
+        setError('Connection failed. The other user may be behind a strict firewall.');
+        setStatus('error');
+      } else if (state === 'disconnected') {
+        // Brief disconnection — ICE may recover
+        setTimeout(() => {
+          if (pc.iceConnectionState === 'disconnected') {
+            setError('Connection lost.');
+            setStatus('error');
+          }
+        }, 5000);
+      }
+    };
+
+    // Receive remote tracks
+    pc.ontrack = (event) => {
+      const [stream] = event.streams;
+      if (stream) {
+        setRemoteStreams((prev) => ({ ...prev, [peerId]: stream }));
+        setHasRemote(true);
+      }
+    };
+
+    return pc;
+  }, []);
 
   // ─── Main Connection Logic ────────────────────────────────────────────────
 
@@ -108,30 +119,28 @@ export default function RushesCallPanel({
 
     const connect = async () => {
       try {
-        // 1. Fetch JWT
+        // 1. Get JWT token for signaling server auth
         const tokenRes = await api.post('/api/calls/rushes-token');
         if (!tokenRes.data?.token) throw new Error('Failed to authenticate with call service');
         const token = tokenRes.data.token;
         if (cancelled) return;
 
-        // 2. Connect socket
+        // 2. Connect to signaling server via Socket.IO
         const socket = io(BACKEND_URL, {
           auth: { token },
-          reconnectionAttempts: 10,
+          reconnectionAttempts: 5,
+          transports: ['websocket', 'polling'],
         });
         socketRef.current = socket;
 
         socket.on('connect_error', (err) => {
-          if (!cancelled) { setError(`Connection failed: ${err.message}`); setStatus('error'); }
-        });
-
-        socket.on('disconnect', (reason) => {
-          if (!cancelled && reason !== 'io client disconnect') {
-            setStatus('connecting');
-            // socket.io auto-reconnects per reconnectionAttempts
+          if (!cancelled) {
+            setError(`Connection failed: ${err.message}`);
+            setStatus('error');
           }
         });
 
+        // Wait for socket connection
         await new Promise((resolve, reject) => {
           socket.on('connect', resolve);
           socket.on('connect_error', reject);
@@ -140,7 +149,7 @@ export default function RushesCallPanel({
         if (cancelled) { socket.disconnect(); return; }
         setStatus('ringing');
 
-        // 3. Join the room
+        // 3. Join the signaling room
         const joinData = await new Promise((resolve, reject) => {
           socket.emit('webrtc:join-room', { roomId: roomID }, (data) => {
             if (!data || data.error) return reject(new Error(data?.message || 'Failed to join room'));
@@ -150,94 +159,167 @@ export default function RushesCallPanel({
 
         if (cancelled) { socket.disconnect(); return; }
 
-        // 4. Load mediasoup Device
-        const { Device } = await import('mediasoup-client');
-        const device = new Device();
-        await device.load({ routerRtpCapabilities: joinData.rtpCapabilities });
-        deviceRef.current = device;
-
-        // 5. Send Transport
-        const sendParams = await createTransport('send');
-        const sendTransport = device.createSendTransport(sendParams);
-        sendTransportRef.current = sendTransport;
-
-        sendTransport.on('connect', ({ dtlsParameters }, callback, errback) => {
-          socket.emit('webrtc:connect-transport', { transportId: sendTransport.id, dtlsParameters }, (res) => {
-            if (res?.error) return errback(new Error(res.error));
-            callback();
-          });
-        });
-
-        sendTransport.on('produce', ({ kind, rtpParameters }, callback, errback) => {
-          socket.emit('webrtc:produce', { transportId: sendTransport.id, kind, rtpParameters }, (res) => {
-            if (!res || res.error) return errback(new Error(res?.error || 'Produce failed'));
-            callback({ id: res.id });
-          });
-        });
-
-        // 6. Recv Transport
-        const recvParams = await createTransport('recv');
-        const recvTransport = device.createRecvTransport(recvParams);
-        recvTransportRef.current = recvTransport;
-
-        recvTransport.on('connect', ({ dtlsParameters }, callback, errback) => {
-          socket.emit('webrtc:connect-transport', { transportId: recvTransport.id, dtlsParameters }, (res) => {
-            if (res?.error) return errback(new Error(res.error));
-            callback();
-          });
-        });
-
-        // 7. Get local media and produce
+        // 4. Get local media (audio, and video if video call)
         const constraints = {
           audio: true,
           video: mode === 'video' ? { width: 1280, height: 720, facingMode: 'user' } : false,
         };
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        localStreamRef.current = stream;
-        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+        const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        localStreamRef.current = localStream;
+        if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
 
-        const audioTrack = stream.getAudioTracks()[0];
-        if (audioTrack) await sendTransport.produce({ track: audioTrack });
-
-        if (mode === 'video') {
-          const videoTrack = stream.getVideoTracks()[0];
-          if (videoTrack) await sendTransport.produce({ track: videoTrack });
+        if (cancelled) {
+          localStream.getTracks().forEach((t) => t.stop());
+          socket.disconnect();
+          return;
         }
 
-        // 8. Consume existing producers
-        if (joinData.existingProducers?.length) {
-          for (const { producerId, peerId } of joinData.existingProducers) {
-            await consumeProducer(producerId, peerId);
+        // 5. Helper: set up a peer connection with a specific remote peer
+        const setupPeerConnection = (peerId) => {
+          const pc = createPeerConnection(socket, peerId);
+          peerConnectionRef.current = pc;
+
+          // Add local tracks to the peer connection
+          localStream.getTracks().forEach((track) => {
+            pc.addTrack(track, localStream);
+          });
+
+          return pc;
+        };
+
+        // Handle incoming offer from remote peer
+        socket.on('webrtc:offer', async ({ senderId, sdp }) => {
+          if (cancelled) return;
+
+          let pc = peerConnectionRef.current;
+          if (!pc || pc.connectionState === 'closed') {
+            pc = setupPeerConnection(senderId);
           }
-        }
 
-        // 9. Listen for new producers
-        socket.on('webrtc:new-producer', async ({ producerId, peerId }) => {
-          await consumeProducer(producerId, peerId);
+          try {
+            isSettingRemoteRef.current = true;
+            await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+            isSettingRemoteRef.current = false;
+
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+
+            socket.emit('webrtc:answer', {
+              targetId: senderId,
+              sdp: pc.localDescription.toJSON(),
+            });
+          } catch (err) {
+            isSettingRemoteRef.current = false;
+            console.error('Error handling offer:', err);
+          }
         });
 
-        // 10. Peer left
-        const handlePeerLeft = ({ peerId, userId }) => {
-          const id = peerId || userId;
+        // Handle incoming answer from remote peer
+        socket.on('webrtc:answer', async ({ senderId, sdp }) => {
+          if (cancelled) return;
+          const pc = peerConnectionRef.current;
+          if (!pc) return;
+
+          try {
+            isSettingRemoteRef.current = true;
+            await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+            isSettingRemoteRef.current = false;
+          } catch (err) {
+            isSettingRemoteRef.current = false;
+            console.error('Error handling answer:', err);
+          }
+        });
+
+        // Handle incoming ICE candidates
+        socket.on('webrtc:ice-candidate', async ({ senderId, candidate }) => {
+          if (cancelled) return;
+          const pc = peerConnectionRef.current;
+          if (!pc) return;
+
+          try {
+            if (candidate) {
+              await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            }
+          } catch (err) {
+            // Ignore ICE candidate errors during early negotiation
+            if (!isSettingRemoteRef.current) {
+              console.warn('ICE candidate error:', err.message);
+            }
+          }
+        });
+
+        // Handle new peer joining (we become the initiator)
+        socket.on('webrtc:user-joined', async ({ userId }) => {
+          if (cancelled) return;
+
+          const pc = setupPeerConnection(userId);
+
+          try {
+            makingOfferRef.current = true;
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+
+            socket.emit('webrtc:offer', {
+              targetId: userId,
+              sdp: pc.localDescription.toJSON(),
+            });
+            makingOfferRef.current = false;
+          } catch (err) {
+            makingOfferRef.current = false;
+            console.error('Error creating offer:', err);
+          }
+        });
+
+        // Handle peer leaving
+        const handlePeerLeft = ({ userId, peerId }) => {
+          const id = userId || peerId;
           setRemoteStreams((prev) => {
             const updated = { ...prev };
             delete updated[id];
             if (Object.keys(updated).length === 0) setHasRemote(false);
             return updated;
           });
-          if (audioRefs.current[id]) {
-            audioRefs.current[id].srcObject = null;
-            delete audioRefs.current[id];
+
+          if (peerConnectionRef.current) {
+            peerConnectionRef.current.close();
+            peerConnectionRef.current = null;
           }
         };
         socket.on('webrtc:user-left', handlePeerLeft);
         socket.on('webrtc:peer-left', handlePeerLeft);
 
-        if (!cancelled) setStatus('connected');
+        // 6. If existing peers, send offer to the first one (1-on-1 call)
+        const existingPeers = joinData.peers || [];
+        if (existingPeers.length > 0) {
+          const peerId = existingPeers[0];
+          const pc = setupPeerConnection(peerId);
+
+          try {
+            makingOfferRef.current = true;
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+
+            socket.emit('webrtc:offer', {
+              targetId: peerId,
+              sdp: pc.localDescription.toJSON(),
+            });
+            makingOfferRef.current = false;
+          } catch (err) {
+            makingOfferRef.current = false;
+            console.error('Error creating initial offer:', err);
+            if (!cancelled) {
+              setError('Failed to initiate call');
+              setStatus('error');
+            }
+          }
+        }
 
       } catch (err) {
         console.error('RushesCallPanel error:', err);
-        if (!cancelled) { setError(err.message || 'Failed to connect to call'); setStatus('error'); }
+        if (!cancelled) {
+          setError(err.message || 'Failed to connect to call');
+          setStatus('error');
+        }
       }
     };
 
@@ -246,14 +328,16 @@ export default function RushesCallPanel({
     return () => {
       cancelled = true;
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
-      try { sendTransportRef.current?.close(); } catch {}
-      try { recvTransportRef.current?.close(); } catch {}
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
       if (socketRef.current?.connected && roomID) {
         socketRef.current.emit('webrtc:leave-room', { roomId: roomID });
         socketRef.current.disconnect();
       }
     };
-  }, [roomID, currentUser, mode]);
+  }, [roomID, currentUser, mode, createPeerConnection]);
 
   // ─── Controls ────────────────────────────────────────────────────────────
 
@@ -359,7 +443,7 @@ export default function RushesCallPanel({
           <audio
             key={peerId}
             ref={(el) => {
-              if (el) { el.srcObject = stream; el.muted = isSpeakerMuted; audioRefs.current[peerId] = el; }
+              if (el) { el.srcObject = stream; el.muted = isSpeakerMuted; remoteAudioRef.current = el; }
             }}
             autoPlay
           />
@@ -649,7 +733,7 @@ export default function RushesCallPanel({
           <audio
             key={peerId}
             ref={(el) => {
-              if (el) { el.srcObject = stream; el.muted = isSpeakerMuted; audioRefs.current[peerId] = el; }
+              if (el) { el.srcObject = stream; el.muted = isSpeakerMuted; remoteAudioRef.current = el; }
             }}
             autoPlay
             className="hidden"

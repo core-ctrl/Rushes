@@ -136,33 +136,7 @@ export default function RushesCallPanel({
 
     const connect = async () => {
       try {
-        // 1. Set up Supabase Realtime Channel
-        const currentUserId = currentUser.id || currentUser._id;
-        const channel = supabase.channel(`webrtc:${roomID}`);
-        socketRef.current = channel; // Reusing socketRef for channel to avoid huge refactors in cleanup
-
-        // Wait for channel subscription
-        await new Promise((resolve, reject) => {
-          channel.subscribe(async (status, err) => {
-            if (status === 'SUBSCRIBED') {
-              resolve();
-            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-              reject(new Error(err?.message || 'Failed to connect to signaling channel'));
-            }
-          });
-        });
-
-        if (cancelled) { supabase.removeChannel(channel); return; }
-        setStatus('ringing');
-
-        // Announce that we joined
-        channel.send({
-          type: 'broadcast',
-          event: 'webrtc_user_joined',
-          payload: { userId: currentUserId }
-        });
-
-        // 4. Get local media (audio, and video if video call)
+        // 1. Get local media (audio, and video if video call) FIRST to avoid missing offers during permission prompt
         const constraints = {
           audio: true,
           video: mode === 'video' ? { width: 1280, height: 720, facingMode: 'user' } : false,
@@ -173,11 +147,15 @@ export default function RushesCallPanel({
 
         if (cancelled) {
           localStream.getTracks().forEach((t) => t.stop());
-          socket.disconnect();
           return;
         }
 
-        // 5. Helper: set up a peer connection with a specific remote peer
+        // 2. Set up Supabase Realtime Channel
+        const currentUserId = currentUser.id || currentUser._id;
+        const channel = supabase.channel(`webrtc:${roomID}`);
+        socketRef.current = channel; // Reusing socketRef for channel to avoid huge refactors in cleanup
+
+        // 3. Helper: set up a peer connection with a specific remote peer
         const setupPeerConnection = (peerId) => {
           const pc = createPeerConnection(channel, peerId);
           peerConnectionRef.current = pc;
@@ -330,8 +308,26 @@ export default function RushesCallPanel({
         };
         channel.on('broadcast', { event: 'webrtc_user_left' }, handlePeerLeft);
 
-        // 6. If existing peers, we are the second to join. We just wait for their offer.
-        // With Supabase channels, we broadcast our presence so existing peers can offer.
+        // 4. Subscribe to the channel now that listeners are active
+        await new Promise((resolve, reject) => {
+          channel.subscribe(async (status, err) => {
+            if (status === 'SUBSCRIBED') {
+              resolve();
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              reject(new Error(err?.message || 'Failed to connect to signaling channel'));
+            }
+          });
+        });
+
+        if (cancelled) { supabase.removeChannel(channel); return; }
+        setStatus('ringing');
+
+        // 5. Announce that we joined (now that we are subscribed and have media)
+        channel.send({
+          type: 'broadcast',
+          event: 'webrtc_user_joined',
+          payload: { userId: currentUserId }
+        });
 
       } catch (err) {
         console.error('RushesCallPanel error:', err);

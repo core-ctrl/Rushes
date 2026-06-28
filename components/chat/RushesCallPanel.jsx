@@ -216,6 +216,14 @@ export default function RushesCallPanel({
             isSettingRemoteRef.current = true;
             await pc.setRemoteDescription(new RTCSessionDescription(sdp));
             isSettingRemoteRef.current = false;
+            
+            // Process queued ICE candidates
+            if (pc.iceQueue) {
+              for (const cand of pc.iceQueue) {
+                await pc.addIceCandidate(new RTCIceCandidate(cand));
+              }
+              pc.iceQueue = [];
+            }
 
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
@@ -240,6 +248,14 @@ export default function RushesCallPanel({
             isSettingRemoteRef.current = true;
             await pc.setRemoteDescription(new RTCSessionDescription(sdp));
             isSettingRemoteRef.current = false;
+            
+            // Process queued ICE candidates
+            if (pc.iceQueue) {
+              for (const cand of pc.iceQueue) {
+                await pc.addIceCandidate(new RTCIceCandidate(cand));
+              }
+              pc.iceQueue = [];
+            }
           } catch (err) {
             isSettingRemoteRef.current = false;
             console.error('Error handling answer:', err);
@@ -254,10 +270,15 @@ export default function RushesCallPanel({
 
           try {
             if (candidate) {
-              await pc.addIceCandidate(new RTCIceCandidate(candidate));
+              if (pc.remoteDescription) {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+              } else {
+                // Queue candidate until remote description is set
+                if (!pc.iceQueue) pc.iceQueue = [];
+                pc.iceQueue.push(candidate);
+              }
             }
           } catch (err) {
-            // Ignore ICE candidate errors during early negotiation
             if (!isSettingRemoteRef.current) {
               console.warn('ICE candidate error:', err.message);
             }

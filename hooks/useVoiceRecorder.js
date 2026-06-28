@@ -39,7 +39,8 @@ export function useVoiceRecorder() {
       mediaRecorder.current.onstop = () => {
         window.clearInterval(timerInterval.current);
         setIsRecording(false);
-        const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
+        // Use the actual mimeType recorded by the browser (Safari uses audio/mp4, Chrome uses audio/webm)
+        const audioBlob = new Blob(audioChunks.current, { type: mediaRecorder.current.mimeType });
         
         // Stop all tracks to release mic
         mediaRecorder.current.stream.getTracks().forEach((track) => track.stop());

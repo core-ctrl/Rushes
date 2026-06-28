@@ -525,7 +525,7 @@ export default function RushesCallPanel({
 
         {/* ── Connecting / Ringing State ── */}
         {(status === 'connecting' || status === 'ringing') && !error && (
-          <div className="flex flex-1 flex-col items-center justify-center gap-6">
+          <div className="flex flex-1 flex-col items-center justify-center gap-6 relative">
             {/* Avatar with pulse rings */}
             <div className="relative flex items-center justify-center">
               {[0, 1, 2].map((i) => (
@@ -558,6 +558,15 @@ export default function RushesCallPanel({
               <p className="mt-2 text-sm text-neutral-500">
                 {status === 'ringing' ? 'Ringing...' : 'Connecting...'}
               </p>
+            </div>
+            {/* Cancel Button */}
+            <div className="absolute bottom-10">
+              <button
+                onClick={handleLeave}
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-red-600 text-white shadow-xl shadow-red-600/30 hover:bg-red-500 hover:scale-105 transition-all"
+              >
+                <PhoneOff className="h-6 w-6" />
+              </button>
             </div>
           </div>
         )}

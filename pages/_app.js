@@ -235,7 +235,7 @@ function AppInner({ Component, pageProps, router }) {
   if (!initialized) {
     return (
       <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black">
-        <ClapperLoader message="Loading..." />
+        <div className="w-12 h-12 border-4 border-white/10 border-t-red-600 rounded-full animate-spin" />
       </div>
     );
   }

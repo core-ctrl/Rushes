@@ -168,8 +168,8 @@ export default function ReportAbusePage() {
 
           <p className="text-center text-xs text-neutral-700 mt-8">
             For legal matters, contact{' '}
-            <a href="mailto:legal@rushes.in" className="text-neutral-500 hover:text-neutral-300">
-              legal@rushes.in
+            <a href="mailto:abuse@rushes.theorbit.in" className="text-neutral-500 hover:text-neutral-300">
+              abuse@rushes.theorbit.in
             </a>
             . See our{' '}
             <Link href="/terms-and-conditions" className="text-neutral-500 hover:text-neutral-300">

@@ -69,7 +69,7 @@ export default function PrivacyPolicyPage() {
               <p className="text-neutral-400 leading-relaxed">You have the right to:</p>
               <ul className="text-neutral-400 list-disc ml-6 mt-2 space-y-1">
                 <li><strong className="text-neutral-300">Delete your account:</strong> You can delete your account at any time from Settings. All your data will be permanently removed within 30 days.</li>
-                <li><strong className="text-neutral-300">Export your data:</strong> Contact us at privacy@rushes.in to request a copy of your data</li>
+                <li><strong className="text-neutral-300">Export your data:</strong> Contact us at legal@rushes.theorbit.in to request a copy of your data</li>
                 <li><strong className="text-neutral-300">Opt out of location:</strong> You can revoke location access at any time from your profile settings</li>
                 <li><strong className="text-neutral-300">Opt out of emails:</strong> Use the unsubscribe link in any email we send</li>
                 <li><strong className="text-neutral-300">Correct your data:</strong> Update your profile information at any time from your account settings</li>
@@ -101,7 +101,7 @@ export default function PrivacyPolicyPage() {
               <h2 className="text-2xl font-bold text-white mb-3">9. Contact</h2>
               <p className="text-neutral-400 leading-relaxed">
                 For privacy-related requests, email us at{' '}
-                <a href="mailto:privacy@rushes.in" className="text-red-400 hover:underline">privacy@rushes.in</a>.
+                <a href="mailto:legal@rushes.theorbit.in" className="text-red-400 hover:underline">legal@rushes.theorbit.in</a>.
                 We aim to respond within 48 hours.
               </p>
             </section>

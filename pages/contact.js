@@ -160,8 +160,8 @@ export default function ContactPage() {
           <div className="mt-10 text-center text-sm text-neutral-600">
             <p>
               You can also email us directly at{' '}
-              <a href="mailto:hello@rushes.in" className="text-red-400 hover:underline">
-                hello@rushes.in
+              <a href="mailto:support@rushes.theorbit.in" className="text-red-400 hover:underline">
+                support@rushes.theorbit.in
               </a>
             </p>
           </div>

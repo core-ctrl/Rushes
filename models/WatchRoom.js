@@ -10,7 +10,9 @@ const WatchRoomSchema = new mongoose.Schema({
   streamingUrl: { type: String },
   members: { type: Number, default: 1 },
   maxMembers: { type: Number, default: 100 },
-  privacy: { type: String, enum: ['public', 'followers', 'private'], default: 'public' },
+  privacy: { type: String, enum: ['public', 'followers', 'private', 'custom'], default: 'public' },
+  password: { type: String },
+  allowedUsers: [{ type: String }],
   isActive: { type: Boolean, default: true },
 }, { timestamps: true });
 

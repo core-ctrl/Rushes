@@ -13,6 +13,7 @@ export default function CreatePartyDrawer({ isOpen, onClose }) {
   const [contentName, setContentName] = useState('');
   const [description, setDescription] = useState('');
   const [privacy, setPrivacy] = useState('public');
+  const [password, setPassword] = useState('');
   const [maxMembers, setMaxMembers] = useState(50);
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,6 +64,7 @@ export default function CreatePartyDrawer({ isOpen, onClose }) {
       description,
       maxMembers,
       privacy,
+      password: (privacy === 'followers' || privacy === 'custom') ? password : null,
       allowedUsers: privacy === 'custom' ? selectedUsers.map(u => u._id || u.id) : []
     };
     
@@ -223,6 +225,30 @@ export default function CreatePartyDrawer({ isOpen, onClose }) {
                           })}
                         </div>
                       )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Password Field for Private & Custom */}
+                <AnimatePresence>
+                  {(privacy === 'followers' || privacy === 'custom') && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }} 
+                      animate={{ opacity: 1, height: 'auto' }} 
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <label className="block text-sm font-bold text-gray-300 mb-2 mt-4">Room Password <span className="text-red-500">*</span></label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input 
+                          type="text" required
+                          value={password} onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Set a password for entry"
+                          className="w-full bg-black/50 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white outline-none focus:border-[#e50914] transition-colors"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Users will need this password to join from the Hub. Invite links bypass this.</p>
                     </motion.div>
                   )}
                 </AnimatePresence>

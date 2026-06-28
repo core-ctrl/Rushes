@@ -19,7 +19,24 @@ export default async function handler(req, res) {
           Authorization: token ? `Bearer ${token}` : ''
         }
       }
-    );
+    ).catch(() => ({ data: { room: { roomId } } })); // Fallback if socket is down
+
+    // Fetch MongoDB details
+    const connectDB = require("../../../lib/mongodb").default;
+    const WatchRoom = require("../../../models/WatchRoom").default;
+    await connectDB();
+    const mongoRoom = await WatchRoom.findOne({ roomId }).lean();
+
+    // Merge them
+    const mergedRoom = {
+      ...backendRes.data.room,
+      ...mongoRoom
+    };
+    if (backendRes.data.room) {
+      backendRes.data.room = mergedRoom;
+    } else {
+      backendRes.data = { room: mergedRoom };
+    }
 
     return res.json(backendRes.data);
   } catch (error) {

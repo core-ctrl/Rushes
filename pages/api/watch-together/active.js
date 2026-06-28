@@ -9,8 +9,9 @@ export default async function handler(req, res) {
   try {
     await connectDB();
     
-    // Fetch active public rooms, sorted by newest
-    const rooms = await WatchRoom.find({ isActive: true, privacy: 'public' })
+    // Fetch all active rooms so they appear on the hub
+    const rooms = await WatchRoom.find({ isActive: true })
+      .select('-password') // Don't send passwords to client
       .sort({ createdAt: -1 })
       .limit(20)
       .lean();

@@ -45,7 +45,9 @@ export default async function handler(req, res) {
       streamingUrl,
       hostId: session?.user?.id || 'anonymous',
       hostUsername: session?.user?.name || 'Anonymous',
-      privacy
+      privacy,
+      password: req.body.password,
+      allowedUsers: req.body.allowedUsers || []
     });
 
     // Construct the watch-party room redirect URL

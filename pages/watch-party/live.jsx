@@ -5,15 +5,31 @@ import Link from 'next/link';
 import { Film, Users, PlayCircle, Radio, Plus } from 'lucide-react';
 import useSWR from 'swr';
 import CreatePartyDrawer from '@/components/watch-party/CreatePartyDrawer';
+import PasswordModal from '@/components/watch-party/PasswordModal';
+import { useRouter } from 'next/router';
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
 export default function LiveWatchParties() {
+  const router = useRouter();
   const { data, error } = useSWR('/api/watch-together/active', fetcher);
   const rooms = data?.rooms || [];
   const isLoading = !data && !error;
   
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [selectedRoomToJoin, setSelectedRoomToJoin] = useState(null);
+
+  const handleJoinClick = (e, room) => {
+    e.preventDefault();
+    if (room.privacy === 'followers' || room.privacy === 'custom') {
+      setSelectedRoomToJoin(room);
+      setIsPasswordModalOpen(true);
+    } else {
+      router.push(`/watch-party/${room.roomId || room._id}?title=${encodeURIComponent(room.title)}&mediaId=${room.mediaId || ''}&mediaType=${room.mediaType || 'movie'}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden">
@@ -90,12 +106,12 @@ export default function LiveWatchParties() {
                       {room.members || 1} / {room.maxMembers || 50}
                     </div>
                     
-                    <Link 
-                      href={`/watch-party/${room.roomId || room._id}?title=${encodeURIComponent(room.title)}&mediaId=${room.mediaId || ''}&mediaType=${room.mediaType || 'movie'}`} 
+                    <button 
+                      onClick={(e) => handleJoinClick(e, room)}
                       className="bg-white text-black hover:bg-gray-200 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors"
                     >
                       Join
-                    </Link>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -105,6 +121,11 @@ export default function LiveWatchParties() {
       </main>
 
       <CreatePartyDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <PasswordModal 
+        isOpen={isPasswordModalOpen} 
+        onClose={() => setIsPasswordModalOpen(false)} 
+        room={selectedRoomToJoin} 
+      />
     </div>
   );
 }

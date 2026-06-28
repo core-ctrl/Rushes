@@ -349,6 +349,44 @@ export default function WatchTogetherRoom() {
       console.error('Error fetching room details:', err);
     }
   };
+  // Verify Password / Invite Token Access
+  // Verify Password / Invite Token Access
+  useEffect(() => {
+    if (!roomId || !user) return; // Wait until user is loaded
+    const verifyAccess = async () => {
+      try {
+        const res = await fetch(`/api/watch-together/room?roomId=${roomId}`);
+        const data = await res.json();
+        const roomData = data.room;
+        
+        if (roomData && (roomData.privacy === 'followers' || roomData.privacy === 'custom')) {
+          // Allow the Host to bypass
+          if (roomData.hostId === (user.id || user._id)) {
+             return;
+          }
+
+          const { inviteToken } = router.query;
+          
+          if (!inviteToken) {
+            toast({ type: 'error', message: 'This room requires a password to join.' });
+            router.push('/watch-party/live');
+            return;
+          }
+          
+          // Verify if the token is valid (using the demo token format we created)
+          const expectedToken = btoa(`${roomId}:${roomData.password}`);
+          if (inviteToken !== expectedToken) {
+            toast({ type: 'error', message: 'Invalid or expired invite token.' });
+            router.push('/watch-party/live');
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Access verification failed:", err);
+      }
+    };
+    verifyAccess();
+  }, [roomId, router.query]);
 
   // Socket connection
   useEffect(() => {
@@ -731,7 +769,13 @@ export default function WatchTogetherRoom() {
   };
 
   const copyInvite = () => {
-    navigator.clipboard.writeText(window.location.href);
+    let inviteUrl = window.location.href;
+    if (roomState?.password && (roomState.privacy === 'followers' || roomState.privacy === 'custom')) {
+      const inviteToken = btoa(`${roomId}:${roomState.password}`);
+      const separator = inviteUrl.includes('?') ? '&' : '?';
+      inviteUrl = `${inviteUrl}${separator}inviteToken=${encodeURIComponent(inviteToken)}`;
+    }
+    navigator.clipboard.writeText(inviteUrl);
     setCopied(true);
     toast({ type: 'success', message: 'Invite link copied!' });
     setTimeout(() => setCopied(false), 2000);

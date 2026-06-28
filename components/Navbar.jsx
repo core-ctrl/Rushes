@@ -109,7 +109,7 @@ export default function Navbar() {
                   onClick={(e) => { if (active) e.preventDefault(); }}
                   className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-colors ${active ? "text-white" : "text-neutral-400 hover:text-white"}`}>
                   {active && <motion.span layoutId="nav-pill" className="absolute inset-0 bg-white/8 rounded-lg" transition={{ type: "spring", bounce: 0.2, duration: 0.4 }} />}
-                  <span className="relative z-10">{item.name}</span>
+                  <span className={`relative z-10 ${item.name === 'Watch Party' ? 'text-[#e50914] font-bold drop-shadow-[0_0_8px_rgba(229,9,20,0.4)]' : ''}`}>{item.name}</span>
                 </Link>
               );
             })}
@@ -123,12 +123,6 @@ export default function Navbar() {
             </div>
 
             {/* Social icons */}
-            <button
-              onClick={handleStartParty}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 mr-2 rounded-full bg-red-600/10 text-red-500 font-medium text-xs hover:bg-red-600 hover:text-white transition-colors border border-red-600/20"
-            >
-              <Users className="w-4 h-4" /> Start Party
-            </button>
             <ErrorBoundary>
               <NotificationBell />
             </ErrorBoundary>
@@ -242,7 +236,7 @@ export default function Navbar() {
                         setMobile(false); 
                         if (active) e.preventDefault(); 
                       }}
-                      className="px-3 py-3 text-neutral-300 hover:text-white text-sm font-medium rounded-xl hover:bg-white/5 transition-colors">
+                      className={`px-3 py-3 text-sm font-medium rounded-xl hover:bg-white/5 transition-colors ${item.name === 'Watch Party' ? 'text-[#e50914] font-bold drop-shadow-[0_0_8px_rgba(229,9,20,0.4)]' : 'text-neutral-300 hover:text-white'}`}>
                       {item.name}
                     </Link>
                   );

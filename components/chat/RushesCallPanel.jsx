@@ -4,10 +4,7 @@ import {
   Maximize2, Minimize2, Mic, MicOff, Video, VideoOff,
   PhoneOff, Phone, Volume2, VolumeX, Wifi, WifiOff, AlertCircle,
 } from 'lucide-react';
-import { io } from 'socket.io-client';
-import api from '../../lib/axios';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_RUSHES_CALL_URL || 'https://rushes-call.onrender.com';
+import { supabase } from '../../lib/supabase';
 
 // Free STUN/TURN servers for NAT traversal
 const ICE_SERVERS = [
@@ -82,16 +79,21 @@ export default function RushesCallPanel({
 
   // ─── Create RTCPeerConnection ──────────────────────────────────────────────
 
-  const createPeerConnection = useCallback((socket, peerId) => {
+  const createPeerConnection = useCallback((channel, peerId) => {
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     remotePeerIdRef.current = peerId;
 
     // Send ICE candidates to remote peer via signaling server
     pc.onicecandidate = ({ candidate }) => {
-      if (candidate && socket.connected) {
-        socket.emit('webrtc:ice-candidate', {
-          targetId: peerId,
-          candidate: candidate.toJSON(),
+      if (candidate) {
+        channel.send({
+          type: 'broadcast',
+          event: 'webrtc_ice_candidate',
+          payload: {
+            targetId: peerId,
+            senderId: currentUser?.id || currentUser?._id,
+            candidate: candidate.toJSON(),
+          }
         });
       }
     };
@@ -134,46 +136,31 @@ export default function RushesCallPanel({
 
     const connect = async () => {
       try {
-        // 1. Get JWT token for signaling server auth
-        const tokenRes = await api.post('/api/calls/rushes-token');
-        if (!tokenRes.data?.token) throw new Error('Failed to authenticate with call service');
-        const token = tokenRes.data.token;
-        if (cancelled) return;
+        // 1. Set up Supabase Realtime Channel
+        const currentUserId = currentUser.id || currentUser._id;
+        const channel = supabase.channel(`webrtc:${roomID}`);
+        socketRef.current = channel; // Reusing socketRef for channel to avoid huge refactors in cleanup
 
-        // 2. Connect to signaling server via Socket.IO
-        const socket = io(BACKEND_URL, {
-          auth: { token },
-          reconnectionAttempts: 5,
-          transports: ['websocket', 'polling'],
-          timeout: 60000,
-        });
-        socketRef.current = socket;
-
-        socket.on('connect_error', (err) => {
-          if (!cancelled) {
-            setError(`Connection failed: ${err.message}`);
-            setStatus('error');
-          }
-        });
-
-        // Wait for socket connection
+        // Wait for channel subscription
         await new Promise((resolve, reject) => {
-          socket.on('connect', resolve);
-          socket.on('connect_error', reject);
-        });
-
-        if (cancelled) { socket.disconnect(); return; }
-        setStatus('ringing');
-
-        // 3. Join the signaling room
-        const joinData = await new Promise((resolve, reject) => {
-          socket.emit('webrtc:join-room', { roomId: roomID }, (data) => {
-            if (!data || data.error) return reject(new Error(data?.message || 'Failed to join room'));
-            resolve(data);
+          channel.subscribe(async (status, err) => {
+            if (status === 'SUBSCRIBED') {
+              resolve();
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              reject(new Error(err?.message || 'Failed to connect to signaling channel'));
+            }
           });
         });
 
-        if (cancelled) { socket.disconnect(); return; }
+        if (cancelled) { supabase.removeChannel(channel); return; }
+        setStatus('ringing');
+
+        // Announce that we joined
+        channel.send({
+          type: 'broadcast',
+          event: 'webrtc_user_joined',
+          payload: { userId: currentUserId }
+        });
 
         // 4. Get local media (audio, and video if video call)
         const constraints = {
@@ -192,7 +179,7 @@ export default function RushesCallPanel({
 
         // 5. Helper: set up a peer connection with a specific remote peer
         const setupPeerConnection = (peerId) => {
-          const pc = createPeerConnection(socket, peerId);
+          const pc = createPeerConnection(channel, peerId);
           peerConnectionRef.current = pc;
 
           // Add local tracks to the peer connection
@@ -204,8 +191,10 @@ export default function RushesCallPanel({
         };
 
         // Handle incoming offer from remote peer
-        socket.on('webrtc:offer', async ({ senderId, sdp }) => {
+        channel.on('broadcast', { event: 'webrtc_offer' }, async ({ payload }) => {
           if (cancelled) return;
+          const { senderId, targetId, sdp } = payload;
+          if (targetId !== currentUserId) return;
 
           let pc = peerConnectionRef.current;
           if (!pc || pc.connectionState === 'closed') {
@@ -228,9 +217,14 @@ export default function RushesCallPanel({
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
 
-            socket.emit('webrtc:answer', {
-              targetId: senderId,
-              sdp: pc.localDescription.toJSON(),
+            channel.send({
+              type: 'broadcast',
+              event: 'webrtc_answer',
+              payload: {
+                targetId: senderId,
+                senderId: currentUserId,
+                sdp: pc.localDescription.toJSON(),
+              }
             });
           } catch (err) {
             isSettingRemoteRef.current = false;
@@ -239,8 +233,10 @@ export default function RushesCallPanel({
         });
 
         // Handle incoming answer from remote peer
-        socket.on('webrtc:answer', async ({ senderId, sdp }) => {
+        channel.on('broadcast', { event: 'webrtc_answer' }, async ({ payload }) => {
           if (cancelled) return;
+          const { senderId, targetId, sdp } = payload;
+          if (targetId !== currentUserId) return;
           const pc = peerConnectionRef.current;
           if (!pc) return;
 
@@ -263,8 +259,10 @@ export default function RushesCallPanel({
         });
 
         // Handle incoming ICE candidates
-        socket.on('webrtc:ice-candidate', async ({ senderId, candidate }) => {
+        channel.on('broadcast', { event: 'webrtc_ice_candidate' }, async ({ payload }) => {
           if (cancelled) return;
+          const { senderId, targetId, candidate } = payload;
+          if (targetId !== currentUserId) return;
           const pc = peerConnectionRef.current;
           if (!pc) return;
 
@@ -286,8 +284,10 @@ export default function RushesCallPanel({
         });
 
         // Handle new peer joining (we become the initiator)
-        socket.on('webrtc:user-joined', async ({ userId }) => {
+        channel.on('broadcast', { event: 'webrtc_user_joined' }, async ({ payload }) => {
           if (cancelled) return;
+          const { userId } = payload;
+          if (userId === currentUserId) return;
 
           const pc = setupPeerConnection(userId);
 
@@ -296,9 +296,14 @@ export default function RushesCallPanel({
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
 
-            socket.emit('webrtc:offer', {
-              targetId: userId,
-              sdp: pc.localDescription.toJSON(),
+            channel.send({
+              type: 'broadcast',
+              event: 'webrtc_offer',
+              payload: {
+                targetId: userId,
+                senderId: currentUserId,
+                sdp: pc.localDescription.toJSON(),
+              }
             });
             makingOfferRef.current = false;
           } catch (err) {
@@ -308,8 +313,9 @@ export default function RushesCallPanel({
         });
 
         // Handle peer leaving
-        const handlePeerLeft = ({ userId, peerId }) => {
-          const id = userId || peerId;
+        const handlePeerLeft = ({ payload }) => {
+          const id = payload?.userId || payload?.peerId;
+          if (!id) return;
           setRemoteStreams((prev) => {
             const updated = { ...prev };
             delete updated[id];
@@ -322,14 +328,10 @@ export default function RushesCallPanel({
             peerConnectionRef.current = null;
           }
         };
-        socket.on('webrtc:user-left', handlePeerLeft);
-        socket.on('webrtc:peer-left', handlePeerLeft);
+        channel.on('broadcast', { event: 'webrtc_user_left' }, handlePeerLeft);
 
         // 6. If existing peers, we are the second to join. We just wait for their offer.
-        const existingPeers = joinData.peers || [];
-        if (existingPeers.length > 0) {
-          console.log('Joined room with existing peer. Waiting for their offer...');
-        }
+        // With Supabase channels, we broadcast our presence so existing peers can offer.
 
       } catch (err) {
         console.error('RushesCallPanel error:', err);
@@ -349,9 +351,13 @@ export default function RushesCallPanel({
         peerConnectionRef.current.close();
         peerConnectionRef.current = null;
       }
-      if (socketRef.current?.connected && roomID) {
-        socketRef.current.emit('webrtc:leave-room', { roomId: roomID });
-        socketRef.current.disconnect();
+      if (socketRef.current) {
+        socketRef.current.send({
+          type: 'broadcast',
+          event: 'webrtc_user_left',
+          payload: { userId: currentUser?.id || currentUser?._id }
+        });
+        supabase.removeChannel(socketRef.current);
       }
     };
   }, [roomID, currentUser, mode, createPeerConnection]);

@@ -89,7 +89,7 @@ async function sendVerificationEmail(email, code, username = "there") {
     <h2 style="${headingStyle}">Verify your email</h2>
     <p style="${bodyTextStyle}">
       Hey <strong style="color:#fff;">@${username}</strong>! Use the verification code below to activate your account.
-      It expires in <strong style="color:#fff;">10 minutes</strong>.
+      It expires in <strong style="color:#fff;">15 minutes</strong>.
     </p>
     <div style="text-align:center;margin:0 0 28px;">
       <div style="display:inline-block;background:linear-gradient(135deg,rgba(230,57,70,0.15),rgba(230,57,70,0.05));border:2px solid rgba(230,57,70,0.5);border-radius:16px;padding:24px 48px;">
@@ -168,13 +168,13 @@ async function sendWelcomeEmail(email, username = "there") {
 
 async function sendOTPEmail(email, username = "there") {
   const otp = generateOTP();
-  const expiry = new Date(Date.now() + 10 * 60 * 1000);
+  const expiry = new Date(Date.now() + 15 * 60 * 1000);
 
   const content = `
     <h2 style="${headingStyle}">Your verification code</h2>
     <p style="${bodyTextStyle}">
       Hey <strong style="color:#fff;">@${username}</strong>! Use the code below to verify your account.
-      It expires in <strong style="color:#fff;">10 minutes</strong>.
+      It expires in <strong style="color:#fff;">15 minutes</strong>.
     </p>
     <div style="text-align:center;margin:0 0 28px;">
       <div style="display:inline-block;background:linear-gradient(135deg,rgba(230,57,70,0.15),rgba(230,57,70,0.05));border:2px solid rgba(230,57,70,0.5);border-radius:16px;padding:24px 48px;">
@@ -200,18 +200,17 @@ async function sendOTPEmail(email, username = "there") {
 
 async function sendLoginThankYouEmail(email, username = "there") {
   const content = `
-    <h2 style="${headingStyle}">New sign-in detected</h2>
+    <h2 style="${headingStyle}">Thanks for logging in! 🎬</h2>
     <p style="margin:0;color:rgba(255,255,255,0.55);font-size:15px;line-height:1.7;">
-      Hey <strong style="color:#fff;">@${username}</strong>, your Rushes account was just used to sign in.
-      If that was you — enjoy the movies! 🎬<br><br>
-      If it wasn't you, please reset your password immediately.
+      Hey <strong style="color:#fff;">@${username}</strong>, thanks for logging into your Rushes account.<br><br>
+      Dive right back in and enjoy the movies. Let us know if you find any new favorites!
     </p>
   `;
 
   await transporter.sendMail({
     from: fromAddress(),
     to: email,
-    subject: "New Rushes sign-in",
+    subject: "Thanks for logging in to Rushes",
     html: baseTemplate(content),
   });
 }

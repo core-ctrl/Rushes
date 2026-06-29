@@ -109,7 +109,7 @@ export async function registerUser({ name, email, password, username }) {
 
     // Generate 6-digit verification code
     const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
-    const verificationTokenExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const verificationTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     const user = await User.create({
         name: name.trim(),

@@ -112,7 +112,7 @@ export default function ConnectionStatusBanner() {
   if (status === 'maintenance') {
     config = {
       icon: Construction,
-      message: 'MovieFinder is under maintenance. We\'ll be back shortly.',
+      message: 'Rushes is under maintenance. We\'ll be back shortly.',
       color: 'bg-blue-600/90',
       textColor: 'text-blue-100',
     };

@@ -61,7 +61,7 @@ export default function CookieConsent() {
                             </div>
                             <div>
                                 <h3 className="font-bold text-sm text-white">Before you continue</h3>
-                                <p className="text-xs text-neutral-400">MovieFinder uses cookies and optional location</p>
+                                <p className="text-xs text-neutral-400">Rushes uses cookies and optional location</p>
                             </div>
                         </div>
 

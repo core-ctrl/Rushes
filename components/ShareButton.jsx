@@ -5,7 +5,7 @@ export default function ShareButton({ movie, onShareToChat }) {
   const router = useRouter();
   const mediaType = movie.media_type === "tv" ? "series" : "movies";
   const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL || ""}/${mediaType}/${movie.id}`;
-  const shareText = `Check out "${movie.title || movie.name}" on MovieFinder`;
+  const shareText = `Check out "${movie.title || movie.name}" on Rushes`;
 
   const handleNativeShare = async () => {
     if (navigator.share) {

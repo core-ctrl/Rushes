@@ -314,7 +314,7 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
                     </motion.button>
                 </div>
                 <p className="text-xs text-neutral-500 mt-2 text-center">
-                    💡 Tap movie poster in MovieFinder to share here
+                    💡 Tap movie poster in Rushes to share here
                 </p>
             </form>
         </motion.div>

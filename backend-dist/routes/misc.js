@@ -28,7 +28,7 @@ router.get('/health', async (req, res) => {
   if (process.env.MAINTENANCE_MODE === 'true') {
     return res.status(503).json({
       status: 'maintenance',
-      message: process.env.MAINTENANCE_MESSAGE || 'We\'re making MovieFinder even better. Back soon!',
+      message: process.env.MAINTENANCE_MESSAGE || 'We\'re making Rushes even better. Back soon!',
       estimatedTime: process.env.MAINTENANCE_ETA || null,
     });
   }

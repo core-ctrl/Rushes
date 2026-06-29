@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import MovieCard from "./MovieCard";
@@ -34,6 +34,22 @@ export default function SectionRow({
   nowPlayingIds,
 }) {
   const scrollRef = useRef(null);
+  const [showLeftScroll, setShowLeftScroll] = useState(false);
+  const [showRightScroll, setShowRightScroll] = useState(true);
+
+  const handleScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setShowLeftScroll(scrollLeft > 0);
+      setShowRightScroll(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    handleScroll();
+    window.addEventListener('resize', handleScroll);
+    return () => window.removeEventListener('resize', handleScroll);
+  }, [items, loading]);
 
   const scroll = (dir) => {
     scrollRef.current?.scrollBy({ left: dir * 640, behavior: "smooth" });
@@ -56,25 +72,9 @@ export default function SectionRow({
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div className="mb-5 flex items-end justify-between px-0.5">
-        <div>
-          <h3 className="text-xl font-bold text-white md:text-2xl">{title}</h3>
-          {subtitle && <p className="mt-0.5 text-sm text-neutral-500">{subtitle}</p>}
-        </div>
-        <div className="hidden gap-1.5 md:flex">
-          <button
-            onClick={() => scroll(-1)}
-            className="glass flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-white transition-all hover:border-white/30"
-          >
-            <AppIcon icon={ArrowLeft01Icon} size={10} />
-          </button>
-          <button
-            onClick={() => scroll(1)}
-            className="glass flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-white transition-all hover:border-white/30"
-          >
-            <AppIcon icon={ArrowRight01Icon} size={10} />
-          </button>
-        </div>
+      <div className="mb-4 px-1">
+        <h3 className="text-xl font-bold text-white md:text-2xl">{title}</h3>
+        {subtitle && <p className="mt-0.5 text-sm text-neutral-500">{subtitle}</p>}
       </div>
 
       {loading ? (
@@ -84,19 +84,46 @@ export default function SectionRow({
           ))}
         </div>
       ) : (
-        <div
-          ref={scrollRef}
-          className="flex gap-3 overflow-x-auto px-4 pb-4 scroll-row"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
-        >
-          <style>{`.scroll-row::-webkit-scrollbar{display:none}`}</style>
-          {items.map((item, i) => (
-            renderItem ? (
-              renderItem(item)
-            ) : (
-              <HoverCard key={item.id} item={item} index={i} onPlayTrailer={onPlayTrailer} />
-            )
-          ))}
+        <div className="group relative -mx-4 px-4 md:mx-0 md:px-0">
+          {/* Left Scroll Button */}
+          {showLeftScroll && (
+            <button
+              onClick={() => scroll(-1)}
+              className="absolute left-0 top-0 z-20 hidden h-[calc(100%-16px)] w-14 items-center justify-center bg-gradient-to-r from-black/90 via-black/50 to-transparent opacity-0 transition-all duration-300 group-hover:opacity-100 md:flex"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-black/80 border border-white/20">
+                <AppIcon icon={ArrowLeft01Icon} size={18} />
+              </div>
+            </button>
+          )}
+
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex gap-3 overflow-x-auto pb-4 scroll-row"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+          >
+            <style>{`.scroll-row::-webkit-scrollbar{display:none}`}</style>
+            {items.map((item, i) => (
+              renderItem ? (
+                renderItem(item)
+              ) : (
+                <HoverCard key={item.id} item={item} index={i} onPlayTrailer={onPlayTrailer} />
+              )
+            ))}
+          </div>
+
+          {/* Right Scroll Button */}
+          {showRightScroll && (
+            <button
+              onClick={() => scroll(1)}
+              className="absolute right-0 top-0 z-20 hidden h-[calc(100%-16px)] w-14 items-center justify-center bg-gradient-to-l from-black/90 via-black/50 to-transparent opacity-0 transition-all duration-300 group-hover:opacity-100 md:flex"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md transition-transform hover:scale-110 hover:bg-black/80 border border-white/20">
+                <AppIcon icon={ArrowRight01Icon} size={18} />
+              </div>
+            </button>
+          )}
         </div>
       )}
     </motion.section>

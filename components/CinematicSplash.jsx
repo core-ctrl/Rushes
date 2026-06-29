@@ -288,22 +288,21 @@ export default function CinematicSplash({ onComplete, minDuration = 4200 }) {
                                 </motion.div>
 
                                 {/* RUSHES Logo */}
-                                <motion.h1
-                                    className="relative z-10 text-5xl md:text-7xl font-black uppercase tracking-tight"
-                                    style={{
-                                        fontFamily: 'Inter, system-ui, sans-serif',
-                                        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 40%, #fbbf24 100%)',
-                                        WebkitBackgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent',
-                                        backgroundClip: 'text',
-                                        filter: 'drop-shadow(0 0 30px rgba(220,38,38,0.6))',
-                                    }}
+                                <motion.div
+                                    className="relative z-10"
                                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     transition={{ delay: 0.2, duration: 0.8, type: 'spring', stiffness: 200 }}
                                 >
-                                    Rushes
-                                </motion.h1>
+                                    <img
+                                        src="https://res.cloudinary.com/dkrvtfbor/image/upload/e_make_transparent/v1782761174/RUSHES_uupcnx.png"
+                                        alt="Rushes"
+                                        className="h-16 md:h-24 w-auto"
+                                        style={{
+                                            filter: 'drop-shadow(0 0 30px rgba(220,38,38,0.6))',
+                                        }}
+                                    />
+                                </motion.div>
 
                                 {/* Tagline */}
                                 <motion.p

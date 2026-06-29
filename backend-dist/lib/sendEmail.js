@@ -26,7 +26,7 @@ function appUrl() {
 }
 
 function fromAddress() {
-  return `"MovieFinder" <${smtpUser}>`;
+  return `"Rushes" <${smtpUser}>`;
 }
 
 function generateOTP() {
@@ -50,14 +50,11 @@ function baseTemplate(content) {
               <!-- Header -->
               <tr>
                 <td style="background:linear-gradient(135deg,#1a0000 0%,#0d0d0d 100%);padding:36px 40px;text-align:center;border-bottom:1px solid rgba(230,57,70,0.3);">
-                  <div style="display:inline-block;background:rgba(230,57,70,0.12);border:1px solid rgba(230,57,70,0.3);border-radius:12px;padding:10px 20px;margin-bottom:16px;">
-                    <span style="font-size:20px;">🎬</span>
+                  <div style="margin-bottom:16px;">
+                    <img src="https://res.cloudinary.com/dkrvtfbor/image/upload/e_make_transparent/v1782761174/RUSHES_uupcnx.png" alt="Rushes" style="height:50px;width:auto;" />
                   </div>
-                  <h1 style="margin:0;color:#E63946;font-size:32px;font-weight:900;letter-spacing:-1px;line-height:1;">
-                    MovieFinder
-                  </h1>
                   <p style="margin:6px 0 0;color:rgba(255,255,255,0.35);font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:500;">
-                    Watch What Moves You
+                    Discover & Connect
                   </p>
                 </td>
               </tr>
@@ -73,7 +70,7 @@ function baseTemplate(content) {
               <tr>
                 <td style="background:#0f0f0f;padding:24px 40px;text-align:center;border-top:1px solid rgba(255,255,255,0.05);">
                   <p style="margin:0 0 4px;color:rgba(255,255,255,0.2);font-size:11px;line-height:1.7;">
-                    Sent by MovieFinder · <a href="${appUrl()}" style="color:#E63946;text-decoration:none;">${process.env.NEXT_PUBLIC_SITE_URL || 'moviefinderforyou.com'}</a>
+                    Sent by Rushes · <a href="${appUrl()}" style="color:#E63946;text-decoration:none;">${process.env.NEXT_PUBLIC_SITE_URL || 'rushes.theorbit.in'}</a>
                   </p>
                   <p style="margin:0;color:rgba(255,255,255,0.15);font-size:11px;">
                     If you didn't request this, you can safely ignore it.
@@ -118,7 +115,7 @@ async function sendVerificationEmail(email, code, username = "there") {
   await transporter.sendMail({
     from: fromAddress(),
     to: email,
-    subject: "Verify your MovieFinder account",
+    subject: "Verify your Rushes account",
     html: baseTemplate(content),
   });
 
@@ -149,7 +146,7 @@ async function sendPasswordResetEmail(email, token, username = "there") {
   await transporter.sendMail({
     from: fromAddress(),
     to: email,
-    subject: "Reset your MovieFinder password",
+    subject: "Reset your Rushes password",
     html: baseTemplate(content),
   });
 
@@ -158,7 +155,7 @@ async function sendPasswordResetEmail(email, token, username = "there") {
 
 async function sendWelcomeEmail(email, username = "there") {
   const content = `
-    <h2 style="${headingStyle}">Welcome to MovieFinder 🎬</h2>
+    <h2 style="${headingStyle}">Welcome to Rushes 🎬</h2>
     <p style="${bodyTextStyle}">
       Hey <strong style="color:#fff;">@${username}</strong>, you're officially in.
       Post your takes, find your movie people, and discover cinema that moves you.
@@ -173,7 +170,7 @@ async function sendWelcomeEmail(email, username = "there") {
 
     <div style="text-align:center;">
       <a href="${appUrl()}" style="${btnStyle}">
-        🎬 &nbsp;Open MovieFinder
+        🎬 &nbsp;Open Rushes
       </a>
     </div>
   `;
@@ -181,7 +178,7 @@ async function sendWelcomeEmail(email, username = "there") {
   await transporter.sendMail({
     from: fromAddress(),
     to: email,
-    subject: "Welcome to MovieFinder 🎬",
+    subject: "Welcome to Rushes 🎬",
     html: baseTemplate(content),
   });
 
@@ -215,7 +212,7 @@ async function sendOTPEmail(email, username = "there") {
   await transporter.sendMail({
     from: fromAddress(),
     to: email,
-    subject: "Your MovieFinder verification code",
+    subject: "Your Rushes verification code",
     html: baseTemplate(content),
   });
 
@@ -227,7 +224,7 @@ async function sendLoginThankYouEmail(email, username = "there") {
   const content = `
     <h2 style="${headingStyle}">New sign-in detected</h2>
     <p style="margin:0;color:rgba(255,255,255,0.55);font-size:15px;line-height:1.7;">
-      Hey <strong style="color:#fff;">@${username}</strong>, your MovieFinder account was just used to sign in.
+      Hey <strong style="color:#fff;">@${username}</strong>, your Rushes account was just used to sign in.
       If that was you — enjoy the movies! 🎬<br><br>
       If it wasn't you, please reset your password immediately.
     </p>
@@ -236,12 +233,12 @@ async function sendLoginThankYouEmail(email, username = "there") {
   await transporter.sendMail({
     from: fromAddress(),
     to: email,
-    subject: "New MovieFinder sign-in",
+    subject: "New Rushes sign-in",
     html: baseTemplate(content),
   });
 }
 
-async function sendDecisionAlertEmail(email, username = "there", message = "", subject = "MovieFinder alert") {
+async function sendDecisionAlertEmail(email, username = "there", message = "", subject = "Rushes alert") {
   const content = `
     <h2 style="${headingStyle}">${subject}</h2>
     <p style="${bodyTextStyle}">
@@ -250,7 +247,7 @@ async function sendDecisionAlertEmail(email, username = "there", message = "", s
 
     <div style="text-align:center;">
       <a href="${appUrl()}" style="${btnStyle}">
-        🎬 &nbsp;Open MovieFinder
+        🎬 &nbsp;Open Rushes
       </a>
     </div>
   `;

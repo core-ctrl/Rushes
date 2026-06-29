@@ -1,7 +1,7 @@
 {
-    "name": "MovieFinder",
-    "short_name": "MovieFinder",
-    "description": "Watch what moves you",
+    "name": "Rushes",
+    "short_name": "Rushes",
+    "description": "Discover & Connect",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0a0a0a",

@@ -96,7 +96,7 @@ export default function Navbar() {
         className={`fixed top-0 left-0 w-full z-[100] transition-all duration-500 ${scrolled ? "bg-black/90 backdrop-blur-2xl border-b border-white/5 shadow-2xl" : "bg-transparent"
           }`}
       >
-        <div className="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between overflow-visible">
           {/* Logo */}
           <RushesLogo />
 

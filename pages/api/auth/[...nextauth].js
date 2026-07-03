@@ -196,4 +196,78 @@ if (hasValue(githubClientId()) && hasValue(process.env.GITHUB_CLIENT_SECRET)) {
   );
 }
 
-export default NextAuth(authOptions);
+export default async function auth(req, res) {
+  const ipAddress = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+  const userAgent = req.headers['user-agent'] || 'unknown';
+
+  const customAuthOptions = {
+    ...authOptions,
+    providers: [
+      CredentialsProvider({
+        name: "credentials",
+        credentials: {
+          email: { label: "Email", type: "email" },
+          password: { label: "Password", type: "password" },
+        },
+        async authorize(credentials) {
+          await connectDB();
+          const email = credentials?.email?.trim().toLowerCase();
+          const user = await User.findOne({ email }).select("+password +verificationToken");
+
+          if (!user) {
+            throw new Error("No account found with this email");
+          }
+
+          const isValid = await bcrypt.compare(credentials.password, user.password);
+          if (!isValid) {
+            user.loginHistory.push({ status: 'failed', ipAddress, userAgent, reason: 'Incorrect password' });
+            await user.save();
+            throw new Error("Incorrect password");
+          }
+
+          if (user.isEmailVerified === false && user.verificationToken) {
+            user.loginHistory.push({ status: 'failed', ipAddress, userAgent, reason: 'Unverified email' });
+            await user.save();
+            throw new Error("Please verify your email first");
+          }
+
+          if (user.isEmailVerified === undefined || user.isEmailVerified === null) {
+            user.isEmailVerified = true;
+          }
+
+          user.lastIpAddress = ipAddress;
+          user.loginHistory.push({ status: 'success', ipAddress, userAgent });
+          await user.save();
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            username: user.username,
+            displayName: user.displayName || user.username || user.name,
+            avatar: avatarOrDefault(user.avatar, user.username || user.email),
+            hasCompletedOnboarding: user.hasCompletedOnboarding ?? false,
+          };
+        },
+      }),
+      ...authOptions.providers.filter(p => p.id !== 'credentials')
+    ],
+    callbacks: {
+      ...authOptions.callbacks,
+      async signIn({ user, account, profile }) {
+        const isAllowed = await authOptions.callbacks.signIn({ user, account });
+        if (isAllowed && user?.email && account?.provider !== 'credentials') {
+          await connectDB();
+          const dbUser = await User.findOne({ email: user.email });
+          if (dbUser) {
+            dbUser.lastIpAddress = ipAddress;
+            dbUser.loginHistory.push({ status: 'success', ipAddress, userAgent, reason: `OAuth: ${account.provider}` });
+            await dbUser.save();
+          }
+        }
+        return isAllowed;
+      }
+    }
+  };
+
+  return await NextAuth(req, res, customAuthOptions);
+}

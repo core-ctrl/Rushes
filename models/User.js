@@ -235,6 +235,14 @@ const UserSchema = new mongoose.Schema(
       calls: { type: Boolean, default: true }
     },
     lastNotificationRead: { type: Date, default: null },
+    lastIpAddress: { type: String, default: null },
+    loginHistory: [{
+      timestamp: { type: Date, default: Date.now },
+      status: { type: String, enum: ['success', 'failed'] },
+      ipAddress: String,
+      userAgent: String,
+      reason: String
+    }],
   },
   { timestamps: true }
 );

@@ -16,8 +16,8 @@ export default function AboutPage() {
         <div className="max-w-3xl mx-auto">
           {/* Hero */}
           <div className="mb-16 text-center">
-            <h1 className="text-5xl font-black mb-4">
-              <span className="text-red-500">Rushes</span>
+            <h1 className="flex justify-center mb-4">
+              <img src="/logo.png" alt="Rushes" className="w-24 h-24 md:w-32 md:h-32 object-contain drop-shadow-xl hover:scale-105 transition-transform" />
             </h1>
             <p className="text-2xl text-neutral-300 font-medium">Where movie people connect</p>
             <p className="text-neutral-500 mt-4 max-w-xl mx-auto leading-relaxed">

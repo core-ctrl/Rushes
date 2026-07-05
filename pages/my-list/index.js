@@ -1,8 +1,11 @@
 // pages/my-list/index.js
 import Head from "next/head";
 import Link from "next/link";
+
+import ListNavigation from "../../components/lists/ListNavigation";
 import Image from "next/image";
 import { TMDB_BLUR_DATA_URL } from "../../lib/imageBlur";
+import ListBuilder from "../../components/lists/ListBuilder";
 
 function recentContext(item) {
   const seenAt = item.watchedAt || item.viewedAt || item.addedAt;
@@ -37,10 +40,16 @@ export default function MyListPage({ wishlist = [], addToWishlist, user, openAut
       <Head><title>My List — Rushes</title></Head>
 
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">❤️ My List</h1>
-        <p className="text-neutral-400 text-sm mb-8">
-          {wishlist.length} saved title{wishlist.length !== 1 ? "s" : ""}. Watchlist updates appear here when titles move to OTT.
-        </p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">❤️ My List</h1>
+            <p className="text-neutral-400 text-sm">
+              {wishlist.length} saved title{wishlist.length !== 1 ? "s" : ""}. Watchlist updates appear here when titles move to OTT.
+            </p>
+          </div>
+          
+          <ListNavigation />
+        </div>
 
         {wishlist.length === 0 ? (
           <div className="text-center py-20">
@@ -92,6 +101,15 @@ export default function MyListPage({ wishlist = [], addToWishlist, user, openAut
             })}
           </div>
         )}
+        
+        <ListBuilder 
+          existingMovies={wishlist}
+          onAddMovie={(item) => addToWishlist({ 
+            id: item.tmdbId, 
+            media_type: item.mediaType, 
+            ...item 
+          })}
+        />
       </div>
     </div>
   );

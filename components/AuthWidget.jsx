@@ -24,6 +24,7 @@ import axios from "axios";
 import AppIcon from "./AppIcon";
 import { toast } from "./ui/Toaster";
 import { signIn } from "next-auth/react";
+import { readStoredPreferences, hasMeaningfulPreferences } from "../lib/userPreferences";
 function PasswordStrength({ password = "" }) {
   const checks = [
     { label: "8+ chars", ok: password.length >= 8 },
@@ -137,6 +138,21 @@ export default function AuthWidget({ open, onClose, onLogin, externalFeedback })
 
     const result = await action;
     if (!result.error) {
+      // Sync preferences if needed
+      const isSignup = mode === "signup";
+      const localPrefs = readStoredPreferences();
+      const userPayload = result.payload?.user;
+      
+      const userHasPrefs = userPayload && (
+        userPayload.preferredGenres?.length > 0 ||
+        userPayload.preferredLanguages?.length > 0 ||
+        userPayload.hasCompletedOnboarding
+      );
+
+      if (hasMeaningfulPreferences(localPrefs) && (isSignup || !userHasPrefs)) {
+        axios.post("/api/user/preferences", localPrefs).catch(console.error);
+      }
+
       if (mode === "signup") {
         const isVerify = result.payload?.requiresVerification;
         const message = isVerify

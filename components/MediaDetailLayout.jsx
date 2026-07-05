@@ -13,6 +13,10 @@ import { PlayIcon, PlusSignIcon, UserIcon } from "@hugeicons/core-free-icons";
 import AppIcon from "./AppIcon";
 import CreatePartyDrawer from "./watch-party/CreatePartyDrawer";
 import PasswordModal from "./watch-party/PasswordModal";
+import SaveToListModal from "./lists/SaveToListModal";
+import MovieShareStoryCard from "./movies/MovieShareStoryCard";
+import { useSelector } from "react-redux";
+import { selectUser } from "../store/slices/authSlice";
 
 export default function MediaDetailLayout({
   media,
@@ -29,7 +33,10 @@ export default function MediaDetailLayout({
   const [isWatchPartyModalOpen, setIsWatchPartyModalOpen] = React.useState(false);
   const [isCreateDrawerOpen, setIsCreateDrawerOpen] = React.useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = React.useState(false);
+  const [isSaveToListModalOpen, setIsSaveToListModalOpen] = React.useState(false);
+  const [isStoryModalOpen, setIsStoryModalOpen] = React.useState(false);
   const [selectedRoomToJoin, setSelectedRoomToJoin] = React.useState(null);
+  const user = useSelector(selectUser);
   const [dominantColor, setDominantColor] = React.useState('147, 51, 234'); // Default purple
   const isMovie = mediaType === "movie";
   const title = media.title || media.name;
@@ -222,7 +229,10 @@ export default function MediaDetailLayout({
               </div>
               
               <div className="mt-4 flex flex-wrap items-center gap-3">
-                <ShareButton movie={{ ...media, media_type: mediaType, title }} />
+                <ShareButton 
+                  movie={{ ...media, media_type: mediaType, title }} 
+                  onShareToStory={() => setIsStoryModalOpen(true)}
+                />
 
                 {/* Watch Together */}
                 <button
@@ -371,6 +381,22 @@ export default function MediaDetailLayout({
         isOpen={isPasswordModalOpen} 
         onClose={() => setIsPasswordModalOpen(false)} 
         room={selectedRoomToJoin} 
+      />
+
+      {/* Save to List Modal */}
+      <SaveToListModal
+        isOpen={isSaveToListModalOpen}
+        onClose={() => setIsSaveToListModalOpen(false)}
+        movie={media}
+        mediaType={mediaType}
+      />
+      
+      {/* IG Story Modal */}
+      <MovieShareStoryCard
+        isOpen={isStoryModalOpen}
+        onClose={() => setIsStoryModalOpen(false)}
+        movie={media}
+        mediaType={mediaType}
       />
     </div>
   );

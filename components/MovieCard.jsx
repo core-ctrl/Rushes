@@ -13,6 +13,9 @@ import FriendActivity from "./social/FriendActivity";
 import ShareButton from "./ShareButton";
 import { TMDB_BLUR_DATA_URL } from "../lib/imageBlur";
 import { toast } from "./ui/Toaster";
+import AppIcon from "./AppIcon";
+import { Layers01Icon } from "@hugeicons/core-free-icons";
+import SaveToListModal from "./lists/SaveToListModal";
 
 export default function MovieCard({ item, friendActivity = [] }) {
   const router = useRouter();
@@ -20,6 +23,7 @@ export default function MovieCard({ item, friendActivity = [] }) {
   const user = useSelector(selectUser);
   const isInList = useSelector(selectInWatchlist(item?.id));
   const [hovered, setHovered] = useState(false);
+  const [isSaveToListModalOpen, setIsSaveToListModalOpen] = useState(false);
   const [popPos, setPopPos] = useState("center");
   const cardRef = useRef(null);
   const hoverTimer = useRef(null);
@@ -166,7 +170,8 @@ export default function MovieCard({ item, friendActivity = [] }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 rounded-2xl overflow-hidden z-20 pointer-events-auto shadow-[0_24px_70px_rgba(0,0,0,0.75)]"
+            onClick={() => router.push(href)}
+            className="absolute inset-0 rounded-2xl overflow-hidden z-20 pointer-events-auto cursor-pointer shadow-[0_24px_70px_rgba(0,0,0,0.75)]"
           >
             {/* Blurred gradient background using movie backdrop color */}
             <div
@@ -197,9 +202,19 @@ export default function MovieCard({ item, friendActivity = [] }) {
                 {trailerLoading ? 'Loading...' : 'Trailer'}
               </button>
 
-              {/* Heart/wishlist button */}
-              <button
-                onClick={(e) => { e.stopPropagation(); handleWishlist(e); }}
+              <div className="flex items-center gap-2">
+                {/* Save to List button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setIsSaveToListModalOpen(true); }}
+                  className="w-8 h-8 rounded-full bg-black/50 text-neutral-400 hover:text-white hover:bg-black/80 backdrop-blur-sm flex items-center justify-center transition-all"
+                  title="Save to Curated List"
+                >
+                  <AppIcon icon={Layers01Icon} size={16} />
+                </button>
+
+                {/* Heart/wishlist button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleWishlist(e); }}
                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                   isInList
                     ? 'bg-red-500 text-white'
@@ -210,6 +225,7 @@ export default function MovieCard({ item, friendActivity = [] }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                 </svg>
               </button>
+              </div>
             </div>
 
             {/* Bottom info */}
@@ -262,6 +278,12 @@ export default function MovieCard({ item, friendActivity = [] }) {
           </motion.div>
         )}
       </AnimatePresence>
+      <SaveToListModal
+        isOpen={isSaveToListModalOpen}
+        onClose={() => setIsSaveToListModalOpen(false)}
+        media={item}
+        mediaType={item.media_type || (isMovie ? 'movie' : 'tv')}
+      />
     </div>
   );
 }

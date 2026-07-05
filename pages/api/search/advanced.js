@@ -1,6 +1,6 @@
 import { searchLimiter } from "@/lib/rateLimit";
 import { getCache, setCache } from "@/lib/cache";
-import { searchMulti } from "@/lib/tmdb";
+import { searchMulti, discoverContent } from "@/lib/tmdb";
 import { correctTypo, detectIntent, scoreResults } from "@/services/searchService";
 import { requireAuth } from "@/middleware/requireAuth";
 import { connectDB } from "@/lib/mongodb";
@@ -40,7 +40,17 @@ export default async function handler(req, res) {
     // Guest searches remain allowed.
   }
 
-  const raw = await searchMulti(corrected, page);
+  let raw = [];
+  if (intent.type === "discover") {
+    // If the intent is purely language/genre discovery
+    const discoverParams = { page };
+    if (intent.language) discoverParams.with_original_language = intent.language;
+    if (intent.genres && intent.genres.length > 0) discoverParams.with_genres = intent.genres.join(",");
+    raw = await discoverContent(discoverParams);
+  } else {
+    raw = await searchMulti(corrected, page);
+  }
+  
   const results = scoreResults(raw, corrected, userGenres);
 
   const payload = {

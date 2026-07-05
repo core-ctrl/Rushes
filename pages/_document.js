@@ -10,10 +10,17 @@ export default function Document() {
         <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
 
         <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" href="/favicons/icon-192.png" />
+        <link rel="manifest" href="/manifest.json" />
 
-        <meta name="theme-color" content="#000000" />
+        <meta name="theme-color" content="#E63946" />
         <meta name="color-scheme" content="dark" />
+        
+        <meta name="application-name" content="Rushes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Rushes" />
+        <meta name="mobile-web-app-capable" content="yes" />
 
 
       </Head>

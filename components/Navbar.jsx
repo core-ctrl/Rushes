@@ -20,6 +20,7 @@ import { openAuthModal } from "../store/slices/uiSlice";
 import AppIcon from "./AppIcon";
 import ErrorBoundary from "./ErrorBoundary";
 import RushesLogo from "./RushesLogo";
+import InstallAppButton from "./InstallAppButton";
 
 export default function Navbar() {
   const dispatch = useDispatch();
@@ -117,6 +118,8 @@ export default function Navbar() {
 
           {/* Right controls */}
           <div className="flex items-center gap-2">
+            <InstallAppButton />
+            
             {/* Smart Search — desktop inline */}
             <div className="hidden md:block">
               <SmartSearch />

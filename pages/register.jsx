@@ -9,6 +9,9 @@ import { LockIcon, Mail01Icon, UserIcon, ViewIcon, ViewOffSlashIcon, CheckmarkCi
 import AppIcon from "../components/AppIcon";
 import ExpandableTerms from "../components/ExpandableTerms";
 
+import { toast } from "../components/ui/Toaster";
+import { signIn } from "next-auth/react";
+
 function PasswordStrength({ password = "" }) {
     const checks = [
         { label: "8+ chars", ok: password.length >= 8 },
@@ -262,7 +265,7 @@ export default function RegisterPage() {
 
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || !termsAccepted}
                             className="mt-1 bg-accent hover:bg-accent-dark disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-all hover:shadow-glow-red text-sm"
                         >
                             {loading ? (
@@ -274,6 +277,31 @@ export default function RegisterPage() {
                                 "Create Account"
                             )}
                         </button>
+                        
+                        <div className="flex items-center gap-3 py-2">
+                            <div className="h-px flex-1 bg-white/10" />
+                            <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">or</span>
+                            <div className="h-px flex-1 bg-white/10" />
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <button
+                                type="button"
+                                disabled={!termsAccepted}
+                                onClick={() => signIn("google")}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span>Continue with Google</span>
+                            </button>
+                            <button
+                                type="button"
+                                disabled={!termsAccepted}
+                                onClick={() => signIn("github")}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span>Continue with GitHub</span>
+                            </button>
+                        </div>
                     </form>
 
                     <div className="flex justify-center gap-4 mt-6 text-sm">

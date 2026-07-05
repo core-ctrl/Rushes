@@ -40,10 +40,12 @@ export default async function handler(req, res) {
       const { action, movie, title, description, privacy, coverImage } = req.body;
 
       if (action === "add_movie") {
-        if (!list.movies.some(m => m.tmdbId === movie.tmdbId)) {
+        if (!list.movies.some(m => String(m.tmdbId) === String(movie.tmdbId))) {
           list.movies.push(movie);
+          list.markModified('movies');
           if (!list.coverImage && movie.posterPath) {
-            list.coverImage = movie.posterPath; // Auto set cover if empty
+            list.coverImage = movie.posterPath;
+            list.markModified('coverImage');
           }
         }
       } else if (action === "remove_movie") {

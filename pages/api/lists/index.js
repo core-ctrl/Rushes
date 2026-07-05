@@ -22,6 +22,8 @@ export default async function handler(req, res) {
         if (String(currentUserId) !== String(userId)) {
           query.privacy = "public";
         }
+      } else {
+        query.privacy = "public";
       }
 
       const lists = await List.find(query).sort({ createdAt: -1 }).populate("userId", "username displayName avatar");

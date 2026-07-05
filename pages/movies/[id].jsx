@@ -38,10 +38,27 @@ export default function MovieDetailPage({ addToWishlist, wishlist = [] }) {
             (v) => v.type === "Trailer" && v.site === "YouTube"
           )?.key || null;
         setTrailerKey(key);
+        
+        // Auto-play trailer if requested
+        if (router.query.playTrailer === 'true') {
+          if (key) {
+            setIsTrailerOpen(true);
+          } else {
+            // If no immediate key, we handle fetching it like handlePlayTrailer does
+            fetch(`/api/trailer?id=${id}&media_type=movie`)
+              .then(res => res.json())
+              .then(td => {
+                 if (td.trailer?.key) {
+                   setTrailerKey(td.trailer.key);
+                   setIsTrailerOpen(true);
+                 }
+              }).catch(() => {});
+          }
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, router.query.playTrailer]);
 
   // early returns AFTER all hooks
   if (loading) return (

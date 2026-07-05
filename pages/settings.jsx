@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { motion } from 'framer-motion';
-import { Shield, Trash2, Power, AlertTriangle } from 'lucide-react';
+import { Shield, Trash2, Power, AlertTriangle, Sparkles, Settings2 } from 'lucide-react';
 import axios from 'axios';
 import { useSelector, useDispatch } from 'react-redux';
-import { selectUser, logoutUser } from '../store/slices/authSlice';
+import { selectUser, logoutUser, setUser } from '../store/slices/authSlice';
 import { toast } from '../components/ui/Toaster';
+import PreferencesGate from '../components/PreferencesGate';
 
 export default function SettingsPage() {
     const router = useRouter();
@@ -16,6 +17,7 @@ export default function SettingsPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [processing, setProcessing] = useState(false);
+    const [showPreferences, setShowPreferences] = useState(false);
 
     if (!user) {
         return (
@@ -91,6 +93,41 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                         </section>
+
+                        {/* Content Preferences */}
+                        <section className="bg-neutral-900 border border-white/10 rounded-2xl p-6 mb-6">
+                            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-neutral-400" />
+                                Content Preferences
+                            </h2>
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-white mb-1">Tailor Your Experience</h3>
+                                    <p className="text-xs text-neutral-500">
+                                        Update your preferred regions, languages, genres, and streaming platforms to get better recommendations.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShowPreferences(true)}
+                                    className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors"
+                                >
+                                    <Settings2 className="w-4 h-4" />
+                                    Edit Preferences
+                                </button>
+                            </div>
+                        </section>
+
+                        {showPreferences && (
+                            <PreferencesGate 
+                                user={user}
+                                forceOpen={true}
+                                onClose={() => setShowPreferences(false)}
+                                onComplete={(prefs) => {
+                                    setShowPreferences(false);
+                                    toast({ type: 'success', message: 'Preferences updated successfully!' });
+                                }}
+                            />
+                        )}
 
                         {/* Danger Zone */}
                         <section className="bg-neutral-900 border border-red-500/20 rounded-2xl p-6">

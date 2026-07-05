@@ -17,7 +17,10 @@ import {
   Sword01Icon,
   Ticket01Icon,
   Tv01Icon,
+  Layers01Icon,
+  Cards02Icon,
 } from "@hugeicons/core-free-icons";
+import Link from "next/link";
 import HeroSlider from "../components/HeroSlider";
 import TopCarousel from "../components/TopCarousel";
 import SectionRow from "../components/SectionRow";
@@ -46,6 +49,8 @@ import { readStoredPreferences } from "../lib/userPreferences";
 import AppIcon from "../components/AppIcon";
 import DailyPicks from "../components/DailyPicks";
 import ErrorBoundary from "../components/ErrorBoundary";
+import RollTheDice from "../components/RollTheDice";
+import { preferencesFromUser } from "../lib/userPreferences";
 
 function TitleWithIcon({ icon: Icon, title, subtitle }) {
   return (
@@ -121,6 +126,8 @@ export default function Home({
   const [recLoad, setRecLoad] = useState(false);
   const [nowPlaying, setNowPlaying] = useState([]);
   const [nowPlayingLoad, setNowPlayingLoad] = useState(false);
+  const [localTrendingMovies, setLocalTrendingMovies] = useState(trendingMovies);
+  
   const regionLabel = user?.preferredRegions?.length
     ? REGION_OPTIONS.find((region) => region.code === user.preferredRegions[0])?.label || user.preferredRegions[0]
     : null;
@@ -144,6 +151,20 @@ export default function Home({
       .then(({ data }) => setRecs(data))
       .catch(() => setRecs(null))
       .finally(() => setRecLoad(false));
+  }, [user]);
+
+  useEffect(() => {
+    // Fetch localized trending if language pref exists
+    const prefs = user ? preferencesFromUser(user) : readStoredPreferences();
+    if (prefs.languages && prefs.languages.length > 0) {
+      axios.get(`/api/trending/localized?lang=${prefs.languages[0]}&type=movie`)
+        .then(res => {
+          if (res.data && res.data.length > 0) {
+            setLocalTrendingMovies(res.data);
+          }
+        })
+        .catch(console.error);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -179,6 +200,7 @@ export default function Home({
 
       <main className="min-h-screen bg-black text-white pb-20 md:pb-0">
         <ErrorBoundary>
+          <RollTheDice floating />
           
           <motion.div 
             style={{ scale: heroScale, opacity: heroOpacity, y: heroY }} 
@@ -189,6 +211,8 @@ export default function Home({
 
           <div className="relative z-10 w-full bg-[#050505] rounded-t-[40px] md:rounded-t-[60px] shadow-[0_-30px_60px_rgba(0,0,0,0.8)] -mt-10 md:-mt-16 pt-10 md:pt-16 pb-10 border-t border-white/5">
             <div className="mx-auto max-w-7xl px-4 md:px-8">
+
+          {/* Mini-Nav removed per user request */}
 
           <TopCarousel
             items={trendingItems}
@@ -255,7 +279,7 @@ export default function Home({
           <AdSlot slot="1000000000" className="mb-10" label="Featured sponsor" />
 
           <BentoGrid
-            items={trendingMovies.slice(0, 5)}
+            items={localTrendingMovies.slice(0, 5)}
             title={<TitleWithIcon icon={PlayIcon} title="Top Movies This Week" subtitle="High momentum picks across the platform" />}
           />
 

@@ -58,6 +58,19 @@ const MOOD_MAP = {
     family: { genres: [10751], query: "family" },
 };
 
+const LANGUAGE_MAP = {
+    english: "en",
+    telugu: "te",
+    hindi: "hi",
+    tamil: "ta",
+    malayalam: "ml",
+    korean: "ko",
+    japanese: "ja",
+    spanish: "es",
+    french: "fr",
+    kannada: "kn",
+};
+
 export function detectIntent(query) {
     const q = query.toLowerCase().trim();
 
@@ -76,8 +89,47 @@ export function detectIntent(query) {
     const yearMatch = q.match(/\b(19\d{2}|20\d{2})\b/);
     if (yearMatch) return { type: "year", year: parseInt(yearMatch[1]) };
 
-    // Default: title search
-    return { type: "title", query: q };
+    // Language patterns: "telugu movies", "hindi horror"
+    let languageIntent = null;
+    let languageCode = null;
+    let languageName = null;
+    let cleanedQuery = q;
+    
+    for (const [lang, code] of Object.entries(LANGUAGE_MAP)) {
+        if (q.includes(lang)) {
+            languageCode = code;
+            languageName = lang.charAt(0).toUpperCase() + lang.slice(1);
+            // Remove the language word from query to see if it's purely a category search
+            cleanedQuery = cleanedQuery.replace(lang, "").trim();
+            languageIntent = { type: "language", language: code, languageName };
+            break;
+        }
+    }
+
+    // Default: title search or combined language + title/mood
+    const baseIntent = { type: "title", query: cleanedQuery };
+    
+    // If language is detected and the rest of the query is just "movies", "films", etc.
+    // Or if it's entirely empty, return a language discover intent.
+    const isGenericSuffix = /^(movie|movies|film|films|series|shows|)$/.test(cleanedQuery.replace(/\s+/g, ''));
+    if (languageIntent && isGenericSuffix) {
+        return { type: "discover", language: languageCode, languageName, genres: [], originalQuery: q };
+    }
+
+    // Combine language with mood if both present (e.g. "telugu horror")
+    if (languageIntent) {
+        for (const [mood, data] of Object.entries(MOOD_MAP)) {
+            if (cleanedQuery.includes(mood)) {
+                return { type: "discover", language: languageCode, languageName, ...data, originalQuery: q };
+            }
+        }
+    }
+
+    if (languageIntent) {
+        return { ...baseIntent, language: languageCode, languageName };
+    }
+
+    return baseIntent;
 }
 
 // ── Typo correction ───────────────────────────────────────────────

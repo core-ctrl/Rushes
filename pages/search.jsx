@@ -7,6 +7,7 @@ import axios from "axios";
 import Image from "next/image";
 import { Search02Icon, UserIcon, FilmIcon, TvIcon } from "@hugeicons/core-free-icons";
 import AppIcon from "../components/AppIcon";
+import RollTheDice from "../components/RollTheDice";
 
 
 
@@ -64,18 +65,21 @@ export default function SearchPage() {
     const [results, setResults] = useState([]);
     const [selectedGenre, setSelectedGenre] = useState("");
     const [debounceTimer, setDebounceTimer] = useState(null);
+    const [intent, setIntent] = useState(null);
 
-    const searchAll = useCallback(async (q) => {
+    const searchAll = useCallback(async (q, genreId) => {
         if (!q || q.length < 1) {
             setResults([]);
+            setIntent(null);
             return;
         }
         setLoading(true);
         try {
-            const res = await axios.get(`/api/search/advanced?q=${encodeURIComponent(q)}`);
+            const res = await axios.get(`/api/search/advanced?q=${encodeURIComponent(q)}&genre=${genreId || ''}`);
             // filter out people, only keep movie/tv
             const mediaOnly = (res.data.results || []).filter(item => item.media_type === "movie" || item.media_type === "tv");
             setResults(mediaOnly);
+            setIntent(res.data.intent);
         } catch (err) {
             console.error("Search failed:", err);
         } finally {
@@ -87,17 +91,21 @@ export default function SearchPage() {
         if (debounceTimer) clearTimeout(debounceTimer);
 
         const timer = setTimeout(() => {
-            searchAll(query);
+            searchAll(query, selectedGenre);
         }, 300);
 
         setDebounceTimer(timer);
         return () => {
             if (debounceTimer) clearTimeout(debounceTimer);
         };
-    }, [query, searchAll]);
+    }, [query, selectedGenre, searchAll]);
 
-    const displayedResults = selectedGenre ? results.filter(m => m.genre_ids?.includes(Number(selectedGenre))) : results;
-    const hasResults = displayedResults.length > 0;
+    const displayedResults = results; // API handles genre filtering for discover, but for regular search we also do it below just in case
+    const filteredResults = selectedGenre && (!intent || intent.type !== 'discover') 
+        ? displayedResults.filter(m => m.genre_ids?.includes(Number(selectedGenre))) 
+        : displayedResults;
+        
+    const hasResults = filteredResults.length > 0;
 
     return (
         <>
@@ -133,7 +141,22 @@ export default function SearchPage() {
                                 <option key={g.name} value={g.id}>{g.name}</option>
                             ))}
                         </select>
+                        <RollTheDice />
                     </div>
+
+                    {/* Intent Badge */}
+                    <AnimatePresence>
+                        {intent && intent.languageName && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm text-neutral-400"
+                            >
+                                <span className="text-white">🗣️ Viewing {intent.languageName} Titles</span>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* Results */}
                     <AnimatePresence mode="wait">
@@ -177,7 +200,7 @@ export default function SearchPage() {
                                 exit={{ opacity: 0 }}
                                 className="space-y-2"
                             >
-                                {displayedResults.map((item) => (
+                                {filteredResults.map((item) => (
                                     <MovieResult key={item.id} movie={{ ...item, poster_path: item.poster_path }} />
                                 ))}
                             </motion.div>

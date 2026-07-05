@@ -5,7 +5,8 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import axios from "axios";
 import { setUser, logoutUser } from "../../store/slices/authSlice";
-import { Search01Icon, Logout01Icon, LockIcon, UserIcon } from "@hugeicons/core-free-icons";
+import { Search01Icon, Logout01Icon, LockIcon, UserIcon, Cards02Icon } from "@hugeicons/core-free-icons";
+import Link from "next/link";
 import { ALL_GENRES, LANGUAGE_OPTIONS, REGION_GROUPS, REGION_OPTIONS, OTT_PLATFORMS } from "../../lib/preferenceOptions";
 import AppIcon from "../../components/AppIcon";
 import OnboardingFlow from "../../components/OnboardingFlow";
@@ -365,7 +366,21 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
           </div>
         </div>
 
-        <div className="bg-neutral-900 border border-white/10 rounded-2xl p-6 mt-6 mb-8">
+        <div className="bg-neutral-900 border border-white/10 rounded-2xl p-6 mt-6 mb-8 flex flex-col gap-4">
+          <h2 className="text-xl font-bold mb-2">Account Details</h2>
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Username</p>
+              <p className="text-white font-medium">@{user.username}</p>
+            </div>
+            <div>
+              <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Email</p>
+              <p className="text-white font-medium">{user.email}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-neutral-900 border border-white/10 rounded-2xl p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-lg">My Taste</h3>
             <button

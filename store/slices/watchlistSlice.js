@@ -29,7 +29,7 @@ export const toggleWatchlist = createAsyncThunk(
                     mediaId: movie.id,
                     mediaType: movie.media_type || (movie.title ? "movie" : "tv"),
                     title: movie.title || movie.name,
-                    posterPath: movie.poster_path,
+                    posterPath: movie.poster_path || movie.posterPath,
                 });
             }
             return { movie, inList };

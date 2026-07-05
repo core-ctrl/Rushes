@@ -14,8 +14,8 @@ export default function SEOMeta({
   const fullTitle = title
     ? title.includes(siteName)
       ? title
-      : `${title} | ${siteName}`
-    : 'Rushes — Where movie people connect';
+      : `${title} | ${siteName} - The Ultimate Movie Finder`
+    : 'Rushes — The Social Movie Finder & Tracker';
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rushes.in';
   const fullUrl = `${baseUrl}${url || ''}`;
@@ -23,7 +23,7 @@ export default function SEOMeta({
   const metaImage = image || defaultImage;
   const metaDescription =
     description ||
-    'Discover, discuss and share movies and series with people who feel cinema like you do.';
+    'Rushes is a social movie finder and tracker. Discover movies, read reviews, and connect with people. (Note: Rushes is a social platform for tracking and discussion, we do NOT host streaming links or pirated content).';
 
   return (
     <Head>

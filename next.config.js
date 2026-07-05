@@ -51,6 +51,15 @@ const nextConfig = {
     ],
   },
 
+  async rewrites() {
+    return [
+      {
+        source: '/tmdb-proxy/:path*',
+        destination: 'https://image.tmdb.org/t/p/:path*'
+      }
+    ];
+  },
+
   async redirects() {
     return [
       { source: "/admin", destination: adminPanelUrl, permanent: false },

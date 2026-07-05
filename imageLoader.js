@@ -3,7 +3,7 @@ export default function myImageLoader({ src }) {
     try {
       const path = src.split('/t/p/')[1];
       if (path) {
-        return `/api/tmdb-image?path=${path}`;
+        return `/tmdb-proxy/${path}`;
       }
     } catch (e) {
       return src;

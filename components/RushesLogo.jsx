@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 
-const RUSHES_LOGO_URL = 'https://res.cloudinary.com/dkrvtfbor/image/upload/e_make_transparent/v1782761174/RUSHES_uupcnx.png';
+const RUSHES_LOGO_URL = '/logo.png';
 
 export default function RushesLogo() {
     const router = useRouter();

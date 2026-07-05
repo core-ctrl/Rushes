@@ -49,7 +49,7 @@ import { readStoredPreferences } from "../lib/userPreferences";
 import AppIcon from "../components/AppIcon";
 import DailyPicks from "../components/DailyPicks";
 import ErrorBoundary from "../components/ErrorBoundary";
-import RollTheDice from "../components/RollTheDice";
+
 import { preferencesFromUser } from "../lib/userPreferences";
 
 function TitleWithIcon({ icon: Icon, title, subtitle }) {
@@ -200,7 +200,7 @@ export default function Home({
 
       <main className="min-h-screen bg-black text-white pb-20 md:pb-0">
         <ErrorBoundary>
-          <RollTheDice floating />
+
           
           <motion.div 
             style={{ scale: heroScale, opacity: heroOpacity, y: heroY }} 

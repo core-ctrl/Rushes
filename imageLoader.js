@@ -1,8 +1,13 @@
-export default function myImageLoader({ src, width, quality }) {
+export default function myImageLoader({ src }) {
   if (src.includes('image.tmdb.org') || src.includes('themoviedb.org')) {
-    // Strip the protocol to pass to wsrv.nl properly
-    const cleanUrl = src.replace(/^https?:\/\//, '');
-    return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&w=${width}&q=${quality || 75}&output=webp`;
+    try {
+      const path = src.split('/t/p/')[1];
+      if (path) {
+        return `/api/tmdb-image?path=${path}`;
+      }
+    } catch (e) {
+      return src;
+    }
   }
   return src;
 }

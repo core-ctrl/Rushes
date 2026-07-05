@@ -37,6 +37,7 @@ const nextConfig = {
   },
 
   images: {
+    unoptimized: true,
     domains: ["image.tmdb.org"],
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

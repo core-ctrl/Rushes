@@ -7,7 +7,7 @@ import axios from "axios";
 import Image from "next/image";
 import { Search02Icon, UserIcon, FilmIcon, TvIcon } from "@hugeicons/core-free-icons";
 import AppIcon from "../components/AppIcon";
-import RollTheDice from "../components/RollTheDice";
+
 
 
 
@@ -141,7 +141,7 @@ export default function SearchPage() {
                                 <option key={g.name} value={g.id}>{g.name}</option>
                             ))}
                         </select>
-                        <RollTheDice />
+
                     </div>
 
                     {/* Intent Badge */}

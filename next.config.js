@@ -37,7 +37,8 @@ const nextConfig = {
   },
 
   images: {
-    unoptimized: true,
+    loader: "custom",
+    loaderFile: "./imageLoader.js",
     domains: ["image.tmdb.org"],
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

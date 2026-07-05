@@ -58,6 +58,18 @@ function AppInner({ Component, pageProps, router }) {
   const loadTimeoutRef = useRef(null);
   const targetUrlRef = useRef(null);
 
+  // Force unregister any lingering service workers from next-pwa that might be breaking images
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (let registration of registrations) {
+          registration.unregister();
+          console.log('ServiceWorker unregistered successfully');
+        }
+      }).catch((err) => console.error('SW unregister error', err));
+    }
+  }, []);
+
   // Route change loading with ClapperLoader and a robust fallback
   useEffect(() => {
     const handleStart = (url) => {

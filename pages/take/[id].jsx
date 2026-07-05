@@ -74,7 +74,7 @@ export default function TakePage({ take, notFound }) {
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rushes.in';
   const ogImage = take.moviePoster
-    ? `https://image.tmdb.org/t/p/w780${take.moviePoster}`
+    ? `/tmdb-proxy/w780${take.moviePoster}`
     : `${baseUrl}/og-default.png`;
 
   const ogTitle = take.movieTitle ? `${take.username}'s take on ${take.movieTitle}` : `${take.username}'s take`;
@@ -102,7 +102,7 @@ export default function TakePage({ take, notFound }) {
         {take.moviePoster && (
           <div className="absolute top-0 left-0 right-0 h-80 w-full overflow-hidden z-0">
             <Image
-              src={`https://image.tmdb.org/t/p/w1280${take.movieBackdrop || take.moviePoster}`}
+              src={`/tmdb-proxy/w1280${take.movieBackdrop || take.moviePoster}`}
               alt={take.movieTitle}
               fill
               className="object-cover opacity-20"
@@ -120,7 +120,7 @@ export default function TakePage({ take, notFound }) {
                 {take.moviePoster && (
                   <div className="relative w-24 md:w-32 flex-shrink-0 rounded-xl overflow-hidden border border-white/10 shadow-2xl aspect-[2/3]">
                     <Image
-                      src={`https://image.tmdb.org/t/p/w342${take.moviePoster}`}
+                      src={`/tmdb-proxy/w342${take.moviePoster}`}
                       alt={take.movieTitle}
                       fill
                       className="object-cover"

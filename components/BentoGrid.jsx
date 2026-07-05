@@ -12,8 +12,8 @@ function BentoCell({ item, size = "normal", rank }) {
   const isMovie = item.media_type === "movie" || item.title;
   const href    = isMovie ? `/movies/${item.id}` : `/series/${item.id}`;
   const img     = item.backdrop_path
-    ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}`
-    : item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : "/fallback.jpg";
+    ? `/tmdb-proxy/w780${item.backdrop_path}`
+    : item.poster_path ? `/tmdb-proxy/w500${item.poster_path}` : "/fallback.jpg";
   const TypeIcon = isMovie ? PlayIcon : Tv01Icon;
 
   return (

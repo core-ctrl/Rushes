@@ -1,9 +1,3 @@
-const withPWA = require("next-pwa")({
-  dest: "public",
-  disable: true,
-  register: false,
-  skipWaiting: true,
-});
 
 const isProduction = process.env.NODE_ENV === "production";
 const adminPanelUrl = process.env.ADMIN_PANEL_URL || "http://localhost:3002";
@@ -50,6 +44,15 @@ const nextConfig = {
     ],
   },
 
+  async rewrites() {
+    return [
+      {
+        source: '/tmdb-proxy/:path*',
+        destination: 'https://image.tmdb.org/t/p/:path*'
+      }
+    ];
+  },
+
   async redirects() {
     return [
       { source: "/admin", destination: adminPanelUrl, permanent: false },
@@ -92,4 +95,4 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
+module.exports = nextConfig;

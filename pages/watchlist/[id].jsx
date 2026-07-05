@@ -99,7 +99,7 @@ export default function SharedWatchlist() {
                 >
                   {item.posterPath ? (
                     <Image
-                      src={`https://image.tmdb.org/t/p/w300${item.posterPath}`}
+                      src={`/tmdb-proxy/w300${item.posterPath}`}
                       alt={item.title}
                       width={300}
                       height={450}

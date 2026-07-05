@@ -84,7 +84,7 @@ export default function TrendingSidebar() {
               <div className="w-12 h-16 bg-gray-800 rounded-lg overflow-hidden shrink-0">
                 {movie.poster_path && (
                   <img 
-                    src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`} 
+                    src={`/tmdb-proxy/w92${movie.poster_path}`} 
                     alt={movie.title}
                     className="w-full h-full object-cover"
                   />

@@ -27,7 +27,7 @@ function SwipeCard({ movie, onSwipeLeft, onSwipeRight, active }) {
   if (!active) {
     return (
       <div className="absolute inset-0 bg-neutral-900 rounded-3xl overflow-hidden opacity-50 scale-95 origin-bottom pointer-events-none transition-transform shadow-xl">
-        <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title} className="w-full h-full object-cover" />
+        <img src={`/tmdb-proxy/w500${movie.poster_path}`} alt={movie.title} className="w-full h-full object-cover" />
       </div>
     );
   }
@@ -44,7 +44,7 @@ function SwipeCard({ movie, onSwipeLeft, onSwipeRight, active }) {
       exit={{ x: x.get() > 0 ? 300 : -300, opacity: 0, transition: { duration: 0.2 } }}
       className="absolute inset-0 bg-neutral-900 rounded-3xl overflow-hidden cursor-grab active:cursor-grabbing shadow-[0_20px_50px_rgba(0,0,0,0.5)] touch-none"
     >
-      <img src={`https://image.tmdb.org/t/p/w780${movie.poster_path}`} alt={movie.title || movie.name} className="w-full h-full object-cover pointer-events-none" />
+      <img src={`/tmdb-proxy/w780${movie.poster_path}`} alt={movie.title || movie.name} className="w-full h-full object-cover pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent pointer-events-none" />
       
       {/* Vibe indicators while dragging */}

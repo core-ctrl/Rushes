@@ -250,7 +250,7 @@ export default function CreateTake({ onCreated }) {
           {selectedMovie && (
             <div className="flex items-center gap-2 bg-neutral-800 rounded-xl p-2 mb-3">
               <img
-                src={`https://image.tmdb.org/t/p/w92${selectedMovie.poster_path}`}
+                src={`/tmdb-proxy/w92${selectedMovie.poster_path}`}
                 className="w-8 h-12 rounded object-cover"
                 alt={selectedMovie.title || selectedMovie.name}
               />
@@ -295,7 +295,7 @@ export default function CreateTake({ onCreated }) {
                       }}
                       className="flex items-center gap-2 px-3 py-2 hover:bg-white/5 cursor-pointer transition-colors"
                     >
-                      <img src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`} className="w-6 h-9 rounded object-cover" alt={movie.title || movie.name} />
+                      <img src={`/tmdb-proxy/w92${movie.poster_path}`} className="w-6 h-9 rounded object-cover" alt={movie.title || movie.name} />
                       <div>
                         <p className="text-xs font-medium">{movie.title || movie.name}</p>
                         <p className="text-xs text-neutral-500 capitalize">{movie.media_type}</p>

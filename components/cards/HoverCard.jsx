@@ -6,10 +6,10 @@ export default function HoverCard({ item, index, showTopBadge = false, landscape
 
   const isTV = item.media_type === 'tv' || !!item.first_air_date;
   const poster = item.poster_path
-    ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+    ? `/tmdb-proxy/w500${item.poster_path}`
     : null;
   const backdrop = item.backdrop_path
-    ? `https://image.tmdb.org/t/p/w500${item.backdrop_path}`
+    ? `/tmdb-proxy/w500${item.backdrop_path}`
     : poster;
 
   const rating = item.vote_average?.toFixed(1);

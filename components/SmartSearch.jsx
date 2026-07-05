@@ -113,7 +113,7 @@ export default function SmartSearch({ fullscreen = false, onClose }) {
                                         className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left">
                                         {s.poster ? (
                                             <Image
-                                                src={`https://image.tmdb.org/t/p/w92${s.poster}`}
+                                                src={`/tmdb-proxy/w92${s.poster}`}
                                                 alt={s.title}
                                                 width={200}
                                                 height={300}

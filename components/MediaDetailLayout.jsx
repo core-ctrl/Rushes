@@ -43,7 +43,7 @@ export default function MediaDetailLayout({
   const releaseDate = media.release_date || media.first_air_date;
   const year = releaseDate?.slice(0, 4);
   const ogImage = media.backdrop_path
-    ? `https://image.tmdb.org/t/p/w1280${media.backdrop_path}`
+    ? `/tmdb-proxy/w1280${media.backdrop_path}`
     : undefined;
 
   const creatorOrDirector = isMovie
@@ -57,7 +57,7 @@ export default function MediaDetailLayout({
   const releaseDateForProviders = regionalRelease?.release_dates?.[0]?.release_date || releaseDate;
 
   const bgImage = media.backdrop_path || media.poster_path || "/fallback.jpg";
-  const bgUrl = (p) => p?.startsWith("http") ? p : `https://image.tmdb.org/t/p/w780${p}`;
+  const bgUrl = (p) => p?.startsWith("http") ? p : `/tmdb-proxy/w780${p}`;
 
   React.useEffect(() => {
     const img = new window.Image();
@@ -137,7 +137,7 @@ export default function MediaDetailLayout({
           <div className="absolute inset-0 z-10 mix-blend-color transition-colors duration-1000" style={{ backgroundColor: 'rgba(var(--theme-color), 0.5)' }} />
           <div className="absolute inset-0 z-10 transition-colors duration-1000 pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(var(--theme-color), 0.15) 0%, transparent 40%)' }} />
           <Image
-            src={`https://image.tmdb.org/t/p/original${media.backdrop_path}`}
+            src={`/tmdb-proxy/original${media.backdrop_path}`}
             alt={title}
             width={780}
             height={440}
@@ -151,7 +151,7 @@ export default function MediaDetailLayout({
             <div className="flex-shrink-0 w-36 md:w-64">
               <motion.div layoutId={`poster-${media.id}`} className="relative aspect-[2/3] w-full shrink-0 overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
                 <Image
-                  src={`https://image.tmdb.org/t/p/w500${media.poster_path}`}
+                  src={`/tmdb-proxy/w500${media.poster_path}`}
                   alt={title}
                   width={256}
                   height={384}
@@ -265,7 +265,7 @@ export default function MediaDetailLayout({
                     <div className="mb-2 h-32 w-full overflow-hidden rounded-xl bg-white/5 md:h-36">
                       {actor.profile_path ? (
                         <Image
-                          src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`}
+                          src={`/tmdb-proxy/w185${actor.profile_path}`}
                           alt={actor.name}
                           width={100}
                           height={100}
@@ -304,7 +304,7 @@ export default function MediaDetailLayout({
                         <Image
                           src={
                             m.poster_path
-                              ? `https://image.tmdb.org/t/p/w300${m.poster_path}`
+                              ? `/tmdb-proxy/w300${m.poster_path}`
                               : "/fallback.jpg"
                           }
                           alt={mTitle}

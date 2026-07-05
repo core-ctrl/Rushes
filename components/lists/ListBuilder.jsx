@@ -74,7 +74,7 @@ export default function ListBuilder({ listId, existingMovies = [], onAddMovie })
               <div className="flex items-center gap-4 flex-1 overflow-hidden">
                 <div className="w-12 h-12 flex-shrink-0 bg-[#282828] rounded flex items-center justify-center overflow-hidden">
                   {posterPath ? (
-                    <img src={`https://image.tmdb.org/t/p/w92${posterPath}`} alt={title} className="w-full h-full object-cover" />
+                    <img src={`/tmdb-proxy/w92${posterPath}`} alt={title} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-[8px] leading-tight text-neutral-500 font-bold uppercase p-1 text-center truncate">{title}</span>
                   )}

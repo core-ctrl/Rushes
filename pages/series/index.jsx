@@ -114,7 +114,7 @@ export default function SeriesPage() {
       {hero && (
         <section className="relative h-[58vh] min-h-[420px]">
           <Image
-            src={`https://image.tmdb.org/t/p/original${hero.backdrop_path || hero.poster_path}`}
+            src={`/tmdb-proxy/original${hero.backdrop_path || hero.poster_path}`}
             alt={hero.name}
             width={780}
             height={440}

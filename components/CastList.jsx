@@ -22,7 +22,7 @@ export default function CastList({ cast = [] }) {
           <div className="w-full h-32 rounded-xl overflow-hidden bg-white/5 mb-2">
             {actor.profile_path ? (
               <Image
-                src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`}
+                src={`/tmdb-proxy/w185${actor.profile_path}`}
                 alt={actor.name}
                 width={100}
                 height={100}

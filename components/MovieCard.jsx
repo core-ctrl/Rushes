@@ -32,7 +32,7 @@ export default function MovieCard({ item, friendActivity = [] }) {
 
   const isMovie = item.media_type === "movie" || item.title;
   const href = isMovie ? `/movies/${item.id}` : `/series/${item.id}`;
-  const poster = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : "/fallback.jpg";
+  const poster = item.poster_path ? `/tmdb-proxy/w500${item.poster_path}` : "/fallback.jpg";
   const title = item.title || item.name;
   const year = (item.release_date || item.first_air_date || "").slice(0, 4);
   const rating = item.vote_average?.toFixed(1);

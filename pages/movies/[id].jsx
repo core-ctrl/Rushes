@@ -100,7 +100,7 @@ export default function MovieDetailPage({ addToWishlist, wishlist = [] }) {
   const isInList = wishlist.some((item) => item.id === movie.id);
   const director = movie.credits?.crew?.find((p) => p.job === "Director");
   const ogImage = movie.backdrop_path
-    ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
+    ? `/tmdb-proxy/w1280${movie.backdrop_path}`
     : undefined;
   const regionalRelease = movie.releaseDates?.find(
     (e) => e.iso_3166_1 === regionCode

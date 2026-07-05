@@ -101,7 +101,7 @@ export default function ListsDashboard() {
   const CardContent = ({ list }) => (
     <>
       {list.coverImage ? (
-        <img src={`https://image.tmdb.org/t/p/w500${list.coverImage}`} alt={list.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
+        <img src={`/tmdb-proxy/w500${list.coverImage}`} alt={list.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
       ) : (
         <div className="w-full h-full flex items-center justify-center opacity-20">
           <AppIcon icon={Layers01Icon} size={64} />

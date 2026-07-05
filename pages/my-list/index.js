@@ -73,7 +73,7 @@ export default function MyListPage({ wishlist = [], addToWishlist, user, openAut
                     <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5 border border-white/10 mb-2">
                       {item.posterPath || item.poster_path ? (
                         <Image
-                          src={`https://image.tmdb.org/t/p/w300${item.posterPath || item.poster_path}`}
+                          src={`/tmdb-proxy/w300${item.posterPath || item.poster_path}`}
                           alt={item.title || item.name}
                           width={200}
                           height={300}

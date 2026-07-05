@@ -248,7 +248,7 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
                                             }`}
                                     >
                                         <Image
-                                            src={`https://image.tmdb.org/t/p/w300${msg.movieCard.poster}`}
+                                            src={`/tmdb-proxy/w300${msg.movieCard.poster}`}
                                             className="w-full h-32 object-cover"
                                             alt={msg.movieCard.title || 'Movie'}
                                             width={200}

@@ -116,7 +116,7 @@ export default function ShareStoryCard({ isOpen, onClose, list }) {
             <div className="absolute inset-0 z-0">
               {posters[0] && (
                 <img 
-                  src={`https://image.tmdb.org/t/p/w300${posters[0].posterPath || posters[0].poster_path}`} 
+                  src={`/tmdb-proxy/w300${posters[0].posterPath || posters[0].poster_path}`} 
                   alt="bg" 
                   className="w-full h-full object-cover opacity-40 blur-3xl scale-110"
                   crossOrigin="anonymous"
@@ -144,7 +144,7 @@ export default function ShareStoryCard({ isOpen, onClose, list }) {
                       className={`aspect-[2/3] rounded-xl overflow-hidden shadow-xl border border-white/10 ${posters.length === 3 && i === 0 ? 'col-span-2 w-2/3 mx-auto' : ''}`}
                     >
                       <img 
-                        src={`https://image.tmdb.org/t/p/w500${m.posterPath || m.poster_path}`} 
+                        src={`/tmdb-proxy/w500${m.posterPath || m.poster_path}`} 
                         alt={m.title}
                         className="w-full h-full object-cover"
                         crossOrigin="anonymous"

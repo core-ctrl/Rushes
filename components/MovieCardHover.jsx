@@ -126,7 +126,7 @@ export default function MovieCardHover({
                 ? "right-0"
                 : "left-1/2 -translate-x-1/2";
 
-    const bgUrl = item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : (item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : "/fallback.jpg");
+    const bgUrl = item.backdrop_path ? `/tmdb-proxy/w780${item.backdrop_path}` : (item.poster_path ? `/tmdb-proxy/w500${item.poster_path}` : "/fallback.jpg");
     const isPosterFallback = !item.backdrop_path && item.poster_path;
 
     return (
@@ -233,7 +233,7 @@ export default function MovieCardHover({
                         {providers.map((p) => (
                             <Image
                                 key={p.provider_id}
-                                src={`https://image.tmdb.org/t/p/w45${p.logo_path}`}
+                                src={`/tmdb-proxy/w45${p.logo_path}`}
                                 width={100}
                                 height={100}
                                 className="w-7 h-7 rounded"

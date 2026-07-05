@@ -112,12 +112,12 @@ export default function ListDetailPage() {
           <div className="w-full md:w-1/4 flex-shrink-0">
             <div className="aspect-[2/3] rounded-2xl overflow-hidden border border-white/10 bg-neutral-900 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
               {list.coverImage ? (
-                <img src={`https://image.tmdb.org/t/p/w500${list.coverImage}`} alt={list.title} className="w-full h-full object-cover" />
+                <img src={`/tmdb-proxy/w500${list.coverImage}`} alt={list.title} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex flex-wrap p-2 gap-1 bg-neutral-900">
                   {list.movies?.slice(0, 4).map(m => (
                     <div key={m.tmdbId} className="w-[calc(50%-0.125rem)] aspect-[2/3] bg-neutral-800 rounded">
-                      {m.posterPath && <img src={`https://image.tmdb.org/t/p/w200${m.posterPath}`} className="w-full h-full object-cover rounded" />}
+                      {m.posterPath && <img src={`/tmdb-proxy/w200${m.posterPath}`} className="w-full h-full object-cover rounded" />}
                     </div>
                   ))}
                 </div>
@@ -166,7 +166,7 @@ export default function ListDetailPage() {
                 <Link href={`/${movie.mediaType || 'movie'}s/${movie.tmdbId}`} key={movie.tmdbId}>
                   <div className="group relative aspect-[2/3] rounded-xl overflow-hidden bg-neutral-900 cursor-pointer">
                     {movie.posterPath ? (
-                      <img src={`https://image.tmdb.org/t/p/w342${movie.posterPath}`} alt={movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      <img src={`/tmdb-proxy/w342${movie.posterPath}`} alt={movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
                         <span className="font-bold text-sm text-neutral-500">{movie.title}</span>

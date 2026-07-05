@@ -356,7 +356,7 @@ export default function WatchTogetherRoom() {
         const data = await res.json();
         
         if (data.poster_path) {
-          setPosterPath(`https://image.tmdb.org/t/p/w500${data.poster_path}`);
+          setPosterPath(`/tmdb-proxy/w500${data.poster_path}`);
         }
         
         // Find trailer key

@@ -399,7 +399,7 @@ export default function TakeCard({ take, index, onTakeDeleted }) {
                         <div className="mb-3 flex max-w-lg cursor-pointer items-stretch overflow-hidden rounded-lg border border-neutral-800 transition-colors hover:bg-white/[0.03]">
                             {currentTake.moviePoster && (
                                 <div className="w-20 sm:w-24 shrink-0 bg-neutral-900 relative">
-                                    <Image src={`https://image.tmdb.org/t/p/w200${currentTake.moviePoster}`} alt={currentTake.movieTitle} fill className="object-cover" />
+                                    <Image src={`/tmdb-proxy/w200${currentTake.moviePoster}`} alt={currentTake.movieTitle} fill className="object-cover" />
                                 </div>
                             )}
                             <div className="p-3 flex-1 min-w-0 flex flex-col justify-center">

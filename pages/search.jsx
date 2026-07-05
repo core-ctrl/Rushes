@@ -38,7 +38,7 @@ function MovieResult({ movie }) {
                 <div className="w-16 h-24 rounded-lg bg-neutral-800 overflow-hidden flex-shrink-0">
                     {movie.poster_path && (
                         <Image
-                            src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
+                            src={`/tmdb-proxy/w200${movie.poster_path}`}
                             alt={movie.title}
                             width={64}
                             height={96}

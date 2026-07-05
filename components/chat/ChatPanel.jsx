@@ -553,7 +553,7 @@ export default function ChatPanel({ conversation, currentUser }) {
                     <div className={`overflow-hidden rounded-[22px] border shadow-2xl ${mine ? "border-red-400/30 bg-red-500/10" : "border-white/10 bg-white/[0.06]"}`}>
                       {msg.movieCard.poster ? (
                         <Image
-                          src={`https://image.tmdb.org/t/p/w300${msg.movieCard.poster}`}
+                          src={`/tmdb-proxy/w300${msg.movieCard.poster}`}
                           className="aspect-[16/10] w-full object-cover"
                           alt={msg.movieCard.title || "Shared poster"}
                           width={320}
@@ -686,7 +686,7 @@ export default function ChatPanel({ conversation, currentUser }) {
                         className="flex items-center gap-3 rounded-xl p-1.5 transition hover:bg-white/10"
                       >
                         <Image
-                          src={movie.poster ? `https://image.tmdb.org/t/p/w92${movie.poster}` : "/fallback.jpg"}
+                          src={movie.poster ? `/tmdb-proxy/w92${movie.poster}` : "/fallback.jpg"}
                           className="h-10 w-8 rounded-md object-cover"
                           alt={movie.title || "Movie poster"}
                           width={32}

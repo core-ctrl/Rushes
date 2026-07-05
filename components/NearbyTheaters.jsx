@@ -113,7 +113,7 @@ export default function NearbyTheaters() {
               {theater.movies.map((movie) => (
                 <div key={movie.tmdbId} className="flex gap-3 border-t border-white/5 pt-4">
                   <img
-                    src={`https://image.tmdb.org/t/p/w154${movie.poster}`}
+                    src={`/tmdb-proxy/w154${movie.poster}`}
                     alt={movie.title}
                     className="h-24 w-16 rounded-lg object-cover shadow-md"
                   />

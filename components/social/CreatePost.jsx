@@ -219,7 +219,7 @@ export default function CreatePost({ onPostCreated }) {
                             className="flex items-center gap-3 p-2 hover:bg-white/10 rounded-xl cursor-pointer transition-colors"
                           >
                             {movie.poster_path ? (
-                              <img src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`} className="w-8 h-12 rounded object-cover" />
+                              <img src={`/tmdb-proxy/w92${movie.poster_path}`} className="w-8 h-12 rounded object-cover" />
                             ) : (
                               <div className="w-8 h-12 bg-gray-800 rounded flex items-center justify-center"><Film className="w-4 h-4 text-gray-500" /></div>
                             )}
@@ -238,7 +238,7 @@ export default function CreatePost({ onPostCreated }) {
                 {selectedMovie && (
                   <div className="mt-4 p-3 border border-[#e50914]/30 bg-[#e50914]/10 rounded-2xl flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {selectedMovie.poster_path && <img src={`https://image.tmdb.org/t/p/w92${selectedMovie.poster_path}`} className="w-10 h-14 rounded object-cover" />}
+                      {selectedMovie.poster_path && <img src={`/tmdb-proxy/w92${selectedMovie.poster_path}`} className="w-10 h-14 rounded object-cover" />}
                       <div>
                         <p className="text-sm font-bold text-white">{selectedMovie.title || selectedMovie.name}</p>
                         <p className="text-xs text-gray-400 capitalize">Attached {selectedMovie.media_type}</p>

@@ -81,9 +81,9 @@ export default function MovieShareStoryCard({ isOpen, onClose, movie, mediaType 
   const title = movie.title || movie.name;
   const releaseYear = (movie.release_date || movie.first_air_date || '').slice(0, 4);
   const rating = movie.vote_average ? movie.vote_average.toFixed(1) : null;
-  const posterUrl = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
+  const posterUrl = `/tmdb-proxy/w500${movie.poster_path}`;
   const backdropUrl = movie.backdrop_path 
-    ? `https://image.tmdb.org/t/p/w780${movie.backdrop_path}` 
+    ? `/tmdb-proxy/w780${movie.backdrop_path}` 
     : posterUrl;
 
   const RUSHES_LOGO_URL = 'https://res.cloudinary.com/dkrvtfbor/image/upload/e_make_transparent/v1782761174/RUSHES_uupcnx.png';

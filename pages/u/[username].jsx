@@ -324,7 +324,7 @@ export default function UserProfile() {
                                                 <div key={list._id} className="relative overflow-hidden rounded-3xl border border-white/10 bg-neutral-900 transition-all hover:border-white/20 hover:shadow-2xl">
                                                     <div className="aspect-video w-full bg-neutral-800">
                                                         {list.coverImage ? (
-                                                            <img src={`https://image.tmdb.org/t/p/w500${list.coverImage}`} className="h-full w-full object-cover opacity-80" alt="" />
+                                                            <img src={`/tmdb-proxy/w500${list.coverImage}`} className="h-full w-full object-cover opacity-80" alt="" />
                                                         ) : (
                                                             <div className="flex h-full items-center justify-center text-neutral-600"><Film className="h-8 w-8" /></div>
                                                         )}

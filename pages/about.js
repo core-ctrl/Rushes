@@ -1,5 +1,6 @@
 import SEOMeta from '../components/SEOMeta';
 import Link from 'next/link';
+import CreatorsSection from '../components/about/CreatorsSection';
 
 export default function AboutPage() {
   return (
@@ -28,10 +29,10 @@ export default function AboutPage() {
             <section>
               <h2 className="text-2xl font-bold text-white mb-4">Our Mission</h2>
               <p className="text-neutral-400 leading-relaxed">
-                Rushes was built for the movie fan who argues about climaxes at midnight, who discovers hidden gems in regional cinema, who knows the difference between a good movie and a movie that moved them. We exist to connect those people.
+                Rushes was built for the movie fan who argues about climaxes at midnight, who discovers hidden gems from around the world, who knows the difference between a good movie and a movie that moved them. We exist to connect those people.
               </p>
               <p className="text-neutral-400 leading-relaxed mt-4">
-                We're especially passionate about Indian regional cinema — Telugu, Tamil, Malayalam, Kannada, Bengali, Marathi and beyond. Hollywood and Bollywood already have their champions. We're here for everything else too.
+                We're passionate about cinema in all its forms — from massive blockbusters to independent art house films. Because at the end of the day, a great movie is a great movie, no matter where it's from. We're here to celebrate every kind of story.
               </p>
             </section>
 
@@ -58,7 +59,7 @@ export default function AboutPage() {
             <section>
               <h2 className="text-2xl font-bold text-white mb-4">Built in India 🇮🇳</h2>
               <p className="text-neutral-400 leading-relaxed">
-                Rushes was built by a college student from India, frustrated by the lack of social discovery tools for regional cinema fans. It's a passion project, designed from scratch with love for cinema. Everything from the recommendation engine to the social features was built to serve the Indian movie fan first.
+                Rushes was built by a college student from India, frustrated by the lack of dedicated social discovery tools for genuine movie fans. It's a passion project, designed from scratch with an absolute love for cinema. Everything from the recommendation engine to the social features was built to serve the global movie community.
               </p>
               <p className="text-neutral-400 leading-relaxed mt-4">
                 We're a small, independent team — not backed by a streaming platform, not trying to sell you subscriptions. Just building a place for movie people.
@@ -83,18 +84,21 @@ export default function AboutPage() {
               </div>
             </section>
 
+            {/* The brand new Creators Section embedded right here! */}
+            <CreatorsSection />
+
             <section>
               <h2 className="text-2xl font-bold text-white mb-4">Get in Touch</h2>
               <p className="text-neutral-400 leading-relaxed">
                 Have feedback, found a bug, or just want to talk movies? We'd love to hear from you.
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
-                <Link
-                  href="/contact"
+                <a
+                  href="mailto:moviefinderforyou@gmail.com"
                   className="bg-red-600 hover:bg-red-500 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
                 >
                   Contact Us
-                </Link>
+                </a>
                 <a
                   href="https://discord.gg/vP9FkcKnz8"
                   target="_blank"

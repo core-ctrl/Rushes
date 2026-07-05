@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { TMDB_BLUR_DATA_URL } from '../../lib/imageBlur';
 import { supabase } from '../../lib/supabase';
 import api from '../../lib/axios';
+import MovieDoodles from '../MovieDoodles';
 
 function normalizeMessage(message) {
   return {
@@ -203,7 +204,10 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 p-4 overflow-y-auto bg-gradient-to-b from-neutral-900/30 to-neutral-950/50 chat-doodle-bg">
+            <div className="relative flex-1 overflow-hidden flex flex-col bg-gradient-to-b from-neutral-900/30 to-neutral-950/50">
+                <MovieDoodles opacity={0.3} />
+                <div className="absolute inset-0 z-0 bg-neutral-950/50" />
+                <div className="relative z-10 flex-1 p-4 overflow-y-auto">
                 {loading ? (
                     <div className="flex items-center justify-center h-full">
                         <motion.div
@@ -293,6 +297,7 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
                     </motion.div>
                 )}
                 <div ref={bottomRef} />
+                </div>
             </div>
 
             {/* Input */}

@@ -50,10 +50,21 @@ export default function MovieShareStoryCard({ isOpen, onClose, movie, mediaType 
           return; // Success, exit early
         }
       } catch (shareError) {
-        console.log("Native share failed, falling back to download", shareError);
+        console.log("Native share failed", shareError);
       }
       
-      // Fallback: Trigger download
+      // Fallback 1: Native Share without files (pops up the Windows Share menu)
+      if (navigator.share) {
+        await navigator.share({
+          title: movie?.title || movie?.name,
+          text: `Check this out on Rushes`,
+          url: window.location.href,
+        });
+        setIsExporting(false);
+        return;
+      }
+      
+      // Fallback 2: Trigger download (only for old browsers)
       const link = document.createElement('a');
       link.download = fileName;
       link.href = dataUrl;

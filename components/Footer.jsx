@@ -29,8 +29,10 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
           <div>
-            <h3 className="text-red-500 font-black text-2xl mb-1">Rushes</h3>
-            <p className="text-neutral-600 text-xs leading-relaxed">Where movie people connect</p>
+            <Link href="/about#khyati" className="inline-block transition-transform hover:scale-105 active:scale-95 group">
+              <h3 className="text-red-500 font-black text-2xl mb-1 group-hover:drop-shadow-[0_0_8px_rgba(220,38,38,0.5)] transition-all">Rushes</h3>
+              <p className="text-neutral-600 text-xs leading-relaxed group-hover:text-neutral-400 transition-colors">Discover and connect</p>
+            </Link>
             <p className="text-neutral-700 text-xs mt-3">Made in India 🇮🇳</p>
           </div>
           {Object.entries(links).map(([section, items]) => (
@@ -65,7 +67,7 @@ export default function Footer() {
 
         <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-3">
           <p className="text-neutral-700 text-xs">
-            © {new Date().getFullYear()} Rushes · Where movie people connect
+            © {new Date().getFullYear()} Rushes · Discover and connect
           </p>
           <div className="flex items-center gap-4">
             <a

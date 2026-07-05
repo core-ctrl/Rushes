@@ -59,10 +59,21 @@ export default function ShareStoryCard({ isOpen, onClose, list }) {
           return; // Success, exit early
         }
       } catch (shareError) {
-        console.log("Native share failed, falling back to download", shareError);
+        console.log("Native share failed", shareError);
       }
       
-      // Fallback: Trigger download
+      // Fallback 1: Native Share without files (pops up the Windows Share menu)
+      if (navigator.share) {
+        await navigator.share({
+          title: list.title,
+          text: `Check out ${list.title} on Rushes`,
+          url: window.location.href,
+        });
+        setIsExporting(false);
+        return;
+      }
+      
+      // Fallback 2: Trigger download
       const link = document.createElement('a');
       link.download = fileName;
       link.href = dataUrl;

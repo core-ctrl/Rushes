@@ -9,14 +9,14 @@ export default function RushesLogo() {
     const router = useRouter();
     const [isHovered, setIsHovered] = useState(false);
     const handleClick = (e) => {
-        if (router.pathname === '/') {
-            e.preventDefault();
+        if (router.pathname === '/about') {
+            // Let the hash link scroll natively if we are already on the page
         }
     };
 
     return (
         <Link
-            href="/"
+            href="/about#khyati"
             onClick={handleClick}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}

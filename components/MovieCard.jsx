@@ -137,8 +137,6 @@ export default function MovieCard({ item, friendActivity = [] }) {
             width={200}
             height={300}
             className="w-full h-full object-cover"
-            placeholder="blur"
-            blurDataURL={TMDB_BLUR_DATA_URL}
           />
           <div className={`absolute left-2 top-2 rounded-md border px-2 py-1 text-[10px] font-black uppercase tracking-wide ${statusClass}`}>
             {status.label}

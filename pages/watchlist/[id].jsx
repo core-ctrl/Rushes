@@ -104,8 +104,6 @@ export default function SharedWatchlist() {
                       width={300}
                       height={450}
                       className="w-full aspect-[2/3] object-cover"
-                      placeholder="blur"
-                      blurDataURL={TMDB_BLUR_DATA_URL}
                     />
                   ) : (
                     <div className="w-full aspect-[2/3] bg-neutral-800 flex items-center justify-center">

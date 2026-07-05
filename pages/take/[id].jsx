@@ -108,8 +108,6 @@ export default function TakePage({ take, notFound }) {
               className="object-cover opacity-20"
               priority
               sizes="100vw"
-              placeholder="blur"
-              blurDataURL={TMDB_BLUR_DATA_URL}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent" />
           </div>
@@ -127,8 +125,6 @@ export default function TakePage({ take, notFound }) {
                       fill
                       className="object-cover"
                       sizes="128px"
-                      placeholder="blur"
-                      blurDataURL={TMDB_BLUR_DATA_URL}
                     />
                   </div>
                 )}

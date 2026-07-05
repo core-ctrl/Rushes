@@ -124,8 +124,6 @@ export default function MoviesPage() {
             width={780}
             height={440}
             className="h-full w-full object-cover"
-            placeholder="blur"
-            blurDataURL={TMDB_BLUR_DATA_URL}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/30 to-transparent" />
           <div className="absolute bottom-10 left-0 right-0 mx-auto max-w-7xl px-4">

@@ -27,8 +27,6 @@ export default function CastList({ cast = [] }) {
                 width={100}
                 height={100}
                 className="w-full h-full object-cover"
-                placeholder="blur"
-                blurDataURL={TMDB_BLUR_DATA_URL}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-3xl">👤</div>

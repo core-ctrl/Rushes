@@ -142,8 +142,6 @@ export default function MediaDetailLayout({
             width={780}
             height={440}
             className="h-full w-full object-cover"
-            placeholder="blur"
-            blurDataURL={TMDB_BLUR_DATA_URL}
           />
         </div>
 
@@ -159,8 +157,6 @@ export default function MediaDetailLayout({
                   height={384}
                   className="h-full w-full object-cover"
                   priority
-                  placeholder="blur"
-                  blurDataURL={TMDB_BLUR_DATA_URL}
                 />
               </motion.div>
             </div>
@@ -274,8 +270,6 @@ export default function MediaDetailLayout({
                           width={100}
                           height={100}
                           className="h-full w-full object-cover"
-                          placeholder="blur"
-                          blurDataURL={TMDB_BLUR_DATA_URL}
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-neutral-500">
@@ -317,8 +311,6 @@ export default function MediaDetailLayout({
                           width={200}
                           height={300}
                           className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                          placeholder="blur"
-                          blurDataURL={TMDB_BLUR_DATA_URL}
                         />
                       </div>
                       <p className="truncate text-xs font-medium transition group-hover:text-red-400">

@@ -78,8 +78,6 @@ export default function MyListPage({ wishlist = [], addToWishlist, user, openAut
                           width={200}
                           height={300}
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                          placeholder="blur"
-                          blurDataURL={TMDB_BLUR_DATA_URL}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-4xl">🎬</div>

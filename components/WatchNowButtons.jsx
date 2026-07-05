@@ -186,8 +186,6 @@ export default function WatchNowButtons({
                 width={100}
                 height={100}
                 className="h-6 w-6 rounded-lg"
-                placeholder="blur"
-                blurDataURL={TMDB_BLUR_DATA_URL}
               />
               <span className="text-xs font-medium text-white transition-colors group-hover:text-accent">
                 {provider.provider_name}

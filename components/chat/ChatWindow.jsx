@@ -253,8 +253,6 @@ export default function ChatWindow({ otherUser, onClose, conversationId }) {
                                             alt={msg.movieCard.title || 'Movie'}
                                             width={200}
                                             height={300}
-                                            placeholder="blur"
-                                            blurDataURL={TMDB_BLUR_DATA_URL}
                                         />
                                         <div className="p-3 bg-gradient-to-t from-neutral-900/80">
                                             <p className="font-semibold text-sm line-clamp-1 text-white mb-1">

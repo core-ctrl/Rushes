@@ -357,8 +357,6 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
                     transform: `perspective(1200px) translateX(${parallax.x * -16}px) translateY(${parallax.y * -10}px) rotateY(${parallax.x * 3}deg) rotateX(${parallax.y * -2.8}deg)`,
                     transitionTimingFunction: "cubic-bezier(.2,.9,.2,1)",
                 }}
-                placeholder="blur"
-                blurDataURL={TMDB_BLUR_DATA_URL}
             />
 
             {/* YouTube inline player */}

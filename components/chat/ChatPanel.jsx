@@ -558,8 +558,6 @@ export default function ChatPanel({ conversation, currentUser }) {
                           alt={msg.movieCard.title || "Shared poster"}
                           width={320}
                           height={200}
-                          placeholder="blur"
-                          blurDataURL={TMDB_BLUR_DATA_URL}
                         />
                       ) : null}
                       <div className="p-3">
@@ -693,8 +691,6 @@ export default function ChatPanel({ conversation, currentUser }) {
                           alt={movie.title || "Movie poster"}
                           width={32}
                           height={40}
-                          placeholder="blur"
-                          blurDataURL={TMDB_BLUR_DATA_URL}
                         />
                         <div className="flex-1 text-left">
                           <p className="line-clamp-1 text-sm font-semibold text-white">{movie.title}</p>

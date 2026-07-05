@@ -155,8 +155,6 @@ export default function MovieCardHover({
                     width={780}
                     height={isPosterFallback ? 1170 : 440}
                     className={`w-full h-full object-cover transition-opacity duration-1000 ${isVideoReady ? 'opacity-0' : 'opacity-100'}`}
-                    placeholder="blur"
-                    blurDataURL={TMDB_BLUR_DATA_URL}
                 />
                 
                 {/* YOUTUBE IFRAME OVERLAY */}
@@ -240,8 +238,6 @@ export default function MovieCardHover({
                                 height={100}
                                 className="w-7 h-7 rounded"
                                 alt="Provider logo"
-                                placeholder="blur"
-                                blurDataURL={TMDB_BLUR_DATA_URL}
                             />
                         ))}
                     </div>

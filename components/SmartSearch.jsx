@@ -118,8 +118,6 @@ export default function SmartSearch({ fullscreen = false, onClose }) {
                                                 width={200}
                                                 height={300}
                                                 className="w-8 h-12 object-cover rounded-md flex-shrink-0"
-                                                placeholder="blur"
-                                                blurDataURL={TMDB_BLUR_DATA_URL}
                                             />
                                         ) : (
                                             <div className="w-8 h-12 bg-white/5 rounded-md flex items-center justify-center flex-shrink-0">

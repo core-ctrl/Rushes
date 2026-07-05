@@ -68,7 +68,7 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
     }, [slide]);
 
     const videoKey = fetchedKey;
-    const bgUrl = (p) => p?.startsWith("http") ? p : `/tmdb-proxy/original${p}`;
+    const bgUrl = (p) => p?.startsWith("http") ? p : `https://image.tmdb.org/t/p/original${p}`;
 
     // ── Dominant colour ────────────────────────────────────────────
     useEffect(() => {

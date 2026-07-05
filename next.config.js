@@ -37,8 +37,7 @@ const nextConfig = {
   },
 
   images: {
-    loader: "custom",
-    loaderFile: "./imageLoader.js",
+    unoptimized: true,
     domains: ["image.tmdb.org"],
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
@@ -49,15 +48,6 @@ const nextConfig = {
       { protocol: "https", hostname: "api.dicebear.com" },
       { protocol: "https", hostname: "res.cloudinary.com" },
     ],
-  },
-
-  async rewrites() {
-    return [
-      {
-        source: '/tmdb-proxy/:path*',
-        destination: 'https://image.tmdb.org/t/p/:path*'
-      }
-    ];
   },
 
   async redirects() {

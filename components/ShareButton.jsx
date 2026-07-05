@@ -4,13 +4,12 @@ import { useRouter } from "next/router";
 export default function ShareButton({ movie, onShareToChat, onShareToStory }) {
   const router = useRouter();
   const mediaType = movie.media_type === "tv" ? "series" : "movies";
-  
-  // Use window.location.origin to always get the exact domain they are currently on (Vercel, local, etc)
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const shareUrl = `${baseUrl}/${mediaType}/${movie.id}`;
-  const shareText = `Check out "${movie.title || movie.name}" on Rushes`;
 
   const handleNativeShare = async () => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const shareUrl = `${baseUrl}/${mediaType}/${movie.id}`;
+    const shareText = `Check out "${movie.title || movie.name}" on Rushes`;
+    
     if (navigator.share) {
       await navigator.share({
         title: movie.title || movie.name,
@@ -24,6 +23,9 @@ export default function ShareButton({ movie, onShareToChat, onShareToStory }) {
   };
 
   const shareToWhatsApp = () => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const shareUrl = `${baseUrl}/${mediaType}/${movie.id}`;
+    const shareText = `Check out "${movie.title || movie.name}" on Rushes`;
     window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`, "_blank", "noopener,noreferrer");
   };
 

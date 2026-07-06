@@ -17,7 +17,7 @@ export default function SEOMeta({
       : `${title} | ${siteName} - The Ultimate Movie Finder`
     : 'Rushes — The Social Movie Finder & Tracker';
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rushes.in';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rushes.theorbit.in';
   const fullUrl = `${baseUrl}${url || ''}`;
   const defaultImage = `${baseUrl}/og-default.png`;
   const metaImage = image || defaultImage;

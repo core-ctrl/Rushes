@@ -17,7 +17,7 @@ export default function AboutPage() {
           {/* Hero */}
           <div className="mb-16 text-center">
             <h1 className="flex justify-center mb-4">
-              <img src="/logo.png" alt="Rushes" className="w-24 h-24 md:w-32 md:h-32 object-contain drop-shadow-xl hover:scale-105 transition-transform" />
+              <img src="/logo.png" alt="Rushes" className="w-48 h-48 md:w-72 md:h-72 object-contain drop-shadow-2xl hover:scale-105 transition-transform" />
             </h1>
             <p className="text-2xl text-neutral-300 font-medium">Where movie people connect</p>
             <p className="text-neutral-500 mt-4 max-w-xl mx-auto leading-relaxed">

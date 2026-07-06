@@ -220,7 +220,7 @@ export default function TakePage({ take, notFound }) {
           {/* Rushes branding footer */}
           <div className="mt-10 text-center">
             <Link href="/" className="inline-flex flex-col items-center gap-1 group">
-              <img src="/logo.png" alt="Rushes" className="w-16 h-16 object-contain mb-1 drop-shadow-md group-hover:scale-105 transition-transform" />
+              <img src="/logo.png" alt="Rushes" className="w-24 h-24 object-contain mb-1 drop-shadow-md group-hover:scale-105 transition-transform" />
               <span className="text-xs text-neutral-600">Where movie people connect</span>
             </Link>
           </div>

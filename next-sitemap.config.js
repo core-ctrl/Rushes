@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
-  siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://rushes.in',
+  siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://rushes.theorbit.in',
   generateRobotsTxt: false, // We already created a custom robots.txt
   sitemapSize: 7000,
   exclude: ['/admin*', '/test*'], // Exclude admin panels from Google

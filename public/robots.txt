@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://rushes.in/sitemap.xml
+Sitemap: https://rushes.theorbit.in/sitemap.xml

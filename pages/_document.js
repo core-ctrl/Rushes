@@ -9,8 +9,8 @@ export default function Document() {
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
 
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/favicons/icon-192.png" />
+        <link rel="icon" type="image/png" href="/logo.png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
         <link rel="manifest" href="/manifest.json" />
 
         <meta name="theme-color" content="#E63946" />

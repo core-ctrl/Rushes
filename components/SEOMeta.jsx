@@ -29,6 +29,9 @@ export default function SEOMeta({
     <Head>
       <title>{fullTitle}</title>
       <meta name="description" content={metaDescription} />
+      <meta name="author" content="Sai Harshitha" />
+      <meta name="creator" content="Sai Harshitha" />
+      <meta name="publisher" content="The Orbit" />
       {keywords.length > 0 && (
         <meta name="keywords" content={keywords.join(', ')} />
       )}

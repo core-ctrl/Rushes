@@ -1,0 +1,10 @@
+/* TEAM */
+Creator: Sai Harshitha
+Developer: Sai Harshitha
+Contact: core-ctrl on GitHub
+
+/* SITE */
+Last update: 2026/07/08
+Standards: HTML5, CSS3, ES6
+Components: Next.js, React, Tailwind CSS
+Software: Rushes Movie Discovery Platform

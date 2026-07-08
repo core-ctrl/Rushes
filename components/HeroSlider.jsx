@@ -25,25 +25,14 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
     if (!slides || slides.length === 0) return null;
 
     const [index, setIndex] = useState(0);
-    const [muted, setMuted] = useState(true);
-    const [volume, setVolume] = useState(28);
-    const [showInfo, setShowInfo] = useState(true);
-    const [showVideo, setShowVideo] = useState(false);
     const [zoom, setZoom] = useState(false);
-    const [isHovering, setIsHovering] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
     const [parallax, setParallax] = useState({ x: 0, y: 0 });
     const [dominant, setDominant] = useState([200, 30, 30]);
 
     const startX = useRef(null);
     const sectionRef = useRef(null);
-    const ytContainer = useRef(null);
-    const ytPlayer = useRef(null);
     const rotateTimer = useRef(null);
     const interacting = useRef(false);
-    const ytApiLoaded = useRef(false);
-
-    const { vqParam, ytQuality } = useAdaptiveVideoQuality();
 
     const slide = slides[index];
     const isInList = Array.isArray(wishlist) && slide ? wishlist.some((m) => m.id === slide.id) : false;
@@ -91,114 +80,7 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
         };
     }, [bgImage]);
 
-    // ── YouTube API loader ─────────────────────────────────────────
-    const ensureYTApi = useCallback(() => {
-        if (typeof window === "undefined") return Promise.resolve();
-        if (window.YT?.Player) return Promise.resolve();
-        return new Promise((resolve) => {
-            if (!ytApiLoaded.current) {
-                ytApiLoaded.current = true;
-                if (!document.getElementById("yt-api")) {
-                    const tag = document.createElement("script");
-                    tag.src = "https://www.youtube.com/iframe_api";
-                    tag.id = "yt-api";
-                    document.body.appendChild(tag);
-                }
-            }
-            const check = setInterval(() => {
-                if (window.YT?.Player) { clearInterval(check); resolve(); }
-            }, 100);
-        });
-    }, []);
-
-    // ── Create / update inline player ─────────────────────────────
-    const createPlayer = useCallback(async (videoId) => {
-        if (!videoId) return;
-        await ensureYTApi();
-
-        if (ytPlayer.current) {
-            try {
-                ytPlayer.current.loadVideoById(videoId);
-                ytPlayer.current.setVolume(volume);
-                muted ? ytPlayer.current.mute() : ytPlayer.current.unMute();
-            } catch (e) { }
-            return;
-        }
-
-        const id = `ytp-${Date.now()}`;
-        if (!ytContainer.current) return;
-        ytContainer.current.innerHTML = `<div id="${id}"></div>`;
-
-        ytPlayer.current = new window.YT.Player(id, {
-            videoId,
-            playerVars: {
-                autoplay: 1,
-                controls: 0,
-                modestbranding: 1,
-                rel: 0,
-                loop: 1,
-                playlist: videoId,
-                playsinline: 1,
-                vq: vqParam || 'hd2160',
-                iv_load_policy: 3,
-                showinfo: 0,
-                fs: 0,
-                disablekb: 1,
-                cc_load_policy: 0,
-                origin: typeof window !== 'undefined' ? window.location.origin : '',
-            },
-            events: {
-                onReady: (e) => {
-                    try {
-                        e.target.setVolume(volume);
-                        muted ? e.target.mute() : e.target.unMute();
-                        // Request highest quality first — 4K > 1440p > 1080p
-                        const preferred = ytQuality || 'hd2160';
-                        e.target.setPlaybackQuality(preferred);
-                    } catch (err) { }
-                },
-                onStateChange: (e) => {
-                    if (e.data === window.YT.PlayerState.PLAYING) {
-                        setIsPlaying(true);
-                        // Attempt to enforce quality after playback starts
-                        try {
-                            const preferred = ytQuality || 'hd2160';
-                            const avail = e.target.getAvailableQualityLevels?.() || [];
-                            if (avail.includes(preferred)) {
-                                e.target.setPlaybackQuality(preferred);
-                            } else if (avail.length > 0) {
-                                e.target.setPlaybackQuality(avail[0]);
-                            }
-                        } catch (err) { }
-                        if (!muted) {
-                            let v = volume;
-                            const fade = setInterval(() => {
-                                v = Math.min(100, v + 4);
-                                try { ytPlayer.current.setVolume(v); } catch (err) { }
-                                if (v >= volume) clearInterval(fade);
-                            }, 120);
-                        }
-                    } else {
-                        setIsPlaying(false);
-                    }
-                },
-            },
-        });
-    }, [ensureYTApi, muted, volume, vqParam, ytQuality]);
-
-    useEffect(() => {
-        if (!videoKey) {
-            if (ytContainer.current) ytContainer.current.innerHTML = "";
-            if (ytPlayer.current) { try { ytPlayer.current.destroy(); } catch (e) { } ytPlayer.current = null; }
-            return;
-        }
-        if (showVideo) createPlayer(videoKey);
-    }, [videoKey, showVideo, createPlayer]);
-
-    useEffect(() => {
-        if (!ytPlayer.current) return;
-        try { muted ? ytPlayer.current.mute() : ytPlayer.current.unMute(); ytPlayer.current.setVolume(volume); } catch (e) { }
-    }, [muted, volume]);
+    // Removed background YouTube auto-player logic
 
     // ── Parallax ───────────────────────────────────────────────────
     useEffect(() => {
@@ -213,19 +95,17 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
 
     // ── Slide timings ──────────────────────────────────────────────
     useEffect(() => {
-        setShowInfo(true); setShowVideo(false); setZoom(false);
-        const t1 = setTimeout(() => setShowInfo(false), 3000);
-        const t2 = setTimeout(() => setShowVideo(true), 4200);
+        setZoom(false);
         const t3 = setTimeout(() => setZoom(true), 900);
-        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+        return () => { clearTimeout(t3); };
     }, [index]);
 
     // ── Auto-rotate ────────────────────────────────────────────────
     useEffect(() => {
-        if (isHovering || interacting.current || isPlaying) { clearTimeout(rotateTimer.current); return; }
+        if (interacting.current) { clearTimeout(rotateTimer.current); return; }
         rotateTimer.current = setTimeout(() => setIndex((i) => (i + 1) % slides.length), ROTATE_MS);
         return () => clearTimeout(rotateTimer.current);
-    }, [index, isHovering, isPlaying, slides.length]);
+    }, [index, slides.length]);
 
     // ── Swipe ──────────────────────────────────────────────────────
     const onTouchStart = (e) => (startX.current = e.touches[0].clientX);
@@ -237,26 +117,6 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
     };
 
     // ── Controls ───────────────────────────────────────────────────
-    const handlePlayClick = async () => {
-        interacting.current = true;
-        setShowVideo(true);
-        await ensureYTApi();
-        createPlayer(videoKey);
-        setTimeout(() => { try { ytPlayer.current.playVideo(); } catch (e) { } }, 300);
-    };
-
-    const handlePlayPause = () => {
-        if (!ytPlayer.current) return;
-        try {
-            const s = ytPlayer.current.getPlayerState();
-            s === window.YT.PlayerState.PLAYING ? ytPlayer.current.pauseVideo() : ytPlayer.current.playVideo();
-        } catch (e) { }
-    };
-
-    const handleSkipIntro = () => {
-        if (!ytPlayer.current) return;
-        try { ytPlayer.current.seekTo((ytPlayer.current.getCurrentTime() || 0) + SKIP_SECS, true); } catch (e) { }
-    };
 
     // ── Hero trailer button — correct signature: (key, title, id, type)
     const handleHeroTrailer = async () => {
@@ -359,32 +219,12 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
                 }}
             />
 
-            {/* YouTube inline player */}
-            <div
-                ref={ytContainer}
-                className="absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-[800ms] [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:absolute [&_iframe]:top-0 [&_iframe]:left-0 [&_iframe]:border-0"
-                style={{ opacity: showVideo ? 1 : 0, transform: `translateX(${parallax.x * -5}px) translateY(${parallax.y * -3}px)` }}
-                aria-hidden={!showVideo}
-            />
-
-            {/* YouTube UI overlay masks — hide branding without scaling */}
-            {showVideo && (
-                <div className="absolute inset-0 z-[5] pointer-events-none" aria-hidden>
-                    {/* Top mask — hides title bar, share button */}
-                    <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black via-black/70 to-transparent" />
-                    {/* Bottom mask — hides progress bar, YT logo */}
-                    <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black via-black/70 to-transparent" />
-                    {/* Bottom-right mask — hides watermark logo */}
-                    <div className="absolute bottom-0 right-0 w-28 h-16 bg-gradient-to-tl from-black/90 to-transparent" />
-                    {/* Top-right mask — hides settings/share */}
-                    <div className="absolute top-0 right-0 w-36 h-16 bg-gradient-to-bl from-black/80 to-transparent" />
-                </div>
-            )}
+            {/* Removed inline video player */}
 
             {/* Glass info card */}
             <div className="absolute inset-0 z-40 flex items-end md:items-center px-4 md:px-12 pb-16 md:pb-16 pointer-events-none">
                 <div
-                    className={`max-w-4xl w-full transition-all duration-700 ${showInfo ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                    className={`max-w-4xl w-full transition-all duration-700 opacity-100`}
                     style={{
                         transform: `translateX(${parallax.x * 8}px) translateY(${parallax.y * 6}px) rotateY(${parallax.x * -2}deg) rotateX(${parallax.y * 2}deg)`,
                         pointerEvents: "auto",
@@ -426,7 +266,7 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
                     {/* Buttons row */}
                     <motion.div 
                         initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: showInfo ? 1 : 0, y: showInfo ? 0 : 10 }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
                         className="flex flex-wrap items-center gap-2 md:gap-3">
                         {/* Play Trailer — correct signature */}
@@ -441,68 +281,18 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
                             Play Trailer
                         </motion.button>
 
-                        <motion.button 
-                            whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.15)" }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setShowInfo((s) => !s)}
-                            className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl border border-white/10 bg-black/40 backdrop-blur-md px-4 py-2.5 md:py-3 text-sm md:font-semibold text-white transition-colors">
-                            <AppIcon icon={InformationCircleIcon} size={16} />
-                            <span className="hidden sm:inline">Info</span>
-                        </motion.button>
-
-                        <motion.button 
-                            whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.1)" }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={handleSkipIntro}
-                            className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl border border-white/5 bg-black/60 backdrop-blur-md px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-white transition-colors">
-                            <AppIcon icon={NextIcon} size={14} />
-                            <span className="hidden sm:inline">Skip</span>
-                        </motion.button>
-
-                        <div className="md:ml-auto w-full md:w-auto mt-2 md:mt-0 flex items-center justify-between md:justify-start gap-3">
+                        <Link href={`/${slide.media_type || (slide.title ? "movie" : "tv")}/${slide.id}`} passHref>
                             <motion.button 
-                                whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.1)" }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => setMuted((m) => !m)}
-                                className="flex items-center justify-center rounded-lg md:rounded-xl border border-white/10 bg-black/50 backdrop-blur-md h-9 w-9 md:h-10 md:w-10 text-white transition-colors">
-                                {muted ? <AppIcon icon={VolumeMute02Icon} size={16} /> : <AppIcon icon={VolumeHighIcon} size={16} />}
+                                whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.15)" }}
+                                whileTap={{ scale: 0.95 }}
+                                className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl border border-white/10 bg-black/40 backdrop-blur-md px-4 py-2.5 md:py-3 text-sm md:font-semibold text-white transition-colors">
+                                <AppIcon icon={InformationCircleIcon} size={16} />
+                                <span className="hidden sm:inline">More Info</span>
                             </motion.button>
-                            <div className="relative flex items-center w-full sm:w-28 md:w-36 group h-6">
-                                <div className="absolute w-full h-1.5 bg-white/20 rounded-full overflow-hidden pointer-events-none">
-                                    <div className="h-full" style={{ width: `${volume}%`, backgroundColor: accent }} />
-                                </div>
-                                <input
-                                    aria-label="Volume"
-                                    type="range" min="0" max="100"
-                                    value={volume}
-                                    onChange={(e) => {
-                                        const v = Number(e.target.value);
-                                        setVolume(v); setMuted(v === 0);
-                                        try { if (ytPlayer.current) ytPlayer.current.setVolume(v); } catch (e) { }
-                                    }}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                />
-                                <div 
-                                    className="absolute h-3.5 w-3.5 rounded-full shadow-lg transition-transform group-hover:scale-125 pointer-events-none" 
-                                    style={{ left: `calc(${volume}% - 7px)`, backgroundColor: accent }}
-                                />
-                            </div>
-                        </div>
+                        </Link>
                     </motion.div>
                 </div>
             </div>
-
-            {/* Playback controls (bg video) */}
-            {videoKey && showVideo && (
-                <div className="absolute bottom-6 left-6 z-50 flex items-center gap-3">
-                    <button onClick={handlePlayPause} className="rounded-xl border border-white/10 bg-black/60 px-4 py-2 text-white hover:bg-black/80 transition-colors">
-                        {isPlaying ? <AppIcon icon={PauseIcon} size={18} /> : <AppIcon icon={PlayIcon} size={18} className="fill-current" />}
-                    </button>
-                    <button onClick={() => setMuted((m) => !m)} className="rounded-xl border border-white/10 bg-black/60 px-4 py-2 text-white hover:bg-black/80 transition-colors">
-                        {muted ? <AppIcon icon={VolumeMute02Icon} size={18} /> : <AppIcon icon={VolumeHighIcon} size={18} />}
-                    </button>
-                </div>
-            )}
 
             {/* Persistent Slide Navigation Arrows */}
             {slides.length > 1 && (

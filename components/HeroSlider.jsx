@@ -186,8 +186,8 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
             className="relative top-0 w-full h-[100dvh] overflow-hidden bg-black select-none touch-pan-y"
             onTouchStart={(e) => { interacting.current = true; onTouchStart(e); }}
             onTouchEnd={(e) => { onTouchEnd(e); interacting.current = false; }}
-            onMouseEnter={() => { setIsHovering(true); interacting.current = true; }}
-            onMouseLeave={() => { setIsHovering(false); interacting.current = false; }}
+            onMouseEnter={() => { interacting.current = true; }}
+            onMouseLeave={() => { interacting.current = false; }}
             aria-roledescription="carousel"
         >
             {/* Film grain */}
@@ -244,7 +244,7 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
                     {/* Card */}
                     <motion.div 
                         initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: showInfo ? 1 : 0, y: showInfo ? 0 : 10 }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.1 }}
                         className="p-3 rounded-xl md:rounded-2xl mb-4 md:mb-5 flex flex-wrap gap-2 items-center"
                         style={{ background: "rgba(20,20,20,0.4)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(24px)", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>

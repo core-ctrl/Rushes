@@ -17,6 +17,8 @@ import AppIcon from "./AppIcon";
 import useAdaptiveVideoQuality from "../hooks/useAdaptiveVideoQuality";
 import { TMDB_BLUR_DATA_URL } from "../lib/imageBlur";
 
+const MotionLink = motion(Link);
+
 const ROTATE_MS = 9000;
 const SKIP_SECS = 60;
 const SCALE = 1.125;
@@ -85,12 +87,16 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
 
     // ── Parallax ───────────────────────────────────────────────────
     useEffect(() => {
+        let lastUpdate = 0;
         const fn = (e) => {
+            const now = Date.now();
+            if (now - lastUpdate < 50) return; // Throttle to 20 FPS to fix lag
             if (!sectionRef.current) return;
             const rect = sectionRef.current.getBoundingClientRect();
             setParallax({ x: (e.clientX - rect.left) / rect.width - 0.5, y: (e.clientY - rect.top) / rect.height - 0.5 });
+            lastUpdate = now;
         };
-        window.addEventListener("mousemove", fn);
+        window.addEventListener("mousemove", fn, { passive: true });
         return () => window.removeEventListener("mousemove", fn);
     }, []);
 
@@ -184,7 +190,7 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
     return (
         <section
             ref={sectionRef}
-            className="relative top-0 w-full h-[100dvh] overflow-hidden bg-black select-none touch-pan-y"
+            className="relative top-0 w-full h-screen overflow-hidden bg-black select-none touch-pan-y"
             onTouchStart={(e) => { interacting.current = true; onTouchStart(e); }}
             onTouchEnd={(e) => { onTouchEnd(e); interacting.current = false; }}
             onMouseEnter={() => { interacting.current = true; }}
@@ -282,15 +288,14 @@ export default function HeroSlider({ slides = [], onPlayTrailer, wishlist = [], 
                             Play Trailer
                         </motion.button>
 
-                        <Link href={`/${slide.media_type || (slide.title ? "movie" : "tv")}/${slide.id}`} passHref>
-                            <motion.button 
-                                whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.15)" }}
-                                whileTap={{ scale: 0.95 }}
-                                className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl border border-white/10 bg-black/40 backdrop-blur-md px-4 py-2.5 md:py-3 text-sm md:font-semibold text-white transition-colors">
-                                <AppIcon icon={InformationCircleIcon} size={16} />
-                                <span className="hidden sm:inline">More Info</span>
-                            </motion.button>
-                        </Link>
+                        <MotionLink 
+                            href={`/${slide?.media_type || (slide?.title ? "movie" : "tv")}/${slide?.id}`} 
+                            whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.15)" }}
+                            whileTap={{ scale: 0.95 }}
+                            className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl border border-white/10 bg-black/40 backdrop-blur-md px-4 py-2.5 md:py-3 text-sm md:font-semibold text-white transition-colors">
+                            <AppIcon icon={InformationCircleIcon} size={16} />
+                            <span className="hidden sm:inline">More Info</span>
+                        </MotionLink>
                     </motion.div>
                 </div>
             </div>

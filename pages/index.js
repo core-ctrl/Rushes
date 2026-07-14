@@ -135,7 +135,7 @@ export default function Home({
   // Scroll animations for 3D card effect
   const { scrollY } = useScroll();
   const heroScale = useTransform(scrollY, [0, 800], [1, 0.85]);
-  const heroOpacity = useTransform(scrollY, [0, 800], [1, 0.3]);
+  const heroOpacity = useTransform(scrollY, [0, 600], [1, 0]);
   const heroY = useTransform(scrollY, [0, 800], [0, 150]);
 
   useEffect(() => {

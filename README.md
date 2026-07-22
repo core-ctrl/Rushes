@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=E8C84A&height=180&section=header&text=MOVIEFINDER&fontSize=55&fontColor=0a0a0f&fontAlignY=38&desc=Cinematic%20Full-Stack%20Movie%20%26%20Series%20Discovery&descAlignY=60&descColor=0a0a0f&descSize=15&animation=fadeIn" width="100%"/>
+<img src="https://res.cloudinary.com/dkrvtfbor/image/upload/v1783633240/RUSHES_1_-Photoroom_ebmtp8.png" width="100%"/>
 
 <br/>
 

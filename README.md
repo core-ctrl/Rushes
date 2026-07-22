@@ -1,11 +1,15 @@
-<p align="center">
-  <img src="https://res.cloudinary.com/dkrvtfbor/image/upload/v1783633240/RUSHES_1_-Photoroom_ebmtp8.png" width="250" alt="Rushes Logo">
-</p>
+<div align="center">
+
+<img src="https://res.cloudinary.com/dkrvtfbor/image/upload/v1783633240/RUSHES_1_-Photoroom_ebmtp8.png" width="250" alt="Rushes Logo"/>
+
 <br/>
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=14&duration=2500&pause=800&color=E8C84A&center=true&vCenter=true&multiline=false&width=620&lines=Next.js+14+%7C+React+%7C+Node.js+%7C+MongoDB+Atlas;JWT+Auth+%7C+Supabase+%7C+Redis+%7C+Firebase;Social+Feeds+%7C+Real-time+Chat+%7C+Smart+Recommendations;Ken+Burns+Hero+%7C+Bento+Grid+%7C+Framer+Motion" alt="Typing SVG" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=14&duration=2500&pause=800&color=E8C84A&center=true&vCenter=true&multiline=false&width=700&lines=Next.js+14+%7C+React+19+%7C+Spring+Boot+%7C+MongoDB+Atlas;JWT+Auth+%7C+Redis+%7C+Supabase+%7C+Firebase;Social+Feeds+%7C+Real-time+Chat+%7C+Smart+Recommendations;Discover+%26+Connect+%7C+Modern+Social+Platform" alt="Typing SVG" />
 
 <br/><br/>
+
+</div>
+<br/>
 
 <!-- STACK BADGES -->
 <img src="https://img.shields.io/badge/Next.js-14-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js"/>

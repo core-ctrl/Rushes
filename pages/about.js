@@ -94,10 +94,10 @@ export default function AboutPage() {
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <a
-                  href="mailto:moviefinderforyou@gmail.com"
+                  href="mailto:admin@theorbit.in"
                   className="bg-red-600 hover:bg-red-500 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
                 >
-                  Contact Us
+                  Contact Us (admin@theorbit.in - our only official email)
                 </a>
                 <a
                   href="https://discord.gg/vP9FkcKnz8"

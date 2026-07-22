@@ -29,7 +29,7 @@ export default function DMCAPage() {
         <h2 className="text-xl font-bold mb-3">Contact Us</h2>
         <p className="text-neutral-300 leading-relaxed">
           If you have a concern specific to Rushes platform content, email:<br />
-          <a href={`mailto:${contactEmail}`} className="text-red-400 hover:underline">{contactEmail}</a>
+          <a href={`mailto:${contactEmail}`} className="text-red-400 hover:underline">{contactEmail}</a> (our only official email)
         </p>
       </div>
     </div>

@@ -7,6 +7,7 @@ import crypto from "crypto";
 import { connectDB } from "../../../lib/mongodb";
 import User from "../../../models/User";
 import { avatarOrDefault } from "../../../lib/avatar";
+import { sendLoginThankYouEmail } from "../../../lib/sendEmail";
 
 function hasValue(value) {
   return typeof value === "string" && value.trim().length > 0;
@@ -134,6 +135,8 @@ export const authOptions = {
 
           await existingUser.save();
         }
+        
+        sendLoginThankYouEmail(existingUser.email, existingUser.name).catch(() => {});
 
         user.id = existingUser._id.toString();
         user.username = existingUser.username;

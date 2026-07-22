@@ -6,9 +6,10 @@ import { Film, Users, PlayCircle, Radio, Plus, ShieldCheck, AlertTriangle, Lock 
 import useSWR from 'swr';
 import CreatePartyDrawer from '@/components/watch-party/CreatePartyDrawer';
 import PasswordModal from '@/components/watch-party/PasswordModal';
-import AuthModal from '@/components/AuthModal';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
+import { useDispatch } from 'react-redux';
+import { openAuthModal } from '@/store/slices/uiSlice';
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
@@ -23,13 +24,13 @@ export default function WatchPartyLanding() {
   const [activeTab, setActiveTab] = useState('public'); // 'public' or 'private'
   
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [selectedRoomToJoin, setSelectedRoomToJoin] = useState(null);
+  const dispatch = useDispatch();
 
   const handleJoinClick = (e, room) => {
     e.preventDefault();
     if (!session?.user) {
-      setAuthModalOpen(true);
+      dispatch(openAuthModal('login'));
       return;
     }
     if (room.privacy === 'followers' || room.privacy === 'custom') {
@@ -71,7 +72,7 @@ export default function WatchPartyLanding() {
               <button
                 onClick={() => {
                   if (!session?.user) {
-                    setAuthModalOpen(true);
+                    dispatch(openAuthModal('login'));
                   } else {
                     setIsDrawerOpen(true);
                   }
@@ -210,8 +211,6 @@ export default function WatchPartyLanding() {
         onClose={() => setIsPasswordModalOpen(false)} 
         room={selectedRoomToJoin} 
       />
-
-      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </div>
   );
 }

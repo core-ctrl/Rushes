@@ -32,6 +32,7 @@ import SEOMeta from "../components/SEOMeta";
 import { SkeletonRow } from "../components/SkeletonCard";
 import { selectUser } from "../store/slices/authSlice";
 import { selectWatchlist } from "../store/slices/watchlistSlice";
+import { selectLocation } from "../store/slices/locationSlice";
 import { REGION_OPTIONS } from "../lib/preferenceOptions";
 import {
   fetchTrending,
@@ -128,6 +129,11 @@ export default function Home({
   const [nowPlayingLoad, setNowPlayingLoad] = useState(false);
   const [localTrendingMovies, setLocalTrendingMovies] = useState(trendingMovies);
   
+  const location = useSelector(selectLocation);
+  const [regionalMovies, setRegionalMovies] = useState([]);
+  const [regionalLoad, setRegionalLoad] = useState(false);
+  const [regionTitle, setRegionTitle] = useState("");
+  
   const regionLabel = user?.preferredRegions?.length
     ? REGION_OPTIONS.find((region) => region.code === user.preferredRegions[0])?.label || user.preferredRegions[0]
     : null;
@@ -179,6 +185,36 @@ export default function Home({
       .finally(() => setNowPlayingLoad(false));
   }, [user?.preferredRegions?.[0]]);
 
+  useEffect(() => {
+    if (location?.countryCode === 'IN' && location?.state) {
+      const stateToLang = {
+        'Andhra Pradesh': 'te',
+        'Telangana': 'te',
+        'Tamil Nadu': 'ta',
+        'Karnataka': 'kn',
+        'Kerala': 'ml',
+        'Maharashtra': 'mr',
+        'West Bengal': 'bn',
+        'Punjab': 'pa',
+        'Gujarat': 'gu'
+      };
+      
+      const langCode = stateToLang[location.state];
+      if (langCode) {
+        setRegionTitle(location.state);
+        setRegionalLoad(true);
+        axios.get(`/api/trending/localized?lang=${langCode}&type=movie`)
+          .then(res => {
+            if (Array.isArray(res.data)) {
+              setRegionalMovies(res.data.map((item) => compactMedia(item, { media_type: "movie" })));
+            }
+          })
+          .catch(console.error)
+          .finally(() => setRegionalLoad(false));
+      }
+    }
+  }, [location]);
+
   const nowPlayingIds = new Set(nowPlaying.map((m) => m.id));
 
   const rowProps = {
@@ -219,6 +255,16 @@ export default function Home({
             title={<TitleWithIcon icon={FireIcon} title="Trending Now" subtitle="Top OTT hits and latest theater releases" />}
             {...rowProps}
           />
+
+          {regionalLoad ? (
+            <SkeletonRow count={7} />
+          ) : regionalMovies.length > 0 ? (
+            <SectionRow
+              title={<TitleWithIcon icon={FireIcon} title={`Popular in ${regionTitle}`} subtitle="Regional hits near you" />}
+              items={regionalMovies}
+              {...rowProps}
+            />
+          ) : null}
 
           {user ? (
             <section className="mb-14">

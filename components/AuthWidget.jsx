@@ -25,6 +25,7 @@ import AppIcon from "./AppIcon";
 import { toast } from "./ui/Toaster";
 import { signIn } from "next-auth/react";
 import { readStoredPreferences, hasMeaningfulPreferences } from "../lib/userPreferences";
+import ExpandableTerms from "./ExpandableTerms";
 function PasswordStrength({ password = "" }) {
   const checks = [
     { label: "8+ chars", ok: password.length >= 8 },
@@ -52,14 +53,15 @@ function PasswordStrength({ password = "" }) {
   );
 }
 
-function SocialButton({ provider, icon, label }) {
+function SocialButton({ provider, icon, label, disabled }) {
   const baseClasses = "flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition";
 
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={() => signIn(provider)}
-      className={`${baseClasses} hover:border-white/20 hover:bg-white/10`}
+      className={`${baseClasses} hover:border-white/20 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed`}
     >
       {icon}
       <span>{label}</span>
@@ -78,6 +80,7 @@ export default function AuthWidget({ open, onClose, onLogin, externalFeedback })
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [success, setSuccess] = useState("");
   const [localErr, setLocalErr] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const { register, handleSubmit, watch, reset, formState: { errors } } = useForm();
   const password = watch("password", "");
@@ -227,8 +230,8 @@ export default function AuthWidget({ open, onClose, onLogin, externalFeedback })
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               {mode !== "forgot" && (
                 <div className="flex flex-col gap-3">
-                  <SocialButton provider="google" icon={<AppIcon icon={GoogleIcon} size={14} />} label="Continue with Google" />
-                  <SocialButton provider="github" icon={<AppIcon icon={GithubIcon} size={14} />} label="Continue with GitHub" />
+                  <SocialButton provider="google" icon={<AppIcon icon={GoogleIcon} size={14} />} label="Continue with Google" disabled={!termsAccepted} />
+                  <SocialButton provider="github" icon={<AppIcon icon={GithubIcon} size={14} />} label="Continue with GitHub" disabled={!termsAccepted} />
                   <div className="flex items-center gap-3 py-1">
                     <div className="h-px flex-1 bg-white/10" />
                     <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">or</span>
@@ -323,6 +326,10 @@ export default function AuthWidget({ open, onClose, onLogin, externalFeedback })
                 </div>
               )}
 
+              {mode !== "forgot" && (
+                <ExpandableTerms isChecked={termsAccepted} setIsChecked={setTermsAccepted} />
+              )}
+
               <AnimatePresence>
                 {err && (
                   <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -338,8 +345,8 @@ export default function AuthWidget({ open, onClose, onLogin, externalFeedback })
                 )}
               </AnimatePresence>
 
-              <button type="submit" disabled={loading}
-                className="mt-1 bg-accent hover:bg-accent-dark disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-all hover:shadow-glow-red text-sm">
+              <button type="submit" disabled={loading || (mode !== "forgot" && !termsAccepted)}
+                className="mt-1 bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all hover:shadow-glow-red text-sm">
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

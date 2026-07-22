@@ -4,7 +4,8 @@ import { X, PlayCircle, Users, Radio, Lock } from 'lucide-react';
 import useSWR from 'swr';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
-import AuthModal from './AuthModal';
+import { useDispatch } from 'react-redux';
+import { openAuthModal } from '../store/slices/uiSlice';
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
@@ -19,7 +20,7 @@ export default function WatchPartyModal({
   const router = useRouter();
   const { data: session } = useSession();
   const { data, error } = useSWR(isOpen ? '/api/watch-together/active' : null, fetcher);
-  const [authModalOpen, setAuthModalOpen] = React.useState(false);
+  const dispatch = useDispatch();
   
   if (!isOpen) return null;
 
@@ -31,7 +32,7 @@ export default function WatchPartyModal({
 
   const handleJoinClick = (room) => {
     if (!session?.user) {
-      setAuthModalOpen(true);
+      dispatch(openAuthModal('login'));
       return;
     }
     if (room.privacy === 'followers' || room.privacy === 'custom' || room.privacy === 'private') {
@@ -112,7 +113,7 @@ export default function WatchPartyModal({
             <button 
               onClick={() => {
                 if (!session?.user) {
-                  setAuthModalOpen(true);
+                  dispatch(openAuthModal('login'));
                 } else {
                   onHostOwn();
                 }
@@ -125,8 +126,6 @@ export default function WatchPartyModal({
           </div>
         </motion.div>
       </div>
-
-      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </AnimatePresence>
   );
 }

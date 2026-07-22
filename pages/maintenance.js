@@ -79,7 +79,7 @@ export default function MaintenancePage() {
               href={`mailto:${SITE_CONTACT.email}`}
               className="text-xs hover:text-neutral-400 transition-colors"
             >
-              {SITE_CONTACT.email}
+              {SITE_CONTACT.email} (our only official email)
             </a>
           </div>
 

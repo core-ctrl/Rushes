@@ -325,6 +325,19 @@ export default function ProfilePage({ user, wishlist = [], openAuth }) {
           {/* Action Buttons */}
           <div className="flex flex-col gap-2">
             <button
+              onClick={() => {
+                const inviteLink = `https://rushes.theorbit.in/invite/${user.username}`;
+                if (navigator.clipboard) {
+                  navigator.clipboard.writeText(inviteLink);
+                  toast({ type: "success", message: "Invite link copied to clipboard!" });
+                }
+              }}
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-neutral-300 transition hover:bg-white/10 hover:text-white"
+            >
+              <AppIcon icon={Cards02Icon} size={16} />
+              Invite Friends
+            </button>
+            <button
               onClick={() => setShowPasswordModal(true)}
               className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-neutral-300 transition hover:bg-white/10 hover:text-white"
             >

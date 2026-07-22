@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://res.cloudinary.com/dkrvtfbor/image/upload/v1783633240/RUSHES_1_-Photoroom_ebmtp8.png" width="100%"/>
+<img src="https://res.cloudinary.com/dkrvtfbor/image/upload/v1783633240/RUSHES_1_-Photoroom_ebmtp8.png" width="400" alt="Rushes Logo" />
 
 <br/>
 

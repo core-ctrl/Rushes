@@ -1,7 +1,6 @@
-<div align="center">
-
-<img src="https://res.cloudinary.com/dkrvtfbor/image/upload/v1783633240/RUSHES_1_-Photoroom_ebmtp8.png" width="400" alt="Rushes Logo" />
-
+<p align="center">
+  <img src="https://res.cloudinary.com/dkrvtfbor/image/upload/v1783633240/RUSHES_1_-Photoroom_ebmtp8.png" width="250" alt="Rushes Logo">
+</p>
 <br/>
 
 <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=14&duration=2500&pause=800&color=E8C84A&center=true&vCenter=true&multiline=false&width=620&lines=Next.js+14+%7C+React+%7C+Node.js+%7C+MongoDB+Atlas;JWT+Auth+%7C+Supabase+%7C+Redis+%7C+Firebase;Social+Feeds+%7C+Real-time+Chat+%7C+Smart+Recommendations;Ken+Burns+Hero+%7C+Bento+Grid+%7C+Framer+Motion" alt="Typing SVG" />

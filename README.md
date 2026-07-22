@@ -2,38 +2,35 @@
 
 <img src="https://res.cloudinary.com/dkrvtfbor/image/upload/v1783633240/RUSHES_1_-Photoroom_ebmtp8.png" width="250" alt="Rushes Logo"/>
 
-<br/>
+<br/><br/>
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=14&duration=2500&pause=800&color=E8C84A&center=true&vCenter=true&multiline=false&width=700&lines=Next.js+14+%7C+React+19+%7C+Spring+Boot+%7C+MongoDB+Atlas;JWT+Auth+%7C+Redis+%7C+Supabase+%7C+Firebase;Social+Feeds+%7C+Real-time+Chat+%7C+Smart+Recommendations;Discover+%26+Connect+%7C+Modern+Social+Platform" alt="Typing SVG" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=14&duration=2500&pause=800&color=E8C84A&center=true&vCenter=true&width=700&lines=Next.js+14+%7C+React+19+%7C+Spring+Boot+%7C+MongoDB+Atlas;JWT+Auth+%7C+Redis+%7C+Supabase+%7C+Firebase;Social+Feeds+%7C+Real-time+Chat+%7C+Smart+Recommendations;Discover+%26+Connect+%7C+Modern+Social+Platform" alt="Typing SVG"/>
 
 <br/><br/>
 
-</div>
-<br/>
-
-<!-- STACK BADGES -->
-<img src="https://img.shields.io/badge/Next.js-14-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js"/>
-<img src="https://img.shields.io/badge/React-18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React"/>
-<img src="https://img.shields.io/badge/MongoDB-Atlas-00ED64?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB"/>
-<img src="https://img.shields.io/badge/Redis-Upstash-FF4438?style=for-the-badge&logo=redis&logoColor=white" alt="Redis"/>
-<img src="https://img.shields.io/badge/Supabase-Realtime-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase"/>
+<!-- Tech Stack -->
+<img src="https://img.shields.io/badge/Next.js-14-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" />
+<img src="https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
+<img src="https://img.shields.io/badge/MongoDB-Atlas-00ED64?style=for-the-badge&logo=mongodb&logoColor=white" />
+<img src="https://img.shields.io/badge/Redis-Upstash-FF4438?style=for-the-badge&logo=redis&logoColor=white" />
+<img src="https://img.shields.io/badge/Supabase-Realtime-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" />
 
 <br/>
 
-<img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
-<img src="https://img.shields.io/badge/TMDB-API-01b4e4?style=for-the-badge&logo=themoviedb&logoColor=white" alt="TMDB"/>
-<img src="https://img.shields.io/badge/Firebase-Analytics-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firebase"/>
-<img src="https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind"/>
+<img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
+<img src="https://img.shields.io/badge/TMDB-API-01B4E4?style=for-the-badge&logo=themoviedb&logoColor=white" />
+<img src="https://img.shields.io/badge/Firebase-Analytics-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" />
+<img src="https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white" />
 
 <br/><br/>
 
-<img src="https://img.shields.io/github/stars/core-ctrl/Rushes?style=for-the-badge&color=E8C84A&labelColor=0a0a0f" alt="Stars"/>
-<img src="https://img.shields.io/github/forks/core-ctrl/Rushes?style=for-the-badge&color=E8C84A&labelColor=0a0a0f" alt="Forks"/>
-<img src="https://img.shields.io/github/last-commit/core-ctrl/Rushes?style=for-the-badge&color=E8C84A&labelColor=0a0a0f" alt="Last Commit"/>
-<img src="https://img.shields.io/github/license/core-ctrl/Rushes?style=for-the-badge&color=E8C84A&labelColor=0a0a0f" alt="License"/>
+<!-- Repo Stats -->
+<img src="https://img.shields.io/github/stars/core-ctrl/Rushes?style=for-the-badge&color=E8C84A&labelColor=0A0A0F" />
+<img src="https://img.shields.io/github/forks/core-ctrl/Rushes?style=for-the-badge&color=E8C84A&labelColor=0A0A0F" />
+<img src="https://img.shields.io/github/last-commit/core-ctrl/Rushes?style=for-the-badge&color=E8C84A&labelColor=0A0A0F" />
+<img src="https://img.shields.io/github/license/core-ctrl/Rushes?style=for-the-badge&color=E8C84A&labelColor=0A0A0F" />
 
 </div>
-
 ---
 
 ## 🧠 What is This?
